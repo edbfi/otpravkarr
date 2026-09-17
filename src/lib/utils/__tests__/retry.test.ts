@@ -251,14 +251,12 @@ describe("isTransientResultError", () => {
     expect(isTransientResultError({ error: "server_error" })).toBe(true);
   });
 
-  it.each([
-    "auth_failure",
-    "not_found",
-    "validation_error",
-    "unexpected_shape",
-  ])("returns false for %s", (code) => {
-    expect(isTransientResultError({ error: code })).toBe(false);
-  });
+  it.each(["auth_failure", "not_found", "validation_error", "unexpected_shape"])(
+    "returns false for %s",
+    (code) => {
+      expect(isTransientResultError({ error: code })).toBe(false);
+    },
+  );
 });
 
 // ---------------------------------------------------------------------------
