@@ -253,25 +253,28 @@ describe("enforceLineupPolicySubscription", () => {
   it.each([
     ["unset", null],
     ["malformed", "not-json"],
-  ])("fails closed through the empty-profile sentinel when approved policy is %s", async (_kind, approvedGroups) => {
-    setLineupPolicyConfig({
-      lineup_policy_default: "fixed",
-      lineup_fixed_group_ids: "[1]",
-      default_selectable_groups: approvedGroups,
-    });
+  ])(
+    "fails closed through the empty-profile sentinel when approved policy is %s",
+    async (_kind, approvedGroups) => {
+      setLineupPolicyConfig({
+        lineup_policy_default: "fixed",
+        lineup_fixed_group_ids: "[1]",
+        default_selectable_groups: approvedGroups,
+      });
 
-    const result = await enforceLineupPolicySubscription(client, 1);
+      const result = await enforceLineupPolicySubscription(client, 1);
 
-    expect(result).toMatchObject({ ok: true, data: { groupIds: [], profileIds: [999] } });
-    expect(ensureEmptyProfile).toHaveBeenCalledOnce();
-    expect(reconcileGroupProfile).not.toHaveBeenCalled();
-    expect(updateUser).toHaveBeenCalledWith(
-      client,
-      42,
-      { channel_profiles: [999], user_level: 1 },
-      8000,
-    );
-  });
+      expect(result).toMatchObject({ ok: true, data: { groupIds: [], profileIds: [999] } });
+      expect(ensureEmptyProfile).toHaveBeenCalledOnce();
+      expect(reconcileGroupProfile).not.toHaveBeenCalled();
+      expect(updateUser).toHaveBeenCalledWith(
+        client,
+        42,
+        { channel_profiles: [999], user_level: 1 },
+        8000,
+      );
+    },
+  );
 
   it("retains orphaned intent when remote enforcement fails", async () => {
     setLineupPolicyConfig({
@@ -468,29 +471,25 @@ describe("applyGroupSubscription", () => {
     expect(reconcileGroupProfile).not.toHaveBeenCalled();
   });
 
-  it.each([
-    0,
-    -1,
-    1.5,
-    Number.MAX_SAFE_INTEGER + 1,
-    Number.NaN,
-    Number.POSITIVE_INFINITY,
-  ])("rejects invalid direct group id %s before discovery or patching", async (invalidId) => {
-    const result = await applyGroupSubscription(client, 1, [invalidId]);
+  it.each([0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, Number.NaN, Number.POSITIVE_INFINITY])(
+    "rejects invalid direct group id %s before discovery or patching",
+    async (invalidId) => {
+      const result = await applyGroupSubscription(client, 1, [invalidId]);
 
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error).toBe("validation_error");
-      expect(result.message).toContain("positive safe integers");
-    }
-    expect(findUserByUsername).not.toHaveBeenCalled();
-    expect(getUser).not.toHaveBeenCalled();
-    expect(listAllChannels).not.toHaveBeenCalled();
-    expect(listChannelGroups).not.toHaveBeenCalled();
-    expect(reconcileGroupProfile).not.toHaveBeenCalled();
-    expect(updateUser).not.toHaveBeenCalled();
-    expect(updateUserMapping).not.toHaveBeenCalled();
-  });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBe("validation_error");
+        expect(result.message).toContain("positive safe integers");
+      }
+      expect(findUserByUsername).not.toHaveBeenCalled();
+      expect(getUser).not.toHaveBeenCalled();
+      expect(listAllChannels).not.toHaveBeenCalled();
+      expect(listChannelGroups).not.toHaveBeenCalled();
+      expect(reconcileGroupProfile).not.toHaveBeenCalled();
+      expect(updateUser).not.toHaveBeenCalled();
+      expect(updateUserMapping).not.toHaveBeenCalled();
+    },
+  );
   it("rejects non-existent group ids before patching the user", async () => {
     const result = await applyGroupSubscription(client, 1, [1, 1, 999]);
 
