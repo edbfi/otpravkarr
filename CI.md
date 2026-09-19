@@ -9,7 +9,7 @@ Use Bun 1.4.2 and `bun install --frozen-lockfile`, then `bun run check`,
 `bun run check:types`, `bun run test`, and `bun run test:e2e`. The type script aligns
 CI and prek and prepares generated SvelteKit types first. Frozen installation now
 propagates preparation failures. The application remains Bun/SQLite; Node is used
-only by test/tool CLIs. CI installs the lockfile's Playwright Chromium on Ubuntu 24.04.
+only by test/tool CLIs. CI installs the lockfile's Playwright Chromium on the configured Ubuntu runner.
 
 The E2E command builds once, verifies the exact migration directory shipped in
 `build/server/migrations`, and boots two successive real production servers on
@@ -26,19 +26,37 @@ include the lockfile/runtime/runner architecture. Prek's formatting/types hooks 
 covered by their dedicated read-only CI checks, while hygiene and secret detection
 remain separate. Source and lockfile mutation fails validation.
 
-Renovate uses `edbfi/automation:default`, including grouped non-major updates,
-pre-commit hook discovery and the official Biome version manager. The v1.1.0
-default and automerge presets make all update types eligible, including majors
-and shared-policy updates, without dashboard approval. All six current-head jobs
-in `.github/merge-policy.json` must pass; TypeScript and warning-free Svelte checks
-remain required. The checked merge preserves genuine sign-offs and dispatches
-full CI for the exact merged commit.
-Biome migrations compute without write privileges, then a separate publisher writes
-allowlisted source/config changes and dispatches full CI for the exact repaired SHA.
-Large repairs beyond the shared limits need manual handling.
+Renovate uses the immutable v3.0.1 default preset, including grouped non-major
+updates, hook discovery and the official Biome version manager. Native PR merging
+is explicitly disabled for this repository. The legacy Actions merger and its
+maintainer commands are retired by this migration; no replacement merger is added.
+All application checks remain mandatory, including warning-free Svelte/TypeScript,
+production browser tests and the existing source assertions.
 
-Other changes retain manual review of the exact head/base, full diff, authors/DCO,
-all CI jobs and relevant artifacts before merging through ghmerge.
-No branch protections or repository rulesets are configured. The suite uses local fake credentials and
-loopback service addresses; real Plex/Dispatcharr behavior, image packaging in the
-separate repository, and deployment hosting remain explicit integration gaps.
+The separate read-only `policy / ci / policy` check validates Conventional Commit
+titles, matching author sign-offs, authentic Renovate provenance, outstanding review
+requests, objections and hold labels. PR metadata and review events refresh it without
+cancelling other evaluations. Before any later opt-in, protection must require this
+policy context and `ci / required` from GitHub Actions, current branches and existing
+review restrictions. Shared automation configuration updates remain manual.
+
+This is a prepared migration while the default branch remains locked and the legacy
+merge workflow remains disabled. The historical queued helper run is not treated as
+quiescent merely because its workflow is disabled. Resolve that integration blocker
+and verify effective protection before merging the migration or enabling automerge.
+A successful PR CI run alone does not authorize either change.
+
+Biome migrations compute without write privileges using the exact isolated official
+formatter. A separate App publisher writes only allowlisted source/config changes
+and dispatches full CI for the exact repaired SHA. Existing recovery settings move
+to `.github/repair-policy.json` with the released v3.0.1 reference. They retain their
+current enabled state, source allowlist and standalone root Bun lock. Recovery can
+dispatch CI but cannot merge, push or manufacture checks. Large repairs need manual
+handling. Every repaired head still needs complete application and policy checks;
+a token-suppressed policy event must be recovered through a supported App/Renovate
+update, not bypassed.
+
+The suite uses local fake credentials and loopback service addresses. Real
+Plex/Dispatcharr behavior, image packaging in the separate repository, and deployment
+hosting remain explicit integration gaps. No helper-dispatched deployment exists in
+this repository; normal default-branch push CI remains unchanged.
