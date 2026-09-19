@@ -1,0 +1,12 @@
+name: PR policy
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited, labeled, unlabeled, ready_for_review, converted_to_draft, review_requested, review_request_removed]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  policy:
+    uses: edbfi/automation/.github/workflows/pr-policy.yml@v3.0.1
