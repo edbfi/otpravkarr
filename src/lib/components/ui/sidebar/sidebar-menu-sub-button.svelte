@@ -31,9 +31,8 @@ const _mergedProps = $derived({
 </script>
 
 {#if child}
-	{@render child({ props: _mergedProps })}
+  {@render child({ props: _mergedProps })}
 {:else}
-	<a bind:this={ref} {..._mergedProps}>
-		{@render children?.()}
-	</a>
+  <!-- biome-ignore lint/a11y/useValidAnchor: The polymorphic component receives href through its merged props. -->
+  <a bind:this={ref} {..._mergedProps}> {@render children?.()} </a>
 {/if}

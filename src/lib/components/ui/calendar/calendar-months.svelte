@@ -11,9 +11,9 @@ let {
 </script>
 
 <div
-	bind:this={ref}
-	class={cn("relative flex flex-col gap-4 md:flex-row", className)}
-	{...restProps}
+  bind:this={ref}
+  class={cn("relative flex flex-col gap-4 md:flex-row", className)}
+  {...restProps}
 >
-	{@render children?.()}
+  {@render children?.()}
 </div>

@@ -10,7 +10,7 @@ let {
 </script>
 
 <CalendarPrimitive.Grid
-	bind:ref
-	class={cn("flex w-full border-collapse flex-col", className)}
-	{...restProps}
+  bind:ref
+  class={cn("flex w-full border-collapse flex-col", className)}
+  {...restProps}
 />

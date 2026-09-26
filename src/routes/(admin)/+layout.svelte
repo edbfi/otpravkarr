@@ -10,6 +10,4 @@ $effect(() => {
 });
 </script>
 
-<AdminSidebar username={data.username}>
-  {@render children()}
-</AdminSidebar>
+<AdminSidebar username={data.username}> {@render children()} </AdminSidebar>

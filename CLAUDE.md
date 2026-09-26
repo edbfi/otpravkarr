@@ -34,7 +34,7 @@ That file is generic stack guidance. Its Svelte 5 runes, SSR-state and routing r
 ## Boundaries
 
 - `src/hooks.server.ts` is one `sequence(...)`. It runs lazy runtime init (env check, migrations, scheduler, bootstrap banner), the setup gate, session → `event.locals`, the Origin/CSRF check on mutating methods, and security headers. Until setup completes, every path not allowlisted in `setupGate` redirects to `/setup`. Add any new unauthenticated endpoint to that list.
-- Server-only code lives in `src/lib/{db,dispatcharr,bridge,plex,scheduler,crypto,server}`. SvelteKit guards only `$lib/server`, so nothing stops the others from being bundled for the client. `.svelte` files may import only types from these modules, written as `import type`. Biome's `.svelte` override disables `useImportType`, so a value import silently drags `bun:sqlite` into the client. Send runtime data through `load`.
+- Server-only code lives in `src/lib/{db,dispatcharr,bridge,plex,scheduler,crypto,server}`. SvelteKit guards only `$lib/server`, so nothing stops the others from being bundled for the client. `.svelte` files may import only types from these modules, written as `import type`. Biome checks type-only imports in Svelte scripts, but a runtime value import can still drag `bun:sqlite` into the client. Send runtime data through `load`.
 - Scheduled sync (`src/lib/scheduler/jobs/sync.ts`) and manual `POST /api/internal/sync` both call `runFullReconcile` in `src/lib/bridge/reconcile.ts` under the `plex-dispatcharr-sync` lock. Add new sync steps there, not in either caller.
 - Process-wide singletons (`db`, `scheduler`, rate limiters, bootstrap token) are deliberate because the app is a single process. Per-request data goes in `event.locals`.
 
@@ -114,3 +114,11 @@ vi.mock("$lib/db/repositories/config", () => ({ getConfig: mocks.getConfig }));
 
 - `.agents/rules/svelte5-sveltekit-app.md`: Svelte 5 runes, SSR state safety, load/actions conventions. Read before writing components or routes, and apply the conflict table above.
 - `README.md`: env vars, production startup, health API contract. Read when changing env handling, startup, or `/api/health`.
+
+## Biome configuration
+
+Biome is pinned to 2.5.14. The configuration uses Git ignores, the recommended lint and assist presets, and experimental full Svelte support. Keep type checking separate from Biome. Project quote, comma and indentation conventions remain explicit in the configuration.
+
+The exact-file formatter overrides protect components containing `{@const ...}`: Biome 2.5.14 inserts parentheses that Svelte rejects with `expected_pattern`. These files still receive lint and import checks. Recheck them with the Svelte compiler when upgrading Biome before removing the exceptions. Do not run a formatter with these overrides bypassed.
+
+Inline accessibility suppressions cover href forwarded through polymorphic props, named link groups and the native search form. They do not disable accessibility checks across all Svelte files.

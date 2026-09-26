@@ -94,7 +94,11 @@ function enhanceHandler() {
 >
   Skip to main content
 </a>
-<main id="main-content" tabindex="-1" class="hero-glow-bg min-h-screen flex flex-col items-center justify-center px-4 py-12 text-foreground">
+<main
+  id="main-content"
+  tabindex="-1"
+  class="hero-glow-bg min-h-screen flex flex-col items-center justify-center px-4 py-12 text-foreground"
+>
   <div class="reveal reveal-1 mb-8 text-center">
     <p class="eyebrow">OTPRAVKARR</p>
     <h1 class="display-hero mt-2">Welcome back.</h1>
@@ -105,9 +109,7 @@ function enhanceHandler() {
     <Card.Root class="surface-elevated">
       <Card.Header>
         <Card.Title class="text-lg">Sign in</Card.Title>
-        <Card.Description>
-          Enter your credentials to access the dashboard.
-        </Card.Description>
+        <Card.Description> Enter your credentials to access the dashboard. </Card.Description>
       </Card.Header>
       <Card.Content>
         {#if errorMessage}

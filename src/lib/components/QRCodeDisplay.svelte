@@ -36,9 +36,14 @@ async function generateQrCode() {
 }
 </script>
 
-<div class={cn("inline-flex flex-col items-center gap-3 rounded-lg border border-border bg-white p-3", className)}>
+<div
+  class={cn(
+  "inline-flex flex-col items-center gap-3 rounded-lg border border-border bg-white p-3",
+  className,
+)}
+>
   {#if dataUri}
-    <img src={dataUri} {alt} width={size} height={size} class="rounded" />
+    <img src={dataUri} {alt} width={size} height={size} class="rounded">
   {:else}
     <Button variant="outline" onclick={generateQrCode} disabled={generating}>
       <QrCodeIcon class="mr-2 h-4 w-4" />

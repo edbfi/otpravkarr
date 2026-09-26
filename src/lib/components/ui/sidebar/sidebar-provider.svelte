@@ -41,22 +41,19 @@ afterNavigate(() => {
 <svelte:window onkeydown={_sidebar.handleShortcutKeydown} />
 
 <Tooltip.Provider delayDuration={0}>
-	<div
-		data-slot="sidebar-wrapper"
-		class={cn(
-			"group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
-			className
-		)}
-		bind:this={ref}
-		{...restProps}
-	>
-		{@render children?.()}
-	</div>
+  <div
+    data-slot="sidebar-wrapper"
+    class={cn("group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full", className)}
+    bind:this={ref}
+    {...restProps}
+  >
+    {@render children?.()}
+  </div>
 </Tooltip.Provider>
 
 <style>
-	:global([data-slot="sidebar-wrapper"]) {
-		--sidebar-width: 16rem;
-		--sidebar-width-icon: 3rem;
-	}
+:global([data-slot="sidebar-wrapper"]) {
+  --sidebar-width: 16rem;
+  --sidebar-width-icon: 3rem;
+}
 </style>

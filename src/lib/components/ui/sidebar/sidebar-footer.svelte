@@ -11,11 +11,11 @@ let {
 </script>
 
 <div
-	bind:this={ref}
-	data-slot="sidebar-footer"
-	data-sidebar="footer"
-	class={cn("gap-2 p-2 flex flex-col", className)}
-	{...restProps}
+  bind:this={ref}
+  data-slot="sidebar-footer"
+  data-sidebar="footer"
+  class={cn("gap-2 p-2 flex flex-col", className)}
+  {...restProps}
 >
-	{@render children?.()}
+  {@render children?.()}
 </div>

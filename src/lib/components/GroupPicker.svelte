@@ -142,7 +142,8 @@ function clearFiltered(): void {
 
   <div class="flex flex-wrap items-center justify-between gap-2">
     <p class="min-w-0 text-sm text-muted-foreground">
-      {selected.size} selected · {groups.length} available
+      {selected.size}
+      selected · {groups.length} available
     </p>
     {#if !disabled}
       <div class="flex flex-wrap gap-2">
@@ -162,7 +163,7 @@ function clearFiltered(): void {
         {groups.length === 0 ? "No channel groups available." : `No groups match “${query}”.`}
       </p>
     {:else}
-      <ul bind:this={listEl} role="group" aria-label="Channel groups">
+      <ul bind:this={listEl} aria-label="Channel groups">
         {#each visible as group, i (group.id)}
           <li class="border-b border-border last:border-b-0">
             <label
@@ -178,7 +179,7 @@ function clearFiltered(): void {
                 onfocus={() => (activeIndex = i)}
                 onkeydown={onRowKeydown}
                 {disabled}
-              />
+              >
               <span class="min-w-0 flex-1 truncate text-sm text-foreground">{group.name}</span>
               {#if group.channelCount != null}
                 <span class="shrink-0 text-xs text-muted-foreground">

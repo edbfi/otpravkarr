@@ -10,10 +10,10 @@ let {
 </script>
 
 <CalendarPrimitive.Header
-	bind:ref
-	class={cn(
-		"flex h-[var(--cell-size)] w-full items-center justify-center gap-1.5 text-sm font-medium",
-		className
-	)}
-	{...restProps}
+  bind:ref
+  class={cn(
+  "flex h-[var(--cell-size)] w-full items-center justify-center gap-1.5 text-sm font-medium",
+  className,
+)}
+  {...restProps}
 />

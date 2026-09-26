@@ -1,5 +1,27 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "**",
+      "!!**/build",
+      "!**/.svelte-kit",
+      "!!**/dist",
+      "!!**/.omc",
+      "!!**/.omx",
+      "!!**/dogfood-output",
+      "!!**/test-results",
+      "!!**/playwright-report",
+      "!!**/e2e/.auth",
+      "!**/node_modules",
+      "!**/bun.lock"
+    ]
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -21,38 +43,40 @@
     }
   },
   "assist": {
+    "enabled": true,
     "actions": {
       "source": {
-        "organizeImports": "on"
+        "preset": "recommended"
       }
     }
   },
-  "files": {
-    "includes": [
-      "**",
-      "!**/build",
-      "!**/.svelte-kit",
-      "!**/dist",
-      "!**/.omc",
-      "!**/.omx",
-      "!**/dogfood-output",
-      "!**/test-results",
-      "!**/playwright-report",
-      "!**/e2e/.auth"
-    ]
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "trailingCommas": "all",
+      "semicolons": "always"
+    }
+  },
+  "html": {
+    "experimentalFullSupportEnabled": true,
+    "formatter": {
+      "enabled": true
+    }
   },
   "overrides": [
     {
-      "includes": ["**/*.svelte"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "noUnusedImports": "off"
-          },
-          "style": {
-            "useImportType": "off"
-          }
-        }
+      "includes": [
+        "src/lib/components/SetupWizard.svelte",
+        "src/lib/components/ui/sidebar/sidebar-menu-button.svelte",
+        "src/routes/(admin)/audit/+page.svelte",
+        "src/routes/(admin)/dashboard/+page.svelte",
+        "src/routes/(admin)/settings/+page.svelte",
+        "src/routes/(admin)/users/+page.svelte",
+        "src/routes/(portal)/+page.svelte",
+        "src/routes/setup/+page.svelte"
+      ],
+      "formatter": {
+        "enabled": false
       }
     }
   ]

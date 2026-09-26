@@ -21,12 +21,7 @@ const labelSize = $derived(size === "sm" ? "text-xs" : "text-sm");
     width={intrinsicSize}
     height={intrinsicSize}
     decoding="async"
-    class={cn(
-      "shrink-0 rounded-md ring-1 ring-border/60 shadow-sm",
-      iconSize,
-    )}
-  />
-  <span class={cn("font-semibold tracking-tight text-primary", labelSize)}>
-    otpravkarr
-  </span>
+    class={cn("shrink-0 rounded-md ring-1 ring-border/60 shadow-sm", iconSize)}
+  >
+  <span class={cn("font-semibold tracking-tight text-primary", labelSize)}> otpravkarr </span>
 </div>

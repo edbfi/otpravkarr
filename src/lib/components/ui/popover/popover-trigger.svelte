@@ -10,8 +10,8 @@ let {
 </script>
 
 <PopoverPrimitive.Trigger
-	bind:ref
-	data-slot="popover-trigger"
-	class={cn("", className)}
-	{...restProps}
+  bind:ref
+  data-slot="popover-trigger"
+  class={cn("", className)}
+  {...restProps}
 />
