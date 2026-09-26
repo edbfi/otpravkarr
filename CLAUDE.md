@@ -113,5 +113,4 @@ vi.mock("$lib/db/repositories/config", () => ({ getConfig: mocks.getConfig }));
 ## Reference
 
 - `.agents/rules/svelte5-sveltekit-app.md`: Svelte 5 runes, SSR state safety, load/actions conventions. Read before writing components or routes, and apply the conflict table above.
-- `CI.md`: required CI jobs, Renovate and merge policy. Read before editing `.github/` or the check scripts.
 - `README.md`: env vars, production startup, health API contract. Read when changing env handling, startup, or `/api/health`.
