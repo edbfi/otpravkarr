@@ -30,21 +30,21 @@ const controls = $derived(
 </script>
 
 <Button
-	bind:ref
-	data-sidebar="trigger"
-	data-slot="sidebar-trigger"
-	variant="ghost"
-	size="icon-sm"
-	class={cn("cn-sidebar-trigger", className)}
-	type="button"
-	aria-expanded={expanded}
-	aria-controls={controls}
-	onclick={(e) => {
-		onclick?.(e);
-		_sidebar.toggle();
-	}}
-	{...restProps}
+  bind:ref
+  data-sidebar="trigger"
+  data-slot="sidebar-trigger"
+  variant="ghost"
+  size="icon-sm"
+  class={cn("cn-sidebar-trigger", className)}
+  type="button"
+  aria-expanded={expanded}
+  aria-controls={controls}
+  onclick={(e) => {
+  onclick?.(e);
+  _sidebar.toggle();
+}}
+  {...restProps}
 >
-	<PanelLeftIcon  />
-	<span class="sr-only">Toggle Sidebar</span>
+  <PanelLeftIcon />
+  <span class="sr-only">Toggle Sidebar</span>
 </Button>

@@ -560,7 +560,8 @@ async function copyOneTimePassword() {
 
   <!-- Filters bar -->
   <div class="flex flex-wrap items-center gap-3">
-    <div role="group" aria-label="Filter users by status" class="flex flex-wrap gap-1.5">
+    <!-- biome-ignore lint/a11y/useSemanticElements: These named groups contain navigation links rather than form controls. -->
+<div role="group" aria-label="Filter users by status" class="flex flex-wrap gap-1.5">
       {#each statusFilterOptions as option}
         <a
           href={filterHref("status", option.value)}
@@ -572,7 +573,8 @@ async function copyOneTimePassword() {
       {/each}
     </div>
 
-    <div role="group" aria-label="Filter users by provisioning mode" class="flex flex-wrap gap-1.5">
+    <!-- biome-ignore lint/a11y/useSemanticElements: These named groups contain navigation links rather than form controls. -->
+<div role="group" aria-label="Filter users by provisioning mode" class="flex flex-wrap gap-1.5">
       {#each modeFilterOptions as option}
         <a
           href={filterHref("mode", option.value)}
@@ -584,7 +586,8 @@ async function copyOneTimePassword() {
       {/each}
     </div>
 
-    <form
+    <!-- biome-ignore lint/a11y/useSemanticElements: The native GET form also provides the search landmark. -->
+<form
       method="GET"
       action="/users"
       role="search"

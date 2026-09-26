@@ -16,21 +16,21 @@ let {
 </script>
 
 {#snippet Fallback()}
-	<ChevronLeftIcon class={cn("size-4", className)} />
+  <ChevronLeftIcon class={cn("size-4", className)} />
 {/snippet}
 
 <CalendarPrimitive.PrevButton
-	bind:ref
-	class={cn(
-		buttonVariants({ variant }),
-		"size-[var(--cell-size)] bg-transparent p-0 select-none disabled:opacity-50 rtl:rotate-180",
-		className
-	)}
-	{...restProps}
+  bind:ref
+  class={cn(
+  buttonVariants({ variant }),
+  "size-[var(--cell-size)] bg-transparent p-0 select-none disabled:opacity-50 rtl:rotate-180",
+  className,
+)}
+  {...restProps}
 >
-	{#if children}
-		{@render children?.()}
-	{:else}
-		{@render Fallback()}
-	{/if}
+  {#if children}
+    {@render children?.()}
+  {:else}
+    {@render Fallback()}
+  {/if}
 </CalendarPrimitive.PrevButton>

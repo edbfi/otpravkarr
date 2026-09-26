@@ -11,11 +11,11 @@ let {
 </script>
 
 <div
-	bind:this={ref}
-	data-slot="sidebar-group-content"
-	data-sidebar="group-content"
-	class={cn("text-sm w-full", className)}
-	{...restProps}
+  bind:this={ref}
+  data-slot="sidebar-group-content"
+  data-sidebar="group-content"
+  class={cn("text-sm w-full", className)}
+  {...restProps}
 >
-	{@render children?.()}
+  {@render children?.()}
 </div>

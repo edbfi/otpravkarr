@@ -10,8 +10,11 @@ let {
 </script>
 
 <DialogPrimitive.Description
-	bind:ref
-	data-slot="dialog-description"
-	class={cn("text-muted-foreground *:[a]:hover:text-foreground text-sm *:[a]:underline *:[a]:underline-offset-3", className)}
-	{...restProps}
+  bind:ref
+  data-slot="dialog-description"
+  class={cn(
+  "text-muted-foreground *:[a]:hover:text-foreground text-sm *:[a]:underline *:[a]:underline-offset-3",
+  className,
+)}
+  {...restProps}
 />

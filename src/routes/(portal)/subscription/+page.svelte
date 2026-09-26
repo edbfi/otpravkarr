@@ -68,8 +68,8 @@ const lockedSelectedNames = $derived(data.assignedGroups.map((g) => g.name));
     </h1>
     <p class="mt-1 text-sm text-muted-foreground">
       {data.policy === "core_bundles"
-        ? "Your core Danish lineup is always included. Add optional bundles below."
-        : "Choose which channel groups appear in your player. Changes apply right away."}
+  ? "Your core Danish lineup is always included. Add optional bundles below."
+  : "Choose which channel groups appear in your player. Changes apply right away."}
     </p>
   </div>
 
@@ -126,8 +126,8 @@ const lockedSelectedNames = $derived(data.assignedGroups.map((g) => g.name));
     </Card.Root>
   {:else}
     <form method="POST" action="?/save">
-      <input type="hidden" name="group_ids" value={selectedJson} />
-      <input type="hidden" name="bundle_ids" value={selectedBundlesJson} />
+      <input type="hidden" name="group_ids" value={selectedJson}>
+      <input type="hidden" name="bundle_ids" value={selectedBundlesJson}>
 
       <Card.Root>
         <Card.Content class="pt-6">
@@ -147,7 +147,9 @@ const lockedSelectedNames = $derived(data.assignedGroups.map((g) => g.name));
               Core channels remain active even when no optional bundle is selected.
             </p>
             {#if data.bundles.length === 0}
-              <p class="text-sm text-muted-foreground">No optional bundles are currently available.</p>
+              <p class="text-sm text-muted-foreground">
+                No optional bundles are currently available.
+              </p>
             {:else}
               <div class="grid gap-3">
                 {#each data.bundles as bundle (bundle.id)}
@@ -156,13 +158,13 @@ const lockedSelectedNames = $derived(data.assignedGroups.map((g) => g.name));
                       type="checkbox"
                       class="mt-0.5 rounded"
                       checked={selectedBundles.has(bundle.id)}
-                      onchange={(event) =>
-                        toggleBundle(bundle.id, (event.currentTarget as HTMLInputElement).checked)}
-                    />
+                      onchange={(event) => toggleBundle(bundle.id, (event.currentTarget as HTMLInputElement).checked)}
+                    >
                     <span>
                       <span class="block text-sm font-medium">{bundle.displayName}</span>
                       <span class="block text-xs text-muted-foreground">
-                        {bundle.groupIds.length} curated group{bundle.groupIds.length === 1 ? "" : "s"}
+                        {bundle.groupIds.length}
+                        curated group{bundle.groupIds.length === 1 ? "" : "s"}
                       </span>
                     </span>
                   </label>

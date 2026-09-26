@@ -11,10 +11,10 @@ let {
 </script>
 
 <div
-	bind:this={ref}
-	data-slot="popover-description"
-	class={cn("text-muted-foreground", className)}
-	{...restProps}
+  bind:this={ref}
+  data-slot="popover-description"
+  class={cn("text-muted-foreground", className)}
+  {...restProps}
 >
-	{@render children?.()}
+  {@render children?.()}
 </div>

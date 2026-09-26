@@ -86,10 +86,7 @@ async function copyToClipboard() {
   </div>
   {#if copyStatus}
     <p
-      class={cn(
-        "text-xs",
-        copyStatus.type === "error" ? "text-destructive" : "text-muted-foreground",
-      )}
+      class={cn("text-xs", copyStatus.type === "error" ? "text-destructive" : "text-muted-foreground")}
       role="status"
       aria-live="polite"
     >

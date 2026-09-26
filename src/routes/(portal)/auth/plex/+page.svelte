@@ -53,7 +53,7 @@ const selectedJson = $derived(JSON.stringify([...selected]));
     {/if}
 
     <form method="POST" action="?/confirm">
-      <input type="hidden" name="group_ids" value={selectedJson} />
+      <input type="hidden" name="group_ids" value={selectedJson}>
 
       <Card.Root>
         <Card.Content class="pt-6">

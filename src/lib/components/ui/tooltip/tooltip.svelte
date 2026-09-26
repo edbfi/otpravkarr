@@ -6,5 +6,5 @@ let { open = $bindable(false), ...restProps }: TooltipPrimitive.RootProps = $pro
 </script>
 
 <TooltipProvider>
-	<TooltipPrimitive.Root bind:open {...restProps} />
+  <TooltipPrimitive.Root bind:open {...restProps} />
 </TooltipProvider>
