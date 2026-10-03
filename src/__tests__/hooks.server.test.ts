@@ -403,9 +403,7 @@ describe("hooks security headers", () => {
     const response = await handle({ event, resolve: resolveSpy });
 
     expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({
-      message: "origin not allowed",
-    });
+    expect(await response.json()).toEqual({ message: "origin not allowed", status: 403 });
     expectStandardSecurityHeaders(response);
     expect(event.setHeaders).not.toHaveBeenCalled();
     expect(resolveSpy).not.toHaveBeenCalled();
@@ -428,9 +426,7 @@ describe("hooks security headers", () => {
     });
 
     expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({
-      message: "missing origin header",
-    });
+    expect(await response.json()).toEqual({ message: "missing origin header", status: 403 });
     expectStandardSecurityHeaders(response);
     expect(event.setHeaders).not.toHaveBeenCalled();
     expect(resolveSpy).not.toHaveBeenCalled();
@@ -452,9 +448,7 @@ describe("hooks security headers", () => {
     const response = await handle({ event, resolve: resolveSpy });
 
     expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({
-      message: "cross-site request blocked",
-    });
+    expect(await response.json()).toEqual({ message: "cross-site request blocked", status: 403 });
     expectStandardSecurityHeaders(response);
     expect(resolveSpy).not.toHaveBeenCalled();
   });
