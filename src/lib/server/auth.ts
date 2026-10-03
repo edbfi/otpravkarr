@@ -55,7 +55,7 @@ export async function getConfiguredAdminAccount(): Promise<AdminAccount | null> 
   return getAdminByUsername(username);
 }
 
-export async function requireAdmin(event: RequestEvent): Promise<AdminAccount> {
+export async function requireAdmin(event: Pick<RequestEvent, "cookies">): Promise<AdminAccount> {
   const sessionId = event.cookies.get(SESSION_COOKIE_NAME);
   if (!sessionId) {
     throw redirect(303, "/login");
