@@ -35,12 +35,31 @@ The dev server binds to `PORT` (default `3000`) and fails fast if that port is b
 ## Production Startup
 
 Use `bun run build`, then `bun run start` with the same pinned Bun version.
-The start script sets `NODE_ENV=production` and runs `build/index.js`. Keep
-production `node_modules/`, `package.json` and the complete `build/` directory;
-`build/server/migrations/` contains the SQL copied by the build command.
+The start script sets `NODE_ENV=production` and runs `scripts/serve.ts`, which
+starts the `@sveltejs/adapter-bun` server in `build/`. Ship `scripts/serve.ts`
+with production `node_modules/`, `package.json` and the complete `build/`
+directory; `build/server/migrations/` contains the SQL copied by the build
+command.
 Keep the same `OTPRAVKARR_SECRET` and database across restarts. A configured
 `DATABASE_PATH` must point to an existing database; the production guard refuses
 to create a replacement if that path is missing.
+
+### Public origin (`ORIGIN`)
+
+SvelteKit 3 checks the origin of every form post. Without `ORIGIN`, the server
+assumes it sits behind an HTTPS proxy that preserves the `Host` header and
+takes the origin as `https://<Host>`; plain-HTTP form posts and writes are then
+rejected with 403, and startup logs a warning when neither `ORIGIN` nor
+`PROTOCOL_HEADER` is set.
+
+**When you serve plain HTTP, set `ORIGIN` to the public URL** (for example
+`http://192.168.1.10:3000`). `scripts/serve.ts` then listens on `HOST`/`PORT`
+itself, runs the app on a private Unix socket and passes the configured origin
+to it on every request. `ORIGIN` must be a bare origin: no path, query,
+credentials or default port. The origin is never taken from the request's
+`Host` header. Leave `ORIGIN` unset only behind a TLS-terminating proxy that
+preserves `Host` (or set `PROTOCOL_HEADER` for a trusted proxy that sends it).
+Cookies are marked `Secure` only when the public origin is `https`.
 
 ## Environment Variables
 
@@ -50,7 +69,12 @@ to create a replacement if that path is missing.
 | `DATABASE_PATH` | No | `./data/otpravkarr.sqlite` | SQLite database file path |
 | `HOST` | No | `0.0.0.0` | Listen address |
 | `PORT` | No | `3000` | Listen port |
-| `ORIGIN` | No | `http://localhost:3000` | Public URL (must match actual deployment URL) |
+| `ORIGIN` | No | unset | Public URL, for example `http://192.168.1.10:3000`. Required when serving plain HTTP; see [Public origin](#public-origin-origin). After setup, the app's own origin check uses the allowed origins saved by the setup wizard |
+| `IDLE_TIMEOUT` | No | `10` | Seconds before an idle client connection closes (0–255; `0` disables). Mapped to the adapter's `CONNECTION_IDLE_TIMEOUT`, which wins if both are set. Event streams are exempt |
+| `SHUTDOWN_TIMEOUT` | No | `30` | Seconds to drain in-flight requests on `SIGTERM`/`SIGINT` before closing them |
+| `BODY_SIZE_LIMIT` | No | `512K` | Maximum request body (`K`/`M`/`G` suffixes, `Infinity` to disable) |
+| `PROTOCOL_HEADER` | No | unset | Only behind a trusted proxy and without `ORIGIN`: header carrying `http`/`https` (for example `x-forwarded-proto`). With `ORIGIN` set the app supplies it itself |
+| `ADDRESS_HEADER`, `XFF_DEPTH` | No | unset, `1` | Only behind a trusted proxy that clients cannot bypass: header with the client address (for example `x-forwarded-for`, counted `XFF_DEPTH` hops from the right). Used for rate limiting; without it the TCP peer is used |
 
 ## Docker Deployment
 
@@ -86,11 +110,10 @@ Complete the wizard immediately; the bootstrap token is single-use.
 ## Production Checklist
 
 - [ ] Strong `OTPRAVKARR_SECRET` (>= 32 random bytes, base64-encoded)
-- [ ] `ORIGIN` matches your actual deployment URL
+- [ ] Plain HTTP: `ORIGIN` set to the public URL. HTTPS proxy: `ORIGIN` set to the public URL, or unset if the proxy preserves `Host`
 - [ ] Persistent volume mounted for `./data` (SQLite lives here)
-- [ ] Reverse proxy with TLS termination in front
-- [ ] Proxy forwards `X-Forwarded-For` header (needed for rate limiting)
-- [ ] Set `PROTOCOL_HEADER=x-forwarded-proto` and `HOST_HEADER=x-forwarded-host` in env
+- [ ] Behind a reverse proxy: it appends `X-Forwarded-For`, clients cannot reach the app directly, and `ADDRESS_HEADER=x-forwarded-for` is set (rate limiting keys on the client address)
+- [ ] With `ORIGIN` set, do not set `PROTOCOL_HEADER`/`HOST_HEADER`; the app supplies them. Without `ORIGIN`, set `PROTOCOL_HEADER` only for a proxy you control
 - [ ] Verify bootstrap token appears in container logs on first run
 - [ ] Complete setup wizard immediately after first start
 
