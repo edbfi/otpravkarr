@@ -98,7 +98,7 @@ function syncDateFilterBounds(url: URL): void {
   }
 }
 
-function updateFilter(key: string, value: string | null) {
+async function updateFilter(key: string, value: string | null) {
   const url = new URL(page.url.href);
   if (value) {
     url.searchParams.set(key, value);
@@ -109,7 +109,11 @@ function updateFilter(key: string, value: string | null) {
   if (key !== "page") {
     url.searchParams.delete("page");
   }
-  goto(url.toString(), { replace: true, reset: false });
+  await goto(url.toString(), { replace: true, reset: false });
+  // Kit 3 has no "keep focus but reset scroll" mode (sveltejs/kit#16990), so
+  // reset: false keeps focus on the control and pagination scrolls to the top
+  // itself. Filter changes keep the scroll position.
+  if (key === "page") window.scrollTo({ top: 0, left: 0 });
 }
 
 function actionBadgeClasses(action: string): string {

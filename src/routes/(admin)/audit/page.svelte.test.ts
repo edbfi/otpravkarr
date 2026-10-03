@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuditEntry } from "$lib/db/types";
 import AuditPage from "./+page.svelte";
 
@@ -58,5 +58,52 @@ describe("admin audit page", () => {
 
     expect(screen.getByText(/"scope": "settings"/)).toBeTruthy();
     expect(expandButton.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  describe("navigation (M4(b): Kit 3 has no keep-focus-but-reset-scroll mode)", () => {
+    const pagedData = { ...defaultData, total: 75, filters: { ...defaultData.filters, page: 2 } };
+    let scrollTo: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      scrollTo = vi.fn();
+      vi.stubGlobal("scrollTo", scrollTo);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    });
+
+    it.each([
+      ["Next", "3"],
+      ["Previous", "1"],
+    ])("%s keeps focus, replaces history and scrolls to the top", async (name, target) => {
+      render(AuditPage, { props: { data: { ...pagedData, totalPages: 3 } } });
+
+      await fireEvent.click(screen.getByRole("button", { name: new RegExp(name) }));
+
+      expect(mocks.goto).toHaveBeenCalledOnce();
+      const [url, options] = mocks.goto.mock.calls[0] as unknown as [string, unknown];
+      expect(new URL(url).searchParams.get("page")).toBe(target);
+      expect(options).toEqual({ replace: true, reset: false });
+      await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0 }));
+    });
+
+    it("keeps the scroll position when a filter changes", async () => {
+      vi.useFakeTimers();
+      render(AuditPage, { props: { data: { ...pagedData, totalPages: 3 } } });
+
+      await fireEvent.input(screen.getByLabelText("Filter by actor or user"), {
+        target: { value: "admin" },
+      });
+      await vi.advanceTimersByTimeAsync(300);
+
+      expect(mocks.goto).toHaveBeenCalledOnce();
+      const [url, options] = mocks.goto.mock.calls[0] as unknown as [string, unknown];
+      expect(new URL(url).searchParams.get("actor")).toBe("admin");
+      expect(new URL(url).searchParams.has("page")).toBe(false);
+      expect(options).toEqual({ replace: true, reset: false });
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
   });
 });
