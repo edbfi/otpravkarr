@@ -1,4 +1,4 @@
-import { json, redirect } from "@sveltejs/kit";
+import { redirect } from "@sveltejs/kit";
 import { appendAuditLog } from "$lib/db/repositories/audit";
 import { deleteSession } from "$lib/db/repositories/sessions";
 import { AuditAction } from "$lib/db/types";
@@ -26,7 +26,12 @@ export const POST: RequestHandler = async ({ cookies, locals, request, getClient
   const redirectTo = sessionType === "user" ? "/" : "/login";
   const accept = request.headers.get("Accept") ?? "";
   if (accept.includes("application/json")) {
-    return json({ ok: true, redirectTo });
+    // Same Content-Type as Kit's json(), which SvelteKit 3 deprecates; Bun's
+    // Response.json would otherwise add a charset parameter.
+    return Response.json(
+      { ok: true, redirectTo },
+      { headers: { "content-type": "application/json" } },
+    );
   }
 
   throw redirect(303, redirectTo);
