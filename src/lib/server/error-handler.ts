@@ -35,5 +35,5 @@ export const handleError: HandleServerError = (caught) => {
     }),
   );
 
-  return { message: "Internal Error" };
+  return { message };
 };
