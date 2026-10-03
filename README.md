@@ -30,7 +30,7 @@ export OTPRAVKARR_SECRET=$(openssl rand -base64 32)
 bun run dev
 ```
 
-The dev server binds to `PORT` (default `3000`) and fails fast if that port is busy, so startup stays aligned with `ORIGIN`. With defaults it starts at `http://localhost:3000`. A bootstrap token will appear in the console — use it to complete the setup wizard.
+The dev server binds to `PORT` (default `3000`) and fails fast if that port is busy. With defaults it starts at `http://localhost:3000`. A bootstrap token will appear in the console — use it to complete the setup wizard.
 
 ## Production Startup
 
