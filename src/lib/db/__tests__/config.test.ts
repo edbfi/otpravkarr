@@ -83,7 +83,7 @@ vi.mock("bun:sqlite", () => ({
   Database: MockDatabase,
 }));
 
-vi.mock("$env/dynamic/private", () => ({
+vi.mock("$lib/server/private-env", () => ({
   env: { DATABASE_PATH: "" },
 }));
 

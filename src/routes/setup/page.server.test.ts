@@ -44,7 +44,7 @@ vi.mock("$lib/crypto/bootstrap", () => ({
   validateBootstrapToken: mocks.validateBootstrapToken,
 }));
 
-vi.mock("$env/dynamic/private", () => ({
+vi.mock("$lib/server/private-env", () => ({
   env: state.env,
 }));
 

@@ -47,7 +47,7 @@ vi.mock("$app/env", () => ({
   building: false,
 }));
 
-vi.mock("$env/dynamic/private", () => ({
+vi.mock("$lib/server/private-env", () => ({
   env: {
     HOST: "localhost",
     PORT: "3000",
@@ -148,7 +148,7 @@ vi.mock("$lib/server/logging", () => ({
 }));
 
 const { handle } = await import("../hooks.server");
-const { env } = await import("$env/dynamic/private");
+const { env } = await import("$lib/server/private-env");
 const { getConfig } = await import("$lib/db/repositories/config");
 const { deleteSession, refreshSession } = await import("$lib/db/repositories/sessions");
 const mockGetConfig = vi.mocked(getConfig);

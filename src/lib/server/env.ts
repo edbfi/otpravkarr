@@ -1,5 +1,5 @@
-import { env } from "$env/dynamic/private";
 import { assessSecretStrength } from "$lib/crypto/secret";
+import { env } from "$lib/server/private-env";
 
 export function validateEnv(): void {
   const secret = env.OTPRAVKARR_SECRET?.trim();
