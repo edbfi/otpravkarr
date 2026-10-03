@@ -171,7 +171,8 @@ export const actions: Actions = {
 
       cookies.set(OAUTH_COOKIE_NAME, result.id, OAUTH_COOKIE_OPTIONS);
 
-      throw redirect(303, result.uri);
+      // @ctrl/plex builds this as https://app.plex.tv/auth#?…; allow only that origin.
+      throw redirect(303, result.uri, { external: ["https://app.plex.tv"] });
     } catch (err: unknown) {
       if (err instanceof PlexAuthError) {
         if (isTransientPlexError(err)) {

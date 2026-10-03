@@ -469,6 +469,31 @@ describe("portal page server", () => {
       );
     });
 
+    it("refuses to redirect anywhere but app.plex.tv", async () => {
+      mocks.initiateOAuth.mockResolvedValueOnce({
+        id: "oauth-pin-id",
+        uri: "https://plex.example.com/auth#?clientID=xxx&code=yyy",
+      });
+      const { actions } = await import("./+page.server");
+      const action = actions.signInWithPlex;
+      if (!action) throw new Error("signInWithPlex action is undefined");
+
+      const { cookies } = createCookies();
+      const outcome = await Promise.resolve()
+        .then(() =>
+          action({
+            url: new URL("http://localhost"),
+            cookies,
+            getClientAddress: () => "127.0.0.1",
+          } as unknown as Parameters<typeof action>[0]),
+        )
+        .catch((error: unknown) => error);
+
+      const { isRedirect } = await import("@sveltejs/kit");
+      expect(isRedirect(outcome)).toBe(false);
+      expect(String((outcome as Error).message)).toContain("plex.example.com");
+    });
+
     it("returns 502 on PlexAuthError", async () => {
       const { PlexAuthError } = await import("$lib/plex/types");
       mocks.initiateOAuth.mockRejectedValueOnce(new PlexAuthError("Plex is down"));
