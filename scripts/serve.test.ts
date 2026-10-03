@@ -5,7 +5,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { request as httpRequest, type IncomingMessage } from "node:http";
-import { createServer, type Server } from "node:net";
+import { connect, createServer, type Server } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -491,6 +491,36 @@ describe("serve.ts process", () => {
     expect(await download).toBeLessThan(8 * 1024 * 1024);
     expect(socketDirectories(server.temp)).toEqual([]);
   }, 30_000);
+
+  it("shuts down cleanly when SIGTERM arrives while the adapter is still loading", async () => {
+    const port = await freePort();
+    const server = await start(
+      { ORIGIN: `http://127.0.0.1:${port}`, PORT: String(port), STANDIN_LOAD_DELAY_MS: "1500" },
+      { waitFor: "exit" },
+    );
+    // The public port is bound before the adapter loads: wait for a TCP connect (an HTTP request
+    // would be held until the adapter is ready), then signal mid-load.
+    const accepting = () =>
+      new Promise<boolean>((done) => {
+        const socket = connect(port, "127.0.0.1");
+        socket.once("connect", () => {
+          socket.destroy();
+          done(true);
+        });
+        socket.once("error", () => done(false));
+      });
+    await expect.poll(accepting, { timeout: 5000, interval: 25 }).toBe(true);
+    expect(server.output()).not.toContain("standin listening");
+    server.child.kill("SIGTERM");
+    const signalled = Date.now();
+    const exited = await Promise.race([
+      server.exited,
+      new Promise<"timeout">((done) => setTimeout(() => done("timeout"), 8000)),
+    ]);
+    expect(exited).toEqual({ code: 0, signal: null });
+    expect(Date.now() - signalled).toBeLessThan(8000);
+    expect(socketDirectories(server.temp)).toEqual([]);
+  }, 20_000);
 
   it("leaves nothing behind when the adapter fails to load", async () => {
     const port = await freePort();

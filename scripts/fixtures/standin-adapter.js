@@ -5,6 +5,11 @@ import { writeFileSync } from "node:fs";
 import process from "node:process";
 
 if (process.env.STANDIN_THROW === "1") throw new Error("stand-in adapter failed to load");
+// Like adapter-bun's top-level `await server.init(...)`: loading takes a while, and the signal
+// handlers below exist only once it finishes.
+if (process.env.STANDIN_LOAD_DELAY_MS) {
+  await new Promise((done) => setTimeout(done, Number(process.env.STANDIN_LOAD_DELAY_MS)));
+}
 
 const env = process.env;
 const seen = Object.fromEntries(

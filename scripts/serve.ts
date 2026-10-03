@@ -185,8 +185,17 @@ export async function serve(
     publicDrain = listener.stop();
     return publicDrain;
   };
-  process.once("SIGTERM", startDrain);
-  process.once("SIGINT", startDrain);
+  // adapter-bun installs its own SIGTERM/SIGINT handlers only when it has finished loading. A
+  // signal that arrives earlier is remembered and delivered again once they exist, so the
+  // adapter still drains and emits sveltekit:shutdown.
+  let loaded = false;
+  let earlySignal: NodeJS.Signals | undefined;
+  const onSignal = (signal: NodeJS.Signals) => {
+    startDrain();
+    if (!loaded) earlySignal ??= signal;
+  };
+  process.once("SIGTERM", onSignal);
+  process.once("SIGINT", onSignal);
   process.once("sveltekit:shutdown", async () => {
     const drain = startDrain();
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -208,7 +217,9 @@ export async function serve(
     removeSocketDirectory();
     throw error;
   }
+  loaded = true;
   markReady();
+  if (earlySignal) process.kill(process.pid, earlySignal);
 
   console.log(`Listening on ${listener.url} for ${origin.origin}`);
 }
