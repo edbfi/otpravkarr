@@ -79,24 +79,24 @@ export async function requireAdmin(event: RequestEvent): Promise<AdminAccount> {
 export async function requireAdminApi(event: RequestEvent): Promise<AdminAccount> {
   const sessionId = event.cookies.get(SESSION_COOKIE_NAME);
   if (!sessionId) {
-    throw error(401, { message: "Unauthorized" });
+    throw error(401, "Unauthorized");
   }
 
   const session = getSession(sessionId);
   if (!session) {
-    throw error(401, { message: "Unauthorized" });
+    throw error(401, "Unauthorized");
   }
   if (session.session_type !== "admin") {
     // Authenticated, but a non-admin (portal) session — forbidden, not
     // unauthenticated. Authorization is unchanged: the request is still denied.
-    throw error(403, { message: "Forbidden" });
+    throw error(403, "Forbidden");
   }
 
   const admin = getAdminByUsername(session.user_ref);
   if (!admin) {
     // Admin-typed session whose backing record is gone → stale/invalid session,
     // not a role denial, so this stays 401 (not 403).
-    throw error(401, { message: "Unauthorized" });
+    throw error(401, "Unauthorized");
   }
 
   return admin;

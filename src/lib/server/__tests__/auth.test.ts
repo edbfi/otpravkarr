@@ -21,8 +21,9 @@ vi.mock("@sveltejs/kit", () => ({
   redirect: (status: number, location: string) => {
     throw { type: "redirect", status, location };
   },
+  // Mirrors Kit's HttpError: a string message becomes `{ message }`.
   error: (status: number, body?: unknown) => {
-    throw { type: "error", status, body };
+    throw { type: "error", status, body: typeof body === "string" ? { message: body } : body };
   },
 }));
 
