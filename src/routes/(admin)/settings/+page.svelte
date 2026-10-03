@@ -1,8 +1,7 @@
 <script lang="ts">
-import type { ActionResult } from "@sveltejs/kit";
 import { untrack } from "svelte";
 import { toast } from "svelte-sonner";
-import { applyAction, enhance } from "$app/forms";
+import { type ActionResult, applyAction, enhance } from "$app/forms";
 import GroupPicker from "$lib/components/GroupPicker.svelte";
 import { Badge } from "$lib/components/ui/badge";
 import { Button } from "$lib/components/ui/button";

@@ -1,21 +1,15 @@
 {
-  "extends": "./.svelte-kit/tsconfig.json",
+  "extends": "$app/tsconfig",
   "compilerOptions": {
     "rewriteRelativeImportExtensions": true,
-    "allowJs": true,
-    "checkJs": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "useUnknownInCatchVariables": true,
-    "verbatimModuleSyntax": true,
-    "moduleResolution": "bundler",
-    "types": ["bun-types"]
+    "types": ["bun-types", "$app/types"],
+    "paths": { "$lib": ["./src/lib"], "$lib/*": ["./src/lib/*"] }
   },
-  "exclude": ["src/**/__tests__/**"]
+  "exclude": ["src/**/__tests__/**"],
+  "include": ["src", "vite.config.ts"]
 }

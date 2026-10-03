@@ -109,7 +109,7 @@ function updateFilter(key: string, value: string | null) {
   if (key !== "page") {
     url.searchParams.delete("page");
   }
-  goto(url.toString(), { replaceState: true, keepFocus: true });
+  goto(url.toString(), { replace: true, reset: false });
 }
 
 function actionBadgeClasses(action: string): string {
