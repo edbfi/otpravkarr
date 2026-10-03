@@ -100,28 +100,33 @@ vi.mock("$lib/server/subscription-config", async (importOriginal) => {
     getLineupBundleCatalog: mocks.getLineupBundleCatalog,
   };
 });
-vi.mock("$lib/server/auth", () => ({
-  ADMIN_COOKIE_OPTIONS: {
+vi.mock("$lib/server/auth", () => {
+  // Same shapes as src/lib/server/auth.ts: Secure follows the request's scheme (M13).
+  const isSecureRequest = (url: URL) => url.protocol === "https:";
+  const adminCookieOptions = (url: URL) => ({
     path: "/",
     httpOnly: true,
-    secure: false,
+    secure: isSecureRequest(url),
     sameSite: "strict",
     maxAge: 3600,
-  },
-  ADMIN_OAUTH_COOKIE_OPTIONS: {
-    path: "/",
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-    maxAge: 3600,
-  },
-  ADMIN_SESSION_TTL: 3600,
-  getConfiguredAdminAccount: mocks.getConfiguredAdminAccount,
-  SESSION_COOKIE_NAME: "otpravkarr_session",
-  USER_COOKIE_OPTIONS: { path: "/", httpOnly: true, secure: false, sameSite: "lax", maxAge: 14400 },
-  USER_SESSION_TTL: 14400,
-  isSecure: false,
-}));
+  });
+  return {
+    adminCookieOptions,
+    adminOAuthCookieOptions: (url: URL) => ({ ...adminCookieOptions(url), sameSite: "lax" }),
+    ADMIN_SESSION_TTL: 3600,
+    getConfiguredAdminAccount: mocks.getConfiguredAdminAccount,
+    SESSION_COOKIE_NAME: "otpravkarr_session",
+    userCookieOptions: (url: URL) => ({
+      path: "/",
+      httpOnly: true,
+      secure: isSecureRequest(url),
+      sameSite: "lax",
+      maxAge: 14400,
+    }),
+    USER_SESSION_TTL: 14400,
+    isSecureRequest,
+  };
+});
 vi.mock("$lib/server/initial-password-flash", () => ({
   INITIAL_PASSWORD_COOKIE_NAME: "otpravkarr_initial_password",
   INITIAL_PASSWORD_COOKIE_MAX_AGE: 120,
@@ -172,21 +177,24 @@ function createCookies() {
   return { cookies: { get, set, delete: deleteFn }, set, deleteFn };
 }
 
-function loadEvent() {
+const PLEX_URL = new URL("http://localhost/auth/plex");
+
+function loadEvent(url: URL = PLEX_URL) {
   const cookies = createCookies();
   return {
-    event: { cookies: cookies.cookies, getClientAddress: () => "127.0.0.1" } as never,
+    event: { cookies: cookies.cookies, url, getClientAddress: () => "127.0.0.1" } as never,
     ...cookies,
   };
 }
 
-function confirmEvent(groupIds: unknown) {
+function confirmEvent(groupIds: unknown, url: URL = PLEX_URL) {
   const cookies = createCookies();
   const body = new FormData();
   body.set("group_ids", JSON.stringify(groupIds));
   return {
     event: {
       cookies: cookies.cookies,
+      url,
       request: { formData: async () => body },
       getClientAddress: () => "127.0.0.1",
     } as never,
@@ -378,6 +386,7 @@ describe("plex onboarding — confirm action", () => {
     malformedBody.set("group_ids", "{bad");
     const malformed = await actions.confirm?.({
       cookies: malformedCookies.cookies,
+      url: PLEX_URL,
       request: { formData: async () => malformedBody },
       getClientAddress: () => "127.0.0.1",
     } as never);
@@ -451,5 +460,32 @@ describe("plex onboarding — confirm action", () => {
       expect.objectContaining({ path: "/" }),
     );
     expect(mocks.createSession).toHaveBeenCalledWith("1", "user", 14400);
+  });
+
+  it.each([
+    ["https://otpravkarr.example.com/auth/plex", true],
+    ["http://192.168.1.10:3000/auth/plex", false],
+  ])("sets and deletes cookies for %s with secure: %s (M13)", async (href, secure) => {
+    mocks.getLineupPolicySettings.mockResolvedValueOnce({
+      defaultPolicy: "approved_selection",
+      fixedGroupIds: [],
+      coreGroupIds: [],
+      approvedGroupIds: [1, 2],
+      bundleCatalogVersion: 1,
+    });
+    const { actions } = await importServer();
+    const { event, set, deleteFn } = confirmEvent([1], new URL(href));
+
+    await expect(actions.confirm?.(event)).rejects.toMatchObject({ status: 303, location: "/" });
+
+    expect(deleteFn).toHaveBeenCalledWith(
+      "otpravkarr_onboarding",
+      expect.objectContaining({ path: "/", secure }),
+    );
+    expect(set).toHaveBeenCalledWith(
+      "otpravkarr_session",
+      expect.any(String),
+      expect.objectContaining({ secure, sameSite: "lax" }),
+    );
   });
 });

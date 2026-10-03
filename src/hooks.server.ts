@@ -14,12 +14,13 @@ import { createHealthJob } from "$lib/scheduler/jobs/health";
 import { createSyncJob } from "$lib/scheduler/jobs/sync";
 import { scheduler } from "$lib/scheduler/runner";
 import {
-  ADMIN_COOKIE_OPTIONS,
   ADMIN_SESSION_TTL,
+  adminCookieOptions,
   isSetupComplete,
   SESSION_COOKIE_NAME,
-  USER_COOKIE_OPTIONS,
+  sessionCookieDeleteOptions,
   USER_SESSION_TTL,
+  userCookieOptions,
 } from "$lib/server/auth";
 import { validateFetchMetadata, validateOrigin } from "$lib/server/csrf";
 import { validateEnv } from "$lib/server/env";
@@ -193,7 +194,7 @@ const sessionResolver: Handle = async ({ event, resolve }) => {
     event.locals.user = null;
     event.locals.revokedUser = null;
     refreshSession(session.id, ADMIN_SESSION_TTL);
-    event.cookies.set(SESSION_COOKIE_NAME, sessionId, ADMIN_COOKIE_OPTIONS);
+    event.cookies.set(SESSION_COOKIE_NAME, sessionId, adminCookieOptions(event.url));
   } else if (session.session_type === "user") {
     const userId = /^\d+$/.test(session.user_ref)
       ? Number.parseInt(session.user_ref, 10)
@@ -204,7 +205,7 @@ const sessionResolver: Handle = async ({ event, resolve }) => {
       event.locals.revokedUser = null;
       event.locals.admin = null;
       refreshSession(session.id, USER_SESSION_TTL);
-      event.cookies.set(SESSION_COOKIE_NAME, sessionId, USER_COOKIE_OPTIONS);
+      event.cookies.set(SESSION_COOKIE_NAME, sessionId, userCookieOptions(event.url));
     } else if (mapping) {
       // Inactive mapping: keep it out of locals.user so credential-serving
       // sinks (requireUser) never see a revoked user, but expose it via
@@ -213,14 +214,14 @@ const sessionResolver: Handle = async ({ event, resolve }) => {
       event.locals.revokedUser = mapping;
       event.locals.admin = null;
       refreshSession(session.id, USER_SESSION_TTL);
-      event.cookies.set(SESSION_COOKIE_NAME, sessionId, USER_COOKIE_OPTIONS);
+      event.cookies.set(SESSION_COOKIE_NAME, sessionId, userCookieOptions(event.url));
     } else {
       // Missing mapping: the underlying user no longer exists, so there is no
       // valid identity to maintain. Invalidate the orphaned ("ghost") session
       // instead of sliding its expiry, which would otherwise keep it alive
       // indefinitely and risk identity confusion if the mapping ID is reused.
       deleteSession(session.id);
-      event.cookies.delete(SESSION_COOKIE_NAME, { path: "/" });
+      event.cookies.delete(SESSION_COOKIE_NAME, sessionCookieDeleteOptions(event.url));
       event.locals.session = null;
       event.locals.user = null;
       event.locals.revokedUser = null;

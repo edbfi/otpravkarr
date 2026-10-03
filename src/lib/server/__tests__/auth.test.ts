@@ -72,19 +72,27 @@ const {
   SESSION_COOKIE_NAME,
   ADMIN_SESSION_TTL,
   USER_SESSION_TTL,
-  ADMIN_COOKIE_OPTIONS,
-  ADMIN_OAUTH_COOKIE_OPTIONS,
-  USER_COOKIE_OPTIONS,
+  adminCookieOptions,
+  adminOAuthCookieOptions,
+  userCookieOptions,
+  sessionCookieDeleteOptions,
+  isSecureRequest,
 } = await import("../auth");
+
+const HTTPS_URL = new URL("https://otpravkarr.example.com/dashboard");
+const HTTP_URL = new URL("http://192.168.1.10:3000/dashboard");
+const ADMIN_COOKIE_OPTIONS = adminCookieOptions(HTTPS_URL);
+const ADMIN_OAUTH_COOKIE_OPTIONS = adminOAuthCookieOptions(HTTPS_URL);
 
 // ---------------------------------------------------------------------------
 // Mock RequestEvent helper
 // ---------------------------------------------------------------------------
 
-function createMockEvent(sessionId: string | undefined = undefined) {
+function createMockEvent(sessionId: string | undefined = undefined, url: URL = HTTPS_URL) {
   const deleteSpy = vi.fn();
   return {
     event: {
+      url,
       cookies: {
         get: (name: string) => (name === SESSION_COOKIE_NAME ? sessionId : undefined),
         delete: deleteSpy,
@@ -182,8 +190,8 @@ describe("auth guards", () => {
       expect(USER_SESSION_TTL).toBe(14400);
     });
 
-    it("exports ADMIN_COOKIE_OPTIONS with strict sameSite", () => {
-      expect(ADMIN_COOKIE_OPTIONS).toEqual({
+    it("builds the admin cookie options with strict sameSite", () => {
+      expect(adminCookieOptions(HTTPS_URL)).toEqual({
         path: "/",
         httpOnly: true,
         secure: true,
@@ -192,14 +200,42 @@ describe("auth guards", () => {
       });
     });
 
-    it("exports USER_COOKIE_OPTIONS with lax sameSite", () => {
-      expect(USER_COOKIE_OPTIONS).toEqual({
+    it("builds the user cookie options with lax sameSite", () => {
+      expect(userCookieOptions(HTTPS_URL)).toEqual({
         path: "/",
         httpOnly: true,
         secure: true,
         sameSite: "lax",
         maxAge: 14400,
       });
+    });
+  });
+
+  // M13: the Secure flag follows the request's public origin, for every cookie
+  // the module defines and for the session-cookie deletion.
+  describe("Secure flag from the request origin (M13)", () => {
+    it.each([
+      [HTTPS_URL, true],
+      [HTTP_URL, false],
+      [new URL("http://localhost:5173/"), false],
+    ])("%s gives secure: %s", (url, secure) => {
+      expect(isSecureRequest(url)).toBe(secure);
+      expect(adminCookieOptions(url).secure).toBe(secure);
+      expect(adminOAuthCookieOptions(url).secure).toBe(secure);
+      expect(userCookieOptions(url).secure).toBe(secure);
+      expect(sessionCookieDeleteOptions(url)).toEqual({ path: "/", secure });
+    });
+
+    it("deletes a stale session cookie with the request's Secure flag", async () => {
+      mockSession = null;
+      for (const [url, secure] of [
+        [HTTPS_URL, true],
+        [HTTP_URL, false],
+      ] as const) {
+        const { event, deleteSpy } = createMockEvent("stale", url);
+        await requireAdmin(event).catch(() => {});
+        expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/", secure });
+      }
     });
   });
 
@@ -236,7 +272,7 @@ describe("auth guards", () => {
         expect(err.location).toBe("/login");
       }
 
-      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/" });
+      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/", secure: true });
     });
 
     it("throws redirect when session type is 'user' not 'admin'", async () => {
@@ -253,7 +289,7 @@ describe("auth guards", () => {
         expect(err.location).toBe("/login");
       }
 
-      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/" });
+      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/", secure: true });
     });
 
     it("throws redirect when admin not found by username", async () => {
@@ -271,7 +307,7 @@ describe("auth guards", () => {
         expect(err.location).toBe("/login");
       }
 
-      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/" });
+      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/", secure: true });
     });
 
     it("returns AdminAccount on valid admin session", async () => {
@@ -447,7 +483,7 @@ describe("auth guards", () => {
         expect(err.location).toBe("/");
       }
 
-      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/" });
+      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/", secure: true });
     });
 
     it("throws redirect when session type is 'admin' not 'user'", async () => {
@@ -464,7 +500,7 @@ describe("auth guards", () => {
         expect(err.location).toBe("/");
       }
 
-      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/" });
+      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/", secure: true });
     });
 
     it("throws redirect when user_ref is not a valid integer", async () => {
@@ -481,7 +517,7 @@ describe("auth guards", () => {
         expect(err.location).toBe("/");
       }
 
-      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/" });
+      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/", secure: true });
     });
 
     it("throws redirect when user_ref is a partial-numeric string", async () => {
@@ -498,7 +534,7 @@ describe("auth guards", () => {
         expect(err.location).toBe("/");
       }
 
-      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/" });
+      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/", secure: true });
     });
 
     it("throws redirect when user mapping not found", async () => {
@@ -516,7 +552,7 @@ describe("auth guards", () => {
         expect(err.location).toBe("/");
       }
 
-      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/" });
+      expect(deleteSpy).toHaveBeenCalledWith(SESSION_COOKIE_NAME, { path: "/", secure: true });
     });
 
     it("returns UserMapping on valid user session", async () => {

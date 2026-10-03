@@ -5,7 +5,7 @@ import { getAdminByUsername } from "$lib/db/repositories/admin";
 import { appendAuditLog } from "$lib/db/repositories/audit";
 import { createSession, deleteSession } from "$lib/db/repositories/sessions";
 import { AuditAction } from "$lib/db/types";
-import { ADMIN_COOKIE_OPTIONS, ADMIN_SESSION_TTL, SESSION_COOKIE_NAME } from "$lib/server/auth";
+import { ADMIN_SESSION_TTL, adminCookieOptions, SESSION_COOKIE_NAME } from "$lib/server/auth";
 import { loginLimiter } from "$lib/server/ratelimit";
 import { LoginSchema, sanitizeString } from "$lib/server/validation";
 
@@ -20,7 +20,7 @@ export const load = async ({ locals }: RequestEvent) => {
 };
 
 export const actions: Actions = {
-  default: async ({ request, cookies, getClientAddress }) => {
+  default: async ({ request, cookies, url, getClientAddress }) => {
     const clientAddress = getClientAddress();
     const limit = loginLimiter.check(clientAddress);
     if (!limit.allowed) {
@@ -54,7 +54,7 @@ export const actions: Actions = {
       deleteSession(priorSessionId);
     }
     const sessionId = createSession(admin.username, "admin", ADMIN_SESSION_TTL);
-    cookies.set(SESSION_COOKIE_NAME, sessionId, ADMIN_COOKIE_OPTIONS);
+    cookies.set(SESSION_COOKIE_NAME, sessionId, adminCookieOptions(url));
 
     appendAuditLog({
       actor: admin.username,

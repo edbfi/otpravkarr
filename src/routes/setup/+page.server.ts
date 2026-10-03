@@ -21,9 +21,9 @@ import { completeOAuth, initiateOAuth, removePendingOAuth } from "$lib/plex/oaut
 import { PlexAuthError, PlexConnectionError } from "$lib/plex/types";
 import { seedInitialHealth } from "$lib/scheduler/jobs/health";
 import {
-  ADMIN_COOKIE_OPTIONS,
   ADMIN_SESSION_TTL,
-  isSecure,
+  adminCookieOptions,
+  isSecureRequest,
   isSetupComplete,
   requireSetupIncomplete,
   SESSION_COOKIE_NAME,
@@ -85,13 +85,14 @@ const DISPATCHARR_CONNECTION_RETRY: RetryOptions = {
   jitter: 0.5,
 };
 const ORIGIN_SETUP_KEY = "allowed_origins";
-const SETUP_CLAIM_COOKIE_OPTIONS = {
-  path: "/setup",
+const SETUP_CLAIM_COOKIE_PATH = "/setup";
+const setupClaimCookieOptions = (url: URL) => ({
+  path: SETUP_CLAIM_COOKIE_PATH,
   httpOnly: true,
-  secure: isSecure,
+  secure: isSecureRequest(url),
   sameSite: "strict" as const,
   maxAge: SETUP_CLAIM_TTL_SECONDS,
-};
+});
 /**
  * Setup-specific retry predicate for Plex errors.
  * Only retries transient PlexConnectionError cases (timeouts, network blips).
@@ -266,23 +267,23 @@ async function hasActiveSetupClaim(cookies: Cookies): Promise<boolean> {
   return claimProof !== undefined && claimProof === expectedProof;
 }
 
-async function requireSetupClaimedAction(cookies: Cookies) {
+async function requireSetupClaimedAction(cookies: Cookies, url: URL) {
   if (await hasActiveSetupClaim(cookies)) {
-    await renewSetupClaim(cookies);
+    await renewSetupClaim(cookies, url);
     return null;
   }
 
   return fail(403, { error: "setup_not_claimed" });
 }
 
-async function renewSetupClaim(cookies: Cookies): Promise<void> {
+async function renewSetupClaim(cookies: Cookies, url: URL): Promise<void> {
   const claimProof = cookies.get(SETUP_CLAIM_COOKIE_NAME);
   if (!claimProof) {
     return;
   }
 
   await setConfig(SETUP_CLAIMED_AT_CONFIG_KEY, String(Date.now()));
-  cookies.set(SETUP_CLAIM_COOKIE_NAME, claimProof, SETUP_CLAIM_COOKIE_OPTIONS);
+  cookies.set(SETUP_CLAIM_COOKIE_NAME, claimProof, setupClaimCookieOptions(url));
 }
 
 async function getMissingSetupPrerequisites(): Promise<string[]> {
@@ -399,9 +400,9 @@ export const load = async ({ url, cookies }: RequestEvent) => {
 };
 
 export const actions: Actions = {
-  claimInstance: async ({ request, getClientAddress, cookies }) => {
+  claimInstance: async ({ request, url, getClientAddress, cookies }) => {
     if (await hasActiveSetupClaim(cookies)) {
-      await renewSetupClaim(cookies);
+      await renewSetupClaim(cookies, url);
       return { success: true };
     }
     if (await getActiveSetupClaimProof()) {
@@ -431,14 +432,14 @@ export const actions: Actions = {
       setConfig(SETUP_CLAIM_PROOF_CONFIG_KEY, claimProof, true),
       setConfig(SETUP_CLAIMED_AT_CONFIG_KEY, String(Date.now())),
     ]);
-    cookies.set(SETUP_CLAIM_COOKIE_NAME, claimProof, SETUP_CLAIM_COOKIE_OPTIONS);
+    cookies.set(SETUP_CLAIM_COOKIE_NAME, claimProof, setupClaimCookieOptions(url));
 
     safeAuditSetupStep("setup-wizard", "bootstrap_token_claimed", {}, getClientAddress());
 
     return { success: true };
   },
 
-  recoverWithAdmin: async ({ request, cookies, getClientAddress }) => {
+  recoverWithAdmin: async ({ request, url, cookies, getClientAddress }) => {
     if (await isSetupComplete()) {
       return fail(404, { error: "not_found" });
     }
@@ -446,7 +447,7 @@ export const actions: Actions = {
       return fail(409, { error: "no_admin" });
     }
     if (await hasActiveSetupClaim(cookies)) {
-      await renewSetupClaim(cookies);
+      await renewSetupClaim(cookies, url);
       const resumePhase = await deriveSetupResumePhase();
       const { dispatcharrGroups, dispatcharrProfiles } =
         await loadDispatcharrSetupPayload(resumePhase);
@@ -492,7 +493,7 @@ export const actions: Actions = {
       ]);
     }
     await setConfig(SETUP_CLAIMED_AT_CONFIG_KEY, String(Date.now()));
-    cookies.set(SETUP_CLAIM_COOKIE_NAME, proof, SETUP_CLAIM_COOKIE_OPTIONS);
+    cookies.set(SETUP_CLAIM_COOKIE_NAME, proof, setupClaimCookieOptions(url));
 
     appendAuditLog({
       action: AuditAction.SETUP_RECOVERY_LOGIN,
@@ -514,8 +515,8 @@ export const actions: Actions = {
     return { success: true, resumePhase, dispatcharrGroups, dispatcharrProfiles };
   },
 
-  createAdmin: async ({ request, cookies, getClientAddress }) => {
-    const claimError = await requireSetupClaimedAction(cookies);
+  createAdmin: async ({ request, url, cookies, getClientAddress }) => {
+    const claimError = await requireSetupClaimedAction(cookies, url);
     if (claimError) {
       return claimError;
     }
@@ -566,7 +567,7 @@ export const actions: Actions = {
   },
 
   configurePlex: async ({ request, url, cookies, getClientAddress }) => {
-    const claimError = await requireSetupClaimedAction(cookies);
+    const claimError = await requireSetupClaimedAction(cookies, url);
     if (claimError) {
       return claimError;
     }
@@ -699,8 +700,8 @@ export const actions: Actions = {
     }
   },
 
-  configureDispatcharr: async ({ request, cookies, getClientAddress }) => {
-    const claimError = await requireSetupClaimedAction(cookies);
+  configureDispatcharr: async ({ request, url, cookies, getClientAddress }) => {
+    const claimError = await requireSetupClaimedAction(cookies, url);
     if (claimError) {
       return claimError;
     }
@@ -801,8 +802,8 @@ export const actions: Actions = {
     return { success: true, groups, profiles, xcProbe };
   },
 
-  configureOrigin: async ({ request, cookies, getClientAddress }) => {
-    const claimError = await requireSetupClaimedAction(cookies);
+  configureOrigin: async ({ request, url, cookies, getClientAddress }) => {
+    const claimError = await requireSetupClaimedAction(cookies, url);
     if (claimError) {
       return claimError;
     }
@@ -844,8 +845,8 @@ export const actions: Actions = {
     return { success: true };
   },
 
-  setDefaults: async ({ request, cookies, getClientAddress }) => {
-    const claimError = await requireSetupClaimedAction(cookies);
+  setDefaults: async ({ request, url, cookies, getClientAddress }) => {
+    const claimError = await requireSetupClaimedAction(cookies, url);
     if (claimError) {
       return claimError;
     }
@@ -907,7 +908,10 @@ export const actions: Actions = {
       setConfig(SETUP_CLAIMED_AT_CONFIG_KEY, ""),
     ]);
     clearBootstrapToken();
-    cookies.delete(SETUP_CLAIM_COOKIE_NAME, { path: SETUP_CLAIM_COOKIE_OPTIONS.path });
+    cookies.delete(SETUP_CLAIM_COOKIE_NAME, {
+      path: SETUP_CLAIM_COOKIE_PATH,
+      secure: isSecureRequest(url),
+    });
 
     seedInitialHealth();
 
@@ -916,7 +920,7 @@ export const actions: Actions = {
       deleteSession(priorSessionId);
     }
     const sessionId = createSession(adminUsername, "admin", ADMIN_SESSION_TTL);
-    cookies.set(SESSION_COOKIE_NAME, sessionId, ADMIN_COOKIE_OPTIONS);
+    cookies.set(SESSION_COOKIE_NAME, sessionId, adminCookieOptions(url));
 
     appendAuditLog({
       actor: adminUsername,

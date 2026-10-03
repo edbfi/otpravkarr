@@ -5,7 +5,7 @@ import { join, relative } from "node:path";
 import * as ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-// ISSUE-001 single-call-site guard. ADMIN_OAUTH_COOKIE_OPTIONS relaxes the admin
+// ISSUE-001 single-call-site guard. adminOAuthCookieOptions relaxes the admin
 // cookie to SameSite=Lax; it must NEVER spread beyond the single owner-OAuth
 // branch. This static scan fails loudly if a new usage appears anywhere else, so
 // the relaxation cannot silently leak to other admin-session issuance.
@@ -41,11 +41,11 @@ function collectSourceFiles(dir: string, acc: string[] = []): string[] {
 // with the TypeScript compiler instead of scanning text so that comments,
 // strings, and template literals (e.g. the explanatory comment above the real
 // call site) can never be mistaken for a reference. `.svelte` files are not
-// scanned: ADMIN_OAUTH_COOKIE_OPTIONS lives in a `$lib/server/` module, so any
+// scanned: adminOAuthCookieOptions lives in a `$lib/server/` module, so any
 // `.svelte` (client) import of it would be a SvelteKit build error — none exist
 // today and none legitimately could.
 
-// True iff the module references ADMIN_OAUTH_COOKIE_OPTIONS as code (an
+// True iff the module references adminOAuthCookieOptions as code (an
 // `Identifier` node), not merely as a comment or string mention.
 function referencesAdminOauthCookieOptions(fileName: string, content: string): boolean {
   const source = ts.createSourceFile(fileName, content, ts.ScriptTarget.Latest, true);
@@ -53,7 +53,7 @@ function referencesAdminOauthCookieOptions(fileName: string, content: string): b
 
   const visit = (node: ts.Node): void => {
     if (found) return;
-    if (ts.isIdentifier(node) && node.text === "ADMIN_OAUTH_COOKIE_OPTIONS") {
+    if (ts.isIdentifier(node) && node.text === "adminOAuthCookieOptions") {
       found = true;
       return;
     }
@@ -74,7 +74,7 @@ function receiverIsCookies(expression: ts.Expression): boolean {
 }
 
 // Count `cookies.set(...)` calls whose argument list references
-// ADMIN_OAUTH_COOKIE_OPTIONS. Parsing the AST (rather than scanning text) keeps
+// adminOAuthCookieOptions. Parsing the AST (rather than scanning text) keeps
 // a documentation mention of `cookies.set(` from ever being miscounted as a
 // call.
 function countAdminOauthCookieSetCalls(fileName: string, content: string): number {
@@ -88,7 +88,10 @@ function countAdminOauthCookieSetCalls(fileName: string, content: string): numbe
       node.expression.name.text === "set" &&
       receiverIsCookies(node.expression.expression) &&
       node.arguments.some(
-        (arg) => ts.isIdentifier(arg) && arg.text === "ADMIN_OAUTH_COOKIE_OPTIONS",
+        (arg) =>
+          ts.isCallExpression(arg) &&
+          ts.isIdentifier(arg.expression) &&
+          arg.expression.text === "adminOAuthCookieOptions",
       )
     ) {
       count += 1;
@@ -100,7 +103,7 @@ function countAdminOauthCookieSetCalls(fileName: string, content: string): numbe
   return count;
 }
 
-describe("ADMIN_OAUTH_COOKIE_OPTIONS single-call-site guard (ISSUE-001)", () => {
+describe("adminOAuthCookieOptions single-call-site guard (ISSUE-001)", () => {
   const files = collectSourceFiles(SRC_ROOT);
   const usageFiles = files.filter(
     (file) =>

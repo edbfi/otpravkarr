@@ -13,13 +13,13 @@ import { fetchFriends } from "$lib/plex/friends";
 import { completeOAuth, removePendingOAuth } from "$lib/plex/oauth";
 import { PlexAuthError, type PlexIdentity } from "$lib/plex/types";
 import {
-  ADMIN_OAUTH_COOKIE_OPTIONS,
   ADMIN_SESSION_TTL,
+  adminOAuthCookieOptions,
   getConfiguredAdminAccount,
-  isSecure,
+  isSecureRequest,
   SESSION_COOKIE_NAME,
-  USER_COOKIE_OPTIONS,
   USER_SESSION_TTL,
+  userCookieOptions,
 } from "$lib/server/auth";
 import {
   INITIAL_PASSWORD_COOKIE_MAX_AGE,
@@ -45,26 +45,26 @@ import { isTransientResultError, retryResult } from "$lib/utils/retry";
 import type { Actions, PageServerLoad } from "./$types";
 
 const OAUTH_COOKIE_NAME = "otpravkarr_oauth_id";
-const OAUTH_COOKIE_DELETE_OPTIONS = {
+const oauthCookieDeleteOptions = (url: URL) => ({
   path: "/",
   httpOnly: true,
-  secure: isSecure,
+  secure: isSecureRequest(url),
   sameSite: "lax" as const,
-};
-const INITIAL_PASSWORD_COOKIE_OPTIONS = {
+});
+const initialPasswordCookieOptions = (url: URL) => ({
   path: "/",
   httpOnly: true,
-  secure: isSecure,
+  secure: isSecureRequest(url),
   sameSite: "lax" as const,
   maxAge: INITIAL_PASSWORD_COOKIE_MAX_AGE,
-};
-const ONBOARDING_COOKIE_OPTIONS = {
+});
+const onboardingCookieOptions = (url: URL) => ({
   path: "/",
   httpOnly: true,
-  secure: isSecure,
+  secure: isSecureRequest(url),
   sameSite: "lax" as const,
   maxAge: ONBOARDING_COOKIE_MAX_AGE,
-};
+});
 
 interface OfferedGroup {
   id: number;
@@ -171,6 +171,7 @@ async function provisionForPortal(
 
 async function redirectProvisionedUser(
   cookies: Parameters<PageServerLoad>[0]["cookies"],
+  requestUrl: URL,
   result: SuccessfulProvisionResult,
 ): Promise<never> {
   const mapping = result.mapping;
@@ -179,14 +180,14 @@ async function redirectProvisionedUser(
     deleteSession(priorSessionId);
   }
   const sessionId = createSession(String(mapping.id), "user", USER_SESSION_TTL);
-  cookies.set(SESSION_COOKIE_NAME, sessionId, USER_COOKIE_OPTIONS);
+  cookies.set(SESSION_COOKIE_NAME, sessionId, userCookieOptions(requestUrl));
 
   const initialPassword = result.status === "provisioned" ? result.initialPassword : undefined;
   if (initialPassword) {
     cookies.set(
       INITIAL_PASSWORD_COOKIE_NAME,
       await sealInitialPasswordFlash(initialPassword),
-      INITIAL_PASSWORD_COOKIE_OPTIONS,
+      initialPasswordCookieOptions(requestUrl),
     );
   }
 
@@ -201,6 +202,7 @@ async function redirectProvisionedUser(
  */
 async function provisionAndRedirect(
   cookies: Parameters<PageServerLoad>[0]["cookies"],
+  requestUrl: URL,
   client: DispatcharrClient,
   identity: PlexIdentity,
   mode: ProvisioningMode,
@@ -212,10 +214,10 @@ async function provisionAndRedirect(
     throw error(502, "Unable to set up your account. Please contact the administrator.");
   }
 
-  return redirectProvisionedUser(cookies, result);
+  return redirectProvisionedUser(cookies, requestUrl, result);
 }
 
-export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
+export const load: PageServerLoad = async ({ cookies, url: requestUrl, getClientAddress }) => {
   const oauthId = cookies.get(OAUTH_COOKIE_NAME);
 
   // Refresh-safe picker re-render. The OAuth handoff is single-use (the pending
@@ -236,7 +238,7 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
         // friend status the way confirm does), so clear the cookie and force a
         // fresh sign-in, which auto-provisions with admin defaults via the gate.
         if (!allowSelfSelect) {
-          cookies.delete(ONBOARDING_COOKIE_NAME, OAUTH_COOKIE_DELETE_OPTIONS);
+          cookies.delete(ONBOARDING_COOKIE_NAME, oauthCookieDeleteOptions(requestUrl));
           throw error(400, "Group selection is no longer available. Please sign in again.");
         }
         return {
@@ -248,13 +250,13 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
       }
       // Stale/tampered onboarding cookie: clear it so the user isn't stuck on a
       // 400 until it naturally expires; a fresh sign-in then starts clean.
-      cookies.delete(ONBOARDING_COOKIE_NAME, OAUTH_COOKIE_DELETE_OPTIONS);
+      cookies.delete(ONBOARDING_COOKIE_NAME, oauthCookieDeleteOptions(requestUrl));
     }
     throw error(400, "Missing OAuth session. Please try signing in again.");
   }
 
   // Fresh OAuth handoff — consume the cookie immediately.
-  cookies.delete(OAUTH_COOKIE_NAME, OAUTH_COOKIE_DELETE_OPTIONS);
+  cookies.delete(OAUTH_COOKIE_NAME, oauthCookieDeleteOptions(requestUrl));
 
   let identity: PlexIdentity;
   try {
@@ -293,10 +295,10 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
       deleteSession(priorSessionId);
     }
     const sessionId = createSession(admin.username, "admin", ADMIN_SESSION_TTL);
-    // SameSite=Lax (ADMIN_OAUTH_COOKIE_OPTIONS) so the cookie survives the
+    // SameSite=Lax (adminOAuthCookieOptions) so the cookie survives the
     // cross-site OAuth redirect to /dashboard; sessionResolver reconverges it to
     // Strict on the next authenticated request. See auth.ts for the rationale.
-    cookies.set(SESSION_COOKIE_NAME, sessionId, ADMIN_OAUTH_COOKIE_OPTIONS);
+    cookies.set(SESSION_COOKIE_NAME, sessionId, adminOAuthCookieOptions(requestUrl));
 
     throw redirect(303, "/dashboard");
   }
@@ -336,7 +338,7 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
     offeredGroups.length > 0
   ) {
     cookies.set(ONBOARDING_COOKIE_NAME, await sealOnboardingIdentity(identity), {
-      ...ONBOARDING_COOKIE_OPTIONS,
+      ...onboardingCookieOptions(requestUrl),
     });
     return {
       picker: true,
@@ -348,16 +350,16 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
 
   // No picker (returning user re-login, self-select disabled, or nothing to
   // offer): provision immediately with the admin defaults and reveal credentials.
-  cookies.delete(ONBOARDING_COOKIE_NAME, OAUTH_COOKIE_DELETE_OPTIONS);
+  cookies.delete(ONBOARDING_COOKIE_NAME, oauthCookieDeleteOptions(requestUrl));
   const mode = await resolveProvisioningMode();
-  return provisionAndRedirect(cookies, client, identity, mode, [], getClientAddress());
+  return provisionAndRedirect(cookies, requestUrl, client, identity, mode, [], getClientAddress());
 };
 
 export const actions: Actions = {
   // Finalize onboarding for a new friend: validate their group selection,
   // re-verify Plex friend status (the sealed cookie is a carrier, not a trust
   // root), then provision and reveal credentials.
-  confirm: async ({ cookies, request, getClientAddress }) => {
+  confirm: async ({ cookies, request, url: requestUrl, getClientAddress }) => {
     const onboardingCookie = cookies.get(ONBOARDING_COOKIE_NAME);
     const identity: OnboardingIdentity | null = onboardingCookie
       ? await openOnboardingIdentity(onboardingCookie)
@@ -365,7 +367,7 @@ export const actions: Actions = {
     if (!identity) {
       // Clear a stale/tampered cookie so the user isn't stuck re-submitting against it.
       if (onboardingCookie) {
-        cookies.delete(ONBOARDING_COOKIE_NAME, OAUTH_COOKIE_DELETE_OPTIONS);
+        cookies.delete(ONBOARDING_COOKIE_NAME, oauthCookieDeleteOptions(requestUrl));
       }
       return fail(400, { error: "Your sign-in session expired. Please sign in again." });
     }
@@ -396,7 +398,7 @@ export const actions: Actions = {
     }
     if (account.id === identity.id) {
       // The server owner is handled in load; they should never reach confirm.
-      cookies.delete(ONBOARDING_COOKIE_NAME, OAUTH_COOKIE_DELETE_OPTIONS);
+      cookies.delete(ONBOARDING_COOKIE_NAME, oauthCookieDeleteOptions(requestUrl));
       return fail(400, { error: "Please sign in again." });
     }
     let friends: Awaited<ReturnType<typeof fetchFriends>>;
@@ -409,12 +411,12 @@ export const actions: Actions = {
       (friend) => friend.id === identity.id && friend.status.trim().toLowerCase() === "accepted",
     );
     if (!hasAcceptedAccess) {
-      cookies.delete(ONBOARDING_COOKIE_NAME, OAUTH_COOKIE_DELETE_OPTIONS);
+      cookies.delete(ONBOARDING_COOKIE_NAME, oauthCookieDeleteOptions(requestUrl));
       return fail(403, { error: "Your Plex account does not have access to this server." });
     }
     const existingMapping = getUserMappingByPlexId(identity.id);
     if (existingMapping?.is_active === 0) {
-      cookies.delete(ONBOARDING_COOKIE_NAME, OAUTH_COOKIE_DELETE_OPTIONS);
+      cookies.delete(ONBOARDING_COOKIE_NAME, oauthCookieDeleteOptions(requestUrl));
       return fail(403, { error: "Your access to this server has been revoked." });
     }
 
@@ -435,7 +437,7 @@ export const actions: Actions = {
     // provisioning the user's own choices. Force a fresh sign-in, which
     // provisions with admin defaults via the correctly-gated load path.
     if (!defaults.allowSelfSelect) {
-      cookies.delete(ONBOARDING_COOKIE_NAME, OAUTH_COOKIE_DELETE_OPTIONS);
+      cookies.delete(ONBOARDING_COOKIE_NAME, oauthCookieDeleteOptions(requestUrl));
       return fail(400, { error: "Group selection is no longer available. Please sign in again." });
     }
     const groupsResult = await retryResult(() => listChannelGroups(client), isTransientResultError);
@@ -471,7 +473,7 @@ export const actions: Actions = {
       });
     }
 
-    cookies.delete(ONBOARDING_COOKIE_NAME, OAUTH_COOKIE_DELETE_OPTIONS);
-    return redirectProvisionedUser(cookies, provisionResult);
+    cookies.delete(ONBOARDING_COOKIE_NAME, oauthCookieDeleteOptions(requestUrl));
+    return redirectProvisionedUser(cookies, requestUrl, provisionResult);
   },
 };
