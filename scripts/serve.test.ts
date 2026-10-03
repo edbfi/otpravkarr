@@ -417,7 +417,12 @@ describe("serve.ts process", () => {
     expect(reply.body.toString()).toBe("data: one\n\ndata: two\n\n");
   }, 10_000);
 
-  it("on SIGTERM stops accepting, lets a slow client finish, then removes the socket", async () => {
+  // This pins the outcome (a slow client still downloading when the adapter has drained and
+  // emitted sveltekit:shutdown gets every byte; the front stops accepting and removes the socket),
+  // not the mechanism: on Bun 1.4.2 the body is already buffered in the front by then, and a front
+  // that force-closes at sveltekit:shutdown passed this test too. The deadline end of the budget is
+  // pinned by the SHUTDOWN_TIMEOUT=3 test below.
+  it("on SIGTERM stops accepting, a slow client still gets every byte, the socket is removed", async () => {
     const port = await freePort();
     const server = await start({
       ORIGIN: `http://127.0.0.1:${port}`,
