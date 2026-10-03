@@ -52,7 +52,7 @@ vi.mock("$lib/db/repositories/users", () => ({
   getUserMappingById: (_id: number) => mockUser,
 }));
 
-vi.mock("$app/environment", () => ({
+vi.mock("$app/env", () => ({
   dev: false,
   building: false,
 }));

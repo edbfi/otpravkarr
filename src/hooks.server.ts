@@ -1,7 +1,7 @@
 import type { Handle } from "@sveltejs/kit";
 import { redirect } from "@sveltejs/kit";
 import { sequence } from "@sveltejs/kit/hooks";
-import { building } from "$app/environment";
+import { building } from "$app/env";
 import { env } from "$env/dynamic/private";
 import { hydrateQuarantineGroupsFromConfig } from "$lib/bridge/quarantine-sync";
 import { createBootstrapToken } from "$lib/crypto/bootstrap";

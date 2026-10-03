@@ -52,7 +52,7 @@ vi.mock("@sveltejs/kit/hooks", () => ({
     },
 }));
 
-vi.mock("$app/environment", () => ({
+vi.mock("$app/env", () => ({
   building: false,
 }));
 

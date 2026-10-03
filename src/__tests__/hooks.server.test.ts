@@ -43,7 +43,7 @@ vi.mock("@sveltejs/kit/hooks", () => ({
 
 type MockEvent = RequestEvent;
 
-vi.mock("$app/environment", () => ({
+vi.mock("$app/env", () => ({
   building: false,
 }));
 
