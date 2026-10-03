@@ -11,5 +11,5 @@
     "paths": { "$lib": ["./src/lib"], "$lib/*": ["./src/lib/*"] }
   },
   "exclude": ["src/**/__tests__/**"],
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "vite.config.ts", "scripts/serve.ts", "scripts/serve.test.ts"]
 }

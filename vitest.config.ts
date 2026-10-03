@@ -31,7 +31,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: "server",
-          include: ["src/**/*.test.ts", "vite.config.test.ts"],
+          include: ["src/**/*.test.ts", "scripts/**/*.test.ts", "vite.config.test.ts"],
           exclude: [...componentTests, "e2e/**", "node_modules/**"],
         },
       },

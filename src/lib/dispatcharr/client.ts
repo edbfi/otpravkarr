@@ -16,10 +16,13 @@ function formatResponseDataForLog(responseData: unknown): string {
   }
 }
 
-// The svelte-adapter-bun server closes idle sockets after IDLE_TIMEOUT seconds
-// (default 10). A render that awaits a Dispatcharr call longer than that window
-// is severed mid-flight (ERR_EMPTY_RESPONSE) before its graceful degraded state
-// can reach the browser. We mirror the adapter's own env read here.
+// The server closes idle client connections after the idle window: adapter-bun's
+// CONNECTION_IDLE_TIMEOUT, or with ORIGIN set the front in scripts/serve.ts
+// (Bun's default is 10s). A render that awaits a Dispatcharr call longer than
+// that window is severed mid-flight (ERR_EMPTY_RESPONSE) before its graceful
+// degraded state can reach the browser. scripts/serve.ts maps IDLE_TIMEOUT to
+// CONNECTION_IDLE_TIMEOUT and keeps IDLE_TIMEOUT equal to the effective window
+// (an explicit CONNECTION_IDLE_TIMEOUT wins), so this reads IDLE_TIMEOUT.
 function parseIdleTimeoutSeconds(): number {
   const raw = Number.parseInt(process.env.IDLE_TIMEOUT ?? "", 10);
   return Number.isFinite(raw) && raw > 0 ? raw : 10;

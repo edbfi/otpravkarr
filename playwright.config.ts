@@ -67,7 +67,7 @@ export default defineConfig({
     command: [
       ...(process.env.E2E_SKIP_BUILD === "1" ? [] : ["bun --bun run build"]),
       `bun e2e/seed-db.ts "${testDbPath}"`,
-      "bun ./build/index.js",
+      "bun scripts/serve.ts",
     ].join(" && "),
     port: E2E_PORT,
     // Always launch a fresh E2E server so each run uses its seeded temp DB
