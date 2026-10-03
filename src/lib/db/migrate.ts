@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-// After svelte-adapter-bun builds the server, code is bundled into
+// After @sveltejs/adapter-bun builds the server, code is bundled into
 // build/server/chunks/ while the build script copies migrations to
 // build/server/migrations. We check both the sibling path (works in dev
 // where this file lives next to migrations/) and the parent path (works
