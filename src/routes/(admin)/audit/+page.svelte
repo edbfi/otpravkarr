@@ -99,7 +99,7 @@ function syncDateFilterBounds(url: URL): void {
 }
 
 function updateFilter(key: string, value: string | null) {
-  const url = new URL(page.url);
+  const url = new URL(page.url.href);
   if (value) {
     url.searchParams.set(key, value);
   } else {

@@ -1,6 +1,5 @@
 import type { Actions, RequestEvent } from "@sveltejs/kit";
 import { fail, redirect } from "@sveltejs/kit";
-import { env } from "$env/dynamic/private";
 import { rotateCredentialsForMappingId } from "$lib/bridge/lifecycle";
 import { decrypt } from "$lib/crypto/encryption";
 import { getConfig } from "$lib/db/repositories/config";
@@ -14,6 +13,7 @@ import {
   openInitialPasswordFlash,
 } from "$lib/server/initial-password-flash";
 import { selectActivePublicOrigin } from "$lib/server/origins";
+import { env } from "$lib/server/private-env";
 import { oauthLimiter } from "$lib/server/ratelimit";
 import { getFredTvAssets } from "$lib/url/github-releases.server";
 import {

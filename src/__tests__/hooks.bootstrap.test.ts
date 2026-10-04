@@ -52,11 +52,11 @@ vi.mock("@sveltejs/kit/hooks", () => ({
     },
 }));
 
-vi.mock("$app/environment", () => ({
+vi.mock("$app/env", () => ({
   building: false,
 }));
 
-vi.mock("$env/dynamic/private", () => ({
+vi.mock("$lib/server/private-env", () => ({
   env: {
     HOST: "localhost",
     PORT: "3000",

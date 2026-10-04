@@ -38,7 +38,7 @@ vi.mock("bun:sqlite", () => ({
   Database: MockDatabase,
 }));
 
-vi.mock("$env/dynamic/private", () => ({
+vi.mock("$lib/server/private-env", () => ({
   env: { DATABASE_PATH: "" },
 }));
 
@@ -55,7 +55,7 @@ const { createDatabase, getDb, initializeDatabase, _resetForTesting } = await im
   "../connection"
 );
 const { runMigrations } = await import("../migrate");
-const { env } = await import("$env/dynamic/private");
+const { env } = await import("$lib/server/private-env");
 
 describe("createDatabase", () => {
   afterEach(() => {

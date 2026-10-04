@@ -157,7 +157,7 @@ const envState = vi.hoisted(() => ({
   ORIGIN: "",
 }));
 
-vi.mock("$env/dynamic/private", () => ({
+vi.mock("$lib/server/private-env", () => ({
   env: envState,
 }));
 

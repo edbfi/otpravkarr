@@ -28,7 +28,7 @@ That file is generic stack guidance. Its Svelte 5 runes, SSR-state and routing r
 | Dev/build runtime | `vite dev` on Node | `bun --bun vite …`, because server code imports `bun:sqlite`, which Node cannot load |
 | UnoCSS | `presetWind3` + `unocss-preset-shadcn/v3` | `presetWind4` + default `unocss-preset-shadcn` (`uno.config.ts`) |
 | Component tests | `vitest-browser-svelte` browser mode | `@testing-library/svelte` + jsdom (`vitest.config.ts`) |
-| Forms | Superforms/Formsnap | Zod schemas in `src/lib/server/validation.ts`, `.safeParse` in actions, and `use:enhance`. `sveltekit-superforms` is installed but unused |
+| Forms | Superforms/Formsnap | Zod schemas in `src/lib/server/validation.ts`, `.safeParse` in actions, and `use:enhance`. No form library is installed |
 | `check` script | svelte-check | Biome. Type checking is `check:types` |
 
 ## Boundaries
@@ -83,7 +83,8 @@ Raw SQL lives in `src/lib/db/repositories/*`. Row types are hand-mirrored in `sr
 
 ## Testing
 
-- `vitest.config.ts` uses the plain `svelte()` plugin, not `sveltekit()`. Only `$lib` and `$app/{forms,navigation,state}` resolve (to `src/lib/test-stubs/`). `$app/environment`, `$env/*` and `bun:sqlite` must be `vi.mock`ed in each test. Tests run on Node, so a test that needs `Bun.*` stubs it with `vi.stubGlobal("Bun", …)`.
+- `vitest.config.ts` uses the plain `svelte()` plugin, not `sveltekit()`, and defines two projects. `components` runs `src/lib/components/**/*.test.ts` and `src/routes/**/*.svelte.test.ts` with the `@testing-library/svelte` plugin. `server` runs every other test plus `vite.config.test.ts`, without that plugin, so server code under test gets SvelteKit's server exports. Never render a component in a `server` test. Run one project with `bunx vitest run --project components` (or `server`).
+- Only `$lib` and `$app/{forms,navigation,state}` resolve (to `src/lib/test-stubs/`). `$app/env`, `$lib/server/private-env` (the one module that reads SvelteKit's private env) and `bun:sqlite` must be `vi.mock`ed in each test that reaches them. Tests run on Node, so a test that needs `Bun.*` stubs it with `vi.stubGlobal("Bun", …)`.
 - The default environment is jsdom. Server-side tests begin with `// @vitest-environment node`.
 - DB repository tests run SQL against mocks. Real SQLite runs only in E2E.
 - Library tests go in `__tests__/` beside the module. Route tests sit next to the route as `page.server.test.ts`, `page.svelte.test.ts` or `server.test.ts`, without the `+` prefix. `tsconfig.json` excludes `src/**/__tests__/**`, so `check:types` skips those files.

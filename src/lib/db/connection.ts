@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { env } from "$env/dynamic/private";
+import { env } from "$lib/server/private-env";
 import { runMigrations } from "./migrate";
 
 const DEFAULT_DATABASE_PATH = "./data/otpravkarr.sqlite";

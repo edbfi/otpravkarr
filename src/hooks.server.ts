@@ -1,8 +1,7 @@
 import type { Handle } from "@sveltejs/kit";
 import { redirect } from "@sveltejs/kit";
 import { sequence } from "@sveltejs/kit/hooks";
-import { building } from "$app/environment";
-import { env } from "$env/dynamic/private";
+import { building } from "$app/env";
 import { hydrateQuarantineGroupsFromConfig } from "$lib/bridge/quarantine-sync";
 import { createBootstrapToken } from "$lib/crypto/bootstrap";
 import { initializeDatabase } from "$lib/db/connection";
@@ -27,6 +26,7 @@ import { validateFetchMetadata, validateOrigin } from "$lib/server/csrf";
 import { validateEnv } from "$lib/server/env";
 import { handleError as serverErrorHandler } from "$lib/server/error-handler";
 import { createRequestLogger } from "$lib/server/logging";
+import { env } from "$lib/server/private-env";
 import { markServerStarted } from "$lib/server/uptime";
 
 let runtimeInitialization: Promise<void> | null = null;

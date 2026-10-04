@@ -64,7 +64,7 @@ vi.mock("$lib/db/repositories/channel-group-profiles", () => ({
   upsertGroupProfile: vi.fn(),
 }));
 
-vi.mock("$app/environment", () => ({
+vi.mock("$app/env", () => ({
   dev: false,
 }));
 
