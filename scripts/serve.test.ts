@@ -380,6 +380,7 @@ describe("forwardPath", () => {
     ["http://x", "/"],
     // What Bun gives when the client's Host header is not a valid host.
     ["/p%2Fq?x=%20", "/p%2Fq?x=%20"],
+    ["/login?next=http://x/y", "/login?next=http://x/y"],
     ["http://[::1/p?x", "/p?x"],
   ])("forwards %s as %s", (url, path) => {
     expect(forwardPath(url)).toBe(path);

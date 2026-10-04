@@ -99,6 +99,8 @@ export function endQuietly(body: ReadableStream<Uint8Array>): ReadableStream<Uin
  * valid host (Bun then gives a bare path or an unparsable URL), and would re-serialise the path.
  */
 export function forwardPath(requestUrl: string): string {
+  // A bare path is already the path; its query may itself contain "://".
+  if (requestUrl.startsWith("/")) return requestUrl;
   const scheme = requestUrl.indexOf("://");
   const start = scheme === -1 ? 0 : requestUrl.indexOf("/", scheme + 3);
   return start === -1 ? "/" : requestUrl.slice(start);
