@@ -245,6 +245,14 @@ describe("prepare", () => {
     });
   });
 
+  it("warns in the words every edbfi app uses", () => {
+    expect(MISSING_ORIGIN_WARNING).toBe(
+      "ORIGIN is not set: Otpravkarr assumes it is served over HTTPS behind a proxy that " +
+        "preserves the Host header. Over plain HTTP, signing in and saving changes will fail. " +
+        "Set ORIGIN to the address users open, for example ORIGIN=http://192.168.1.10:3000.",
+    );
+  });
+
   it("treats a blank ORIGIN as unset, for the app too", () => {
     const environment: Record<string, string | undefined> = { ORIGIN: "  " };
     expect(prepare(environment)).toEqual({ mode: "direct", warning: MISSING_ORIGIN_WARNING });

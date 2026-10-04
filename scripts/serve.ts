@@ -13,11 +13,11 @@ export const PROTOCOL_HEADER = "x-otpravkarr-origin-proto";
 export const HOST_HEADER = "x-otpravkarr-origin-host";
 export const PEER_HEADER = "x-otpravkarr-peer";
 
+// Worded the same in every edbfi app: it names what fails for the user and how to fix it.
 export const MISSING_ORIGIN_WARNING =
-  "ORIGIN is not set and no PROTOCOL_HEADER is configured: the app assumes https + Host, so " +
-  "plain-HTTP form posts and writes will be rejected with 403. Set ORIGIN to the public URL " +
-  "(for example http://192.168.1.10:3000) when serving plain HTTP; leave it unset only behind " +
-  "an HTTPS proxy that preserves Host.";
+  "ORIGIN is not set: Otpravkarr assumes it is served over HTTPS behind a proxy that preserves " +
+  "the Host header. Over plain HTTP, signing in and saving changes will fail. Set ORIGIN to the " +
+  "address users open, for example ORIGIN=http://192.168.1.10:3000.";
 
 export const ORIGIN_ERROR =
   "ORIGIN must be a bare http(s) origin such as http://192.168.1.10:3000 (no path, query, " +
