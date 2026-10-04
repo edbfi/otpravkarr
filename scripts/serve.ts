@@ -258,6 +258,9 @@ export async function serve(
   };
   process.once("SIGTERM", onSignal);
   process.once("SIGINT", onSignal);
+  // Every exit removes the socket directory, including the adapter's process.exit(1) on a second
+  // signal, which skips sveltekit:shutdown (synchronously, as exit handlers must).
+  process.once("exit", removeSocketDirectory);
   process.once("sveltekit:shutdown", async () => {
     const drain = startDrain();
     let timer: ReturnType<typeof setTimeout> | undefined;

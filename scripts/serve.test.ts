@@ -712,6 +712,31 @@ describe("serve.ts process", () => {
     expect(socketDirectories(server.temp)).toEqual([]);
   }, 20_000);
 
+  it("removes the socket directory when a second signal forces the exit after loading", async () => {
+    const port = await freePort();
+    const server = await start({
+      ORIGIN: `http://127.0.0.1:${port}`,
+      PORT: String(port),
+      SHUTDOWN_TIMEOUT: "30",
+    });
+    // Keep a request in flight so the first signal starts a drain that does not finish.
+    await new Promise<void>((done) => {
+      const req = httpRequest({ host: "127.0.0.1", port: server.port, path: "/hold" }, (res) => {
+        res.once("data", () => done());
+        res.on("error", () => {});
+      });
+      req.on("error", () => {});
+      req.end();
+    });
+    expect(socketDirectories(server.temp)).toHaveLength(1);
+    server.child.kill("SIGTERM");
+    await new Promise((done) => setTimeout(done, 300));
+    // The adapter exits 1 on a second signal, without sveltekit:shutdown.
+    server.child.kill("SIGTERM");
+    expect(await server.exited).toEqual({ code: 1, signal: null });
+    expect(socketDirectories(server.temp)).toEqual([]);
+  }, 20_000);
+
   it("leaves nothing behind when the adapter fails to load", async () => {
     const port = await freePort();
     const server = await start(
