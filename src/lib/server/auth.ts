@@ -1,6 +1,5 @@
 import type { RequestEvent } from "@sveltejs/kit";
 import { error, redirect } from "@sveltejs/kit";
-import { dev } from "$app/env";
 import { getAdminByUsername } from "$lib/db/repositories/admin";
 import { getConfig } from "$lib/db/repositories/config";
 import { getSession } from "$lib/db/repositories/sessions";
@@ -13,15 +12,22 @@ export const USER_SESSION_TTL = 14400;
 export const SETUP_COMPLETED_CONFIG_KEY = "setup_completed";
 const SETUP_COMPLETED_VALUE = "true";
 
-export const isSecure = !dev;
+/**
+ * Cookies are `Secure` only when the request's public origin is https. With ORIGIN set,
+ * scripts/serve.ts makes event.url carry ORIGIN's scheme; without it the adapter assumes https
+ * (a TLS-terminating proxy); `vite dev` serves http://localhost. A browser refuses a `Secure`
+ * cookie, and a `Secure` deletion, over plain HTTP outside loopback, so plain-HTTP deployments
+ * could not log in or out with a fixed `secure: true`.
+ */
+export const isSecureRequest = (url: URL): boolean => url.protocol === "https:";
 
-export const ADMIN_COOKIE_OPTIONS = {
+export const adminCookieOptions = (url: URL) => ({
   path: "/",
   httpOnly: true,
-  secure: isSecure,
+  secure: isSecureRequest(url),
   sameSite: "strict" as const,
   maxAge: ADMIN_SESSION_TTL,
-};
+});
 
 // SameSite=Lax variant of the admin cookie, used ONLY for the owner OAuth
 // redirect (src/routes/(portal)/auth/plex/+page.server.ts). The owner OAuth
@@ -30,21 +36,27 @@ export const ADMIN_COOKIE_OPTIONS = {
 // admin session would be invisible to requireAdmin and bounce to /login. Lax is
 // sent on top-level cross-site GET navigations, so the session survives the
 // handoff. Steady state stays Strict: sessionResolver re-issues this cookie with
-// ADMIN_COOKIE_OPTIONS on the very next authenticated request. CSRF is
+// adminCookieOptions on the very next authenticated request. CSRF is
 // unaffected — mutating methods are Origin-validated server-side (csrf.ts) and
 // GET loads do not mutate.
-export const ADMIN_OAUTH_COOKIE_OPTIONS = {
-  ...ADMIN_COOKIE_OPTIONS,
+export const adminOAuthCookieOptions = (url: URL) => ({
+  ...adminCookieOptions(url),
   sameSite: "lax" as const,
-};
+});
 
-export const USER_COOKIE_OPTIONS = {
+export const userCookieOptions = (url: URL) => ({
   path: "/",
   httpOnly: true,
-  secure: isSecure,
+  secure: isSecureRequest(url),
   sameSite: "lax" as const,
   maxAge: USER_SESSION_TTL,
-};
+});
+
+/** Deletion options for the session cookie; `secure` must match, or browsers keep the cookie. */
+export const sessionCookieDeleteOptions = (url: URL) => ({
+  path: "/",
+  secure: isSecureRequest(url),
+});
 
 export async function getConfiguredAdminAccount(): Promise<AdminAccount | null> {
   const username = await getConfig("admin_username");
@@ -55,7 +67,9 @@ export async function getConfiguredAdminAccount(): Promise<AdminAccount | null> 
   return getAdminByUsername(username);
 }
 
-export async function requireAdmin(event: Pick<RequestEvent, "cookies">): Promise<AdminAccount> {
+export async function requireAdmin(
+  event: Pick<RequestEvent, "cookies" | "url">,
+): Promise<AdminAccount> {
   const sessionId = event.cookies.get(SESSION_COOKIE_NAME);
   if (!sessionId) {
     throw redirect(303, "/login");
@@ -63,13 +77,13 @@ export async function requireAdmin(event: Pick<RequestEvent, "cookies">): Promis
 
   const session = getSession(sessionId);
   if (!session || session.session_type !== "admin") {
-    event.cookies.delete(SESSION_COOKIE_NAME, { path: "/" });
+    event.cookies.delete(SESSION_COOKIE_NAME, sessionCookieDeleteOptions(event.url));
     throw redirect(303, "/login");
   }
 
   const admin = getAdminByUsername(session.user_ref);
   if (!admin) {
-    event.cookies.delete(SESSION_COOKIE_NAME, { path: "/" });
+    event.cookies.delete(SESSION_COOKIE_NAME, sessionCookieDeleteOptions(event.url));
     throw redirect(303, "/login");
   }
 
@@ -110,24 +124,24 @@ export async function requireUser(event: RequestEvent): Promise<UserMapping> {
 
   const session = getSession(sessionId);
   if (!session || session.session_type !== "user") {
-    event.cookies.delete(SESSION_COOKIE_NAME, { path: "/" });
+    event.cookies.delete(SESSION_COOKIE_NAME, sessionCookieDeleteOptions(event.url));
     throw redirect(303, "/");
   }
 
   if (!/^\d+$/.test(session.user_ref)) {
-    event.cookies.delete(SESSION_COOKIE_NAME, { path: "/" });
+    event.cookies.delete(SESSION_COOKIE_NAME, sessionCookieDeleteOptions(event.url));
     throw redirect(303, "/");
   }
 
   const userId = Number.parseInt(session.user_ref, 10);
   if (Number.isNaN(userId)) {
-    event.cookies.delete(SESSION_COOKIE_NAME, { path: "/" });
+    event.cookies.delete(SESSION_COOKIE_NAME, sessionCookieDeleteOptions(event.url));
     throw redirect(303, "/");
   }
 
   const user = getUserMappingById(userId);
   if (!user) {
-    event.cookies.delete(SESSION_COOKIE_NAME, { path: "/" });
+    event.cookies.delete(SESSION_COOKIE_NAME, sessionCookieDeleteOptions(event.url));
     throw redirect(303, "/");
   }
 

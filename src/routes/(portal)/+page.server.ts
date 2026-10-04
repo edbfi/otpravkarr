@@ -7,7 +7,7 @@ import { updateLastAccessed } from "$lib/db/repositories/users";
 import { DispatcharrClient } from "$lib/dispatcharr/client";
 import { initiateOAuth } from "$lib/plex/oauth";
 import { PlexAuthError } from "$lib/plex/types";
-import { isSecure, requireUser } from "$lib/server/auth";
+import { isSecureRequest, requireUser } from "$lib/server/auth";
 import {
   INITIAL_PASSWORD_COOKIE_NAME,
   openInitialPasswordFlash,
@@ -30,13 +30,13 @@ import { buildPlayerApiUrl, buildXcUrl } from "$lib/url/xc";
 import { isTransientPlexError, type RetryOptions, retryAsync } from "$lib/utils/retry";
 
 const OAUTH_COOKIE_NAME = "otpravkarr_oauth_id";
-const OAUTH_COOKIE_OPTIONS = {
+const oauthCookieOptions = (url: URL) => ({
   path: "/",
   httpOnly: true,
-  secure: isSecure,
+  secure: isSecureRequest(url),
   sameSite: "lax" as const,
   maxAge: 600,
-};
+});
 const OAUTH_INITIATE_RETRY: RetryOptions = {
   maxRetries: 3,
   baseDelayMs: 500,
@@ -56,7 +56,7 @@ interface PlatformEntry {
   result: PlatformUrlResult;
 }
 
-export const load = async ({ locals, cookies }: RequestEvent) => {
+export const load = async ({ locals, cookies, url }: RequestEvent) => {
   // Authenticated admins have no portal account (locals.user stays null), so
   // mirror /login and /welcome and send them to the admin dashboard instead of
   // the signed-out "Sign in with Plex" card.
@@ -83,7 +83,7 @@ export const load = async ({ locals, cookies }: RequestEvent) => {
     const initialPasswordCookie = cookies.get(INITIAL_PASSWORD_COOKIE_NAME);
     let initialPassword: string | null = null;
     if (initialPasswordCookie) {
-      cookies.delete(INITIAL_PASSWORD_COOKIE_NAME, { path: "/" });
+      cookies.delete(INITIAL_PASSWORD_COOKIE_NAME, { path: "/", secure: isSecureRequest(url) });
       initialPassword = await openInitialPasswordFlash(initialPasswordCookie);
     }
 
@@ -169,9 +169,10 @@ export const actions: Actions = {
         OAUTH_INITIATE_RETRY,
       );
 
-      cookies.set(OAUTH_COOKIE_NAME, result.id, OAUTH_COOKIE_OPTIONS);
+      cookies.set(OAUTH_COOKIE_NAME, result.id, oauthCookieOptions(url));
 
-      throw redirect(303, result.uri);
+      // @ctrl/plex builds this as https://app.plex.tv/auth#?…; allow only that origin.
+      throw redirect(303, result.uri, { external: ["https://app.plex.tv"] });
     } catch (err: unknown) {
       if (err instanceof PlexAuthError) {
         if (isTransientPlexError(err)) {

@@ -23,7 +23,11 @@ vi.mock("$lib/db/types", () => ({
 
 vi.mock("$lib/server/auth", () => ({
   SESSION_COOKIE_NAME: "otpravkarr_session",
+  // Same shape as src/lib/server/auth.ts: Secure follows the request's scheme (M13).
+  sessionCookieDeleteOptions: (url: URL) => ({ path: "/", secure: url.protocol === "https:" }),
 }));
+
+const SIGNOUT_URL = new URL("http://localhost/api/internal/signout");
 
 function createCookies(sessionId?: string) {
   const set = vi.fn();
@@ -56,6 +60,7 @@ describe("signout endpoint", () => {
         locals: {
           session: { id: "sess-123", type: "user", userRef: "1" },
         },
+        url: SIGNOUT_URL,
         getClientAddress: () => "127.0.0.1",
       } as unknown as Parameters<typeof POST>[0]),
     ).rejects.toMatchObject({
@@ -83,6 +88,7 @@ describe("signout endpoint", () => {
           session: { id: "sess-456", type: "admin", userRef: "admin" },
           admin: { id: 1, username: "admin" },
         },
+        url: SIGNOUT_URL,
         getClientAddress: () => "10.0.0.1",
       } as unknown as Parameters<typeof POST>[0]),
     ).rejects.toMatchObject({
@@ -109,6 +115,7 @@ describe("signout endpoint", () => {
           session: { id: "sess-456", type: "admin", userRef: "admin" },
           admin: { id: 1, username: "admin" },
         },
+        url: SIGNOUT_URL,
         getClientAddress: () => "10.0.0.1",
       } as unknown as Parameters<typeof POST>[0]);
     } catch {
@@ -133,6 +140,7 @@ describe("signout endpoint", () => {
         cookies,
         request: new Request("http://localhost/api/internal/signout", { method: "POST" }),
         locals: {},
+        url: SIGNOUT_URL,
         getClientAddress: () => "127.0.0.1",
       } as unknown as Parameters<typeof POST>[0]),
     ).rejects.toMatchObject({
@@ -156,6 +164,7 @@ describe("signout endpoint", () => {
       locals: {
         session: { id: "sess-json-1", type: "user", userRef: "1" },
       },
+      url: SIGNOUT_URL,
       getClientAddress: () => "127.0.0.1",
     } as unknown as Parameters<typeof POST>[0]);
 
@@ -183,6 +192,7 @@ describe("signout endpoint", () => {
         session: { id: "sess-json-2", type: "admin", userRef: "admin" },
         admin: { id: 1, username: "admin" },
       },
+      url: SIGNOUT_URL,
       getClientAddress: () => "10.0.0.1",
     } as unknown as Parameters<typeof POST>[0]);
 
@@ -214,6 +224,7 @@ describe("signout endpoint", () => {
         locals: {
           session: { id: "sess-789", type: "user", userRef: "42" },
         },
+        url: SIGNOUT_URL,
         getClientAddress: () => "127.0.0.1",
       } as unknown as Parameters<typeof POST>[0]);
     } catch {
@@ -221,5 +232,25 @@ describe("signout endpoint", () => {
     }
 
     expect(mocks.appendAuditLog).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["https://otpravkarr.example.com/api/internal/signout", true],
+    ["http://192.168.1.10:3000/api/internal/signout", false],
+  ])("deletes the session cookie for %s with secure: %s (M13)", async (href, secure) => {
+    const { POST } = await import("./+server");
+    const { cookies, deleteFn } = createCookies("sess-m13");
+
+    await expect(
+      POST({
+        cookies,
+        request: new Request(href, { method: "POST" }),
+        url: new URL(href),
+        locals: { session: { id: "sess-m13", type: "user", userRef: "1" } },
+        getClientAddress: () => "127.0.0.1",
+      } as unknown as Parameters<typeof POST>[0]),
+    ).rejects.toMatchObject({ status: 303 });
+
+    expect(deleteFn).toHaveBeenCalledWith("otpravkarr_session", { path: "/", secure });
   });
 });

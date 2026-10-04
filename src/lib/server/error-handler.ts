@@ -1,4 +1,4 @@
-import type { HandleServerError } from "@sveltejs/kit";
+import type { HandleServerError } from "@sveltejs/kit/hooks";
 
 /**
  * ISSUE-012: SvelteKit's default server error handler logs an unhelpful
@@ -7,8 +7,17 @@ import type { HandleServerError } from "@sveltejs/kit";
  * logger / health job style) carrying the real error class, message, and
  * stack — or `String(error)` for non-Error throws — while returning a generic
  * body to the client so no internal detail leaks (Phase-12 posture).
+ *
+ * SvelteKit 3 passes every error here. Errors thrown with `error(...)` (`app`),
+ * validation errors and SvelteKit's own errors (`framework`: 404, 405, 413, …)
+ * keep their status and message and are not logged; only `unknown` errors are
+ * logged and answered with the generic body.
  */
-export const handleError: HandleServerError = ({ error, event, status, message }) => {
+export const handleError: HandleServerError = (caught) => {
+  if (caught.kind !== "unknown") return;
+  const { error, event } = caught;
+  const status = 500;
+  const message = "Internal Error";
   const isError = error instanceof Error;
 
   console.error(
@@ -26,5 +35,5 @@ export const handleError: HandleServerError = ({ error, event, status, message }
     }),
   );
 
-  return { message: "Internal Error" };
+  return { message };
 };

@@ -1,5 +1,5 @@
-import type { Handle } from "@sveltejs/kit";
 import { isHttpError, isRedirect } from "@sveltejs/kit";
+import type { Handle } from "@sveltejs/kit/hooks";
 
 export interface RequestLogEntry {
   timestamp: string;

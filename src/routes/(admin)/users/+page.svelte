@@ -7,9 +7,8 @@ import KeyRoundIcon from "@lucide/svelte/icons/key-round";
 import LayersIcon from "@lucide/svelte/icons/layers";
 import Trash2Icon from "@lucide/svelte/icons/trash-2";
 import UsersIcon from "@lucide/svelte/icons/users";
-import type { ActionResult } from "@sveltejs/kit";
 import { toast } from "svelte-sonner";
-import { applyAction, enhance } from "$app/forms";
+import { type ActionResult, applyAction, enhance } from "$app/forms";
 import { invalidateAll } from "$app/navigation";
 
 import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";

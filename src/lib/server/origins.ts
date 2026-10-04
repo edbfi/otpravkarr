@@ -90,6 +90,26 @@ export function selectActivePublicOrigin(
   return configured.origin;
 }
 
+/** The canonical form of an origin (lowercase scheme and host, no default port), or null. */
+export function canonicalOrigin(value: string | null | undefined): string | null {
+  return toOriginUrl(value)?.origin ?? null;
+}
+
+/**
+ * The origins a write may come from. With ORIGIN set it is always allowed and the stored
+ * allowed origins only add to it, so changing ORIGIN after setup never locks out every write.
+ * Without ORIGIN the stored list applies, or the request's own origin while none is stored.
+ */
+export function effectiveAllowedOrigins(
+  stored: readonly string[],
+  configuredOrigin: string | undefined,
+  requestOrigin: string,
+): string[] {
+  const configured = canonicalOrigin(configuredOrigin);
+  if (configured) return [configured, ...stored];
+  return stored.length > 0 ? [...stored] : [requestOrigin];
+}
+
 export function parseAndNormalizeOrigins(
   rawOrigins: string,
   separator: string | RegExp,

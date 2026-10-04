@@ -143,15 +143,16 @@ vi.mock("$lib/plex/types", () => ({
 }));
 
 vi.mock("$lib/server/auth", () => ({
-  ADMIN_COOKIE_OPTIONS: {
+  // Same shapes as src/lib/server/auth.ts: Secure follows the request's scheme (M13).
+  adminCookieOptions: (url: URL) => ({
     path: "/",
     httpOnly: true,
-    secure: true,
+    secure: url.protocol === "https:",
     sameSite: "strict",
     maxAge: 3600,
-  },
+  }),
   ADMIN_SESSION_TTL: 3600,
-  isSecure: true,
+  isSecureRequest: (url: URL) => url.protocol === "https:",
   isSetupComplete: mocks.isSetupComplete,
   requireSetupIncomplete: mocks.requireSetupIncomplete,
   SETUP_COMPLETED_CONFIG_KEY: "setup_completed",
@@ -220,6 +221,7 @@ type CookieSetCall = {
 function createCookies(initial: Record<string, string> = {}) {
   const jar = new Map<string, string>(Object.entries(initial));
   const setCalls: CookieSetCall[] = [];
+  const deleteCalls: { name: string; options: unknown }[] = [];
 
   return {
     cookies: {
@@ -228,11 +230,13 @@ function createCookies(initial: Record<string, string> = {}) {
         jar.set(name, value);
         setCalls.push({ name, value, options });
       },
-      delete: (name: string) => {
+      delete: (name: string, options: unknown) => {
         jar.delete(name);
+        deleteCalls.push({ name, options });
       },
     },
     setCalls,
+    deleteCalls,
     jar,
   };
 }
@@ -495,6 +499,7 @@ describe("setup claim ownership", () => {
       // 409 (falsely blocked by a "claim" it can't even read).
       const result = await claimInstance({
         request,
+        url: new URL("http://localhost/setup"),
         getClientAddress: () => "127.0.0.1",
         cookies,
       } as unknown as Parameters<typeof claimInstance>[0]);
@@ -788,6 +793,7 @@ describe("setup claim ownership", () => {
     const result = await createAdmin({
       request,
       cookies,
+      url: new URL("http://localhost/setup"),
     } as unknown as Parameters<typeof createAdmin>[0]);
 
     expect(result).toMatchObject({
@@ -813,6 +819,7 @@ describe("setup claim ownership", () => {
 
     const result = await claimInstance({
       request,
+      url: new URL("http://localhost/setup"),
       getClientAddress: () => "127.0.0.1",
       cookies,
     } as unknown as Parameters<typeof claimInstance>[0]);
@@ -849,6 +856,7 @@ describe("setup claim ownership", () => {
 
     const result = await claimInstance({
       request,
+      url: new URL("http://localhost/setup"),
       getClientAddress: () => "127.0.0.1",
       cookies,
     } as unknown as Parameters<typeof claimInstance>[0]);
@@ -882,6 +890,7 @@ describe("setup claim ownership", () => {
 
     const result = await claimInstance({
       request,
+      url: new URL("http://localhost/setup"),
       getClientAddress: () => "127.0.0.1",
       cookies,
     } as unknown as Parameters<typeof claimInstance>[0]);
@@ -919,6 +928,7 @@ describe("setup claim ownership", () => {
 
       const result = await claimInstance({
         request,
+        url: new URL("http://localhost/setup"),
         getClientAddress: () => "127.0.0.1",
         cookies,
       } as unknown as Parameters<typeof claimInstance>[0]);
@@ -956,6 +966,7 @@ describe("setup claim ownership", () => {
 
     const result = await claimInstance({
       request,
+      url: new URL("http://localhost/setup"),
       getClientAddress: () => "127.0.0.1",
       cookies,
     } as unknown as Parameters<typeof claimInstance>[0]);
@@ -999,6 +1010,7 @@ describe("setup claim ownership", () => {
 
       const result = await claimInstance({
         request,
+        url: new URL("http://localhost/setup"),
         getClientAddress: () => "127.0.0.1",
         cookies,
       } as unknown as Parameters<typeof claimInstance>[0]);
@@ -1044,6 +1056,7 @@ describe("setup claim ownership", () => {
     const createAdminResult = await createAdmin({
       request: createAdminRequest,
       cookies: ownerCookies,
+      url: new URL("http://localhost/setup"),
       getClientAddress: () => "127.0.0.1",
     } as unknown as Parameters<typeof createAdmin>[0]);
     expect(createAdminResult).toEqual({ success: true });
@@ -1063,6 +1076,7 @@ describe("setup claim ownership", () => {
       });
       const claimResult = await claimInstance({
         request: claimRequest,
+        url: new URL("http://localhost/setup"),
         getClientAddress: () => "127.0.0.1",
         cookies: recoveredCookies,
       } as unknown as Parameters<typeof claimInstance>[0]);
@@ -1078,6 +1092,7 @@ describe("setup claim ownership", () => {
       const configureOriginResult = await configureOrigin({
         request: configureOriginRequest,
         cookies: recoveredCookies,
+        url: new URL("http://localhost/setup"),
         getClientAddress: () => "127.0.0.1",
       } as unknown as Parameters<typeof configureOrigin>[0]);
       expect(configureOriginResult).toEqual({ success: true });
@@ -1117,6 +1132,7 @@ describe("setup claim ownership", () => {
       const createAdminResult = await createAdmin({
         request: createAdminRequest,
         cookies,
+        url: new URL("http://localhost/setup"),
         getClientAddress: () => "127.0.0.1",
       } as unknown as Parameters<typeof createAdmin>[0]);
       expect(createAdminResult).toEqual({ success: true });
@@ -1133,6 +1149,7 @@ describe("setup claim ownership", () => {
       const configureOriginResult = await configureOrigin({
         request: configureOriginRequest,
         cookies,
+        url: new URL("http://localhost/setup"),
         getClientAddress: () => "127.0.0.1",
       } as unknown as Parameters<typeof configureOrigin>[0]);
       expect(configureOriginResult).toEqual({ success: true });
@@ -1214,6 +1231,7 @@ describe("createAdmin", () => {
     const result = await createAdmin({
       request,
       cookies,
+      url: new URL("http://localhost/setup"),
       getClientAddress: () => "127.0.0.1",
     } as unknown as Parameters<typeof createAdmin>[0]);
 
@@ -1252,6 +1270,7 @@ describe("createAdmin", () => {
     const result = await createAdmin({
       request,
       cookies,
+      url: new URL("http://localhost/setup"),
     } as unknown as Parameters<typeof createAdmin>[0]);
 
     expect(result).toMatchObject({
@@ -1279,6 +1298,7 @@ describe("createAdmin", () => {
     const result = await createAdmin({
       request,
       cookies,
+      url: new URL("http://localhost/setup"),
     } as unknown as Parameters<typeof createAdmin>[0]);
 
     expect(result).toMatchObject({
@@ -1317,6 +1337,7 @@ describe("configureOrigin", () => {
     const result = await configureOrigin({
       request,
       cookies,
+      url: new URL("http://localhost/setup"),
     } as unknown as Parameters<typeof configureOrigin>[0]);
 
     expect(result).toMatchObject({
@@ -1357,6 +1378,7 @@ describe("setDefaults", () => {
     const result = await setDefaults({
       request,
       cookies,
+      url: new URL("http://localhost/setup"),
       getClientAddress: () => "127.0.0.1",
     } as unknown as Parameters<typeof setDefaults>[0]);
 
@@ -1408,6 +1430,7 @@ describe("setDefaults", () => {
       setDefaults({
         request,
         cookies,
+        url: new URL("http://localhost/setup"),
         getClientAddress: () => "127.0.0.1",
       } as unknown as Parameters<typeof setDefaults>[0]),
     ).rejects.toMatchObject({
@@ -1460,6 +1483,7 @@ describe("setDefaults", () => {
       setDefaults({
         request,
         cookies,
+        url: new URL("http://localhost/setup"),
         getClientAddress: () => "127.0.0.1",
       } as unknown as Parameters<typeof setDefaults>[0]),
     ).rejects.toMatchObject({ status: 303 });
@@ -1469,6 +1493,57 @@ describe("setDefaults", () => {
     const deleteOrder = mocks.deleteSession.mock.invocationCallOrder[0] ?? Infinity;
     const createOrder = mocks.createSession.mock.invocationCallOrder[0] ?? -Infinity;
     expect(deleteOrder).toBeLessThan(createOrder);
+  });
+
+  it.each([
+    ["https://otpravkarr.example.com/setup", true],
+    ["http://192.168.1.10:3000/setup", false],
+  ])("completes setup on %s with secure: %s on every cookie (M13)", async (href, secure) => {
+    for (const [key, value] of Object.entries(setupPrerequisiteConfig)) {
+      state.configValues.set(key, value);
+    }
+    state.configValues.set("admin_username", "admin");
+    mocks.adminExists.mockReturnValue(true);
+
+    const { cookies, setCalls, deleteCalls } = createCookies({ [setupClaimCookie]: "proof-123" });
+    const body = new FormData();
+    body.set("defaultGroupId", "10");
+    body.set("defaultProfileId", "20");
+    body.set("syncInterval", "15");
+    body.set("defaultProvisioningMode", "automatic");
+
+    const { actions } = await import("./+page.server");
+    const setDefaults = actions.setDefaults;
+    if (!setDefaults) {
+      throw new Error("setDefaults action is undefined");
+    }
+
+    await expect(
+      setDefaults({
+        request: new Request(href, { method: "POST", body }),
+        cookies,
+        url: new URL(href),
+        getClientAddress: () => "127.0.0.1",
+      } as unknown as Parameters<typeof setDefaults>[0]),
+    ).rejects.toMatchObject({ status: 303 });
+
+    // The claim cookie is renewed, then deleted, and the admin session is issued.
+    expect(setCalls).toContainEqual(
+      expect.objectContaining({
+        name: setupClaimCookie,
+        options: expect.objectContaining({ path: "/setup", secure }),
+      }),
+    );
+    expect(deleteCalls).toContainEqual({
+      name: setupClaimCookie,
+      options: { path: "/setup", secure },
+    });
+    expect(setCalls).toContainEqual(
+      expect.objectContaining({
+        name: "otpravkarr_session",
+        options: expect.objectContaining({ path: "/", secure, sameSite: "strict" }),
+      }),
+    );
   });
 });
 
@@ -2065,6 +2140,7 @@ describe("configureDispatcharr retry behavior", () => {
     const result = await configureDispatcharr({
       request,
       cookies,
+      url: new URL("http://localhost/setup"),
       getClientAddress: () => "127.0.0.1",
     } as unknown as Parameters<typeof configureDispatcharr>[0]);
 
@@ -2097,6 +2173,7 @@ describe("configureDispatcharr retry behavior", () => {
     const result = await configureDispatcharr({
       request,
       cookies,
+      url: new URL("http://localhost/setup"),
       getClientAddress: () => "127.0.0.1",
     } as unknown as Parameters<typeof configureDispatcharr>[0]);
 
@@ -2130,6 +2207,7 @@ describe("configureDispatcharr retry behavior", () => {
     const result = await configureDispatcharr({
       request,
       cookies,
+      url: new URL("http://localhost/setup"),
     } as unknown as Parameters<typeof configureDispatcharr>[0]);
 
     expect(result).toMatchObject({
@@ -2163,6 +2241,7 @@ describe("configureDispatcharr retry behavior", () => {
     const result = await configureDispatcharr({
       request,
       cookies,
+      url: new URL("http://localhost/setup"),
       getClientAddress: () => "127.0.0.1",
     } as unknown as Parameters<typeof configureDispatcharr>[0]);
 
@@ -2196,6 +2275,7 @@ describe("configureDispatcharr retry behavior", () => {
     const result = await configureDispatcharr({
       request,
       cookies,
+      url: new URL("http://localhost/setup"),
       getClientAddress: () => "127.0.0.1",
     } as unknown as Parameters<typeof configureDispatcharr>[0]);
 
@@ -2226,6 +2306,7 @@ describe("configureDispatcharr retry behavior", () => {
     const result = await configureDispatcharr({
       request,
       cookies,
+      url: new URL("http://localhost/setup"),
     } as unknown as Parameters<typeof configureDispatcharr>[0]);
 
     expect(result).toMatchObject({
@@ -2259,6 +2340,7 @@ describe("setup recovery via admin login", () => {
     const result = await recoverWithAdmin({
       request,
       cookies: cookieJar.cookies,
+      url: new URL("http://localhost/setup"),
       getClientAddress: () => "127.0.0.1",
     } as unknown as Parameters<typeof recoverWithAdmin>[0]);
     return { result, ...cookieJar };

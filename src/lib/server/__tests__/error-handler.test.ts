@@ -27,12 +27,7 @@ function createMockEvent(overrides?: {
 }
 
 function invoke(error: unknown) {
-  return handleError({
-    error,
-    event: createMockEvent(),
-    status: 500,
-    message: "Internal Error",
-  });
+  return handleError({ kind: "unknown", error, event: createMockEvent() });
 }
 
 describe("handleError", () => {
@@ -73,13 +68,27 @@ describe("handleError", () => {
 
   it("tolerates a missing requestId", () => {
     handleError({
+      kind: "unknown",
       error: new Error("no locals"),
       event: createMockEvent({ requestId: null }),
-      status: 500,
-      message: "Internal Error",
     });
     const raw = (consoleSpy.mock.calls[0] as unknown[])[0] as string;
     const entry = JSON.parse(raw);
     expect(entry.requestId).toBeNull();
+  });
+
+  it.each([
+    ["app", { status: 403, message: "Forbidden" }],
+    ["framework", { status: 404, message: "Not Found" }],
+    ["validation", { status: 400, message: "Bad Request" }],
+  ] as const)("passes %s errors through unchanged and does not log them", (kind, error) => {
+    const caught =
+      kind === "validation"
+        ? { kind, error, issues: [], event: createMockEvent() }
+        : { kind, error, event: createMockEvent() };
+    const returned = handleError(caught as Parameters<typeof handleError>[0]);
+
+    expect(returned).toBeUndefined();
+    expect(consoleSpy).not.toHaveBeenCalled();
   });
 });

@@ -48,16 +48,19 @@ vi.mock("$lib/server/ratelimit", () => ({
 }));
 
 vi.mock("$lib/server/auth", () => ({
-  ADMIN_COOKIE_OPTIONS: {
+  // Same shape as src/lib/server/auth.ts: Secure follows the request's scheme (M13).
+  adminCookieOptions: (url: URL) => ({
     path: "/",
     httpOnly: true,
-    secure: true,
+    secure: url.protocol === "https:",
     sameSite: "strict",
     maxAge: 3600,
-  },
+  }),
   ADMIN_SESSION_TTL: 3600,
   SESSION_COOKIE_NAME: "otpravkarr_session",
 }));
+
+const LOGIN_URL = new URL("https://otpravkarr.example.com/login");
 
 function createCookies(initial: Record<string, string> = {}) {
   const store: Record<string, string> = { ...initial };
@@ -143,6 +146,7 @@ describe("login page server", () => {
     const result = await login({
       request: createRequest({ username: "admin", password: "password" }),
       cookies,
+      url: LOGIN_URL,
       getClientAddress: () => "127.0.0.1",
     } as unknown as Parameters<typeof login>[0]);
 
@@ -165,6 +169,7 @@ describe("login page server", () => {
     const result = await login({
       request: createRequest({ username: "", password: "" }),
       cookies,
+      url: LOGIN_URL,
       getClientAddress: () => "127.0.0.1",
     } as unknown as Parameters<typeof login>[0]);
 
@@ -188,6 +193,7 @@ describe("login page server", () => {
     const result = await login({
       request: createRequest({ username: "missing-admin", password: "password" }),
       cookies,
+      url: LOGIN_URL,
       getClientAddress: () => "127.0.0.1",
     } as unknown as Parameters<typeof login>[0]);
 
@@ -212,6 +218,7 @@ describe("login page server", () => {
     const result = await login({
       request: createRequest({ username: "admin", password: "wrong-password" }),
       cookies,
+      url: LOGIN_URL,
       getClientAddress: () => "127.0.0.1",
     } as unknown as Parameters<typeof login>[0]);
 
@@ -220,6 +227,30 @@ describe("login page server", () => {
       data: { error: "invalid_credentials" },
     });
     expect(mocks.createSession).not.toHaveBeenCalled();
+  });
+
+  it("sets a non-Secure session cookie on a plain-HTTP origin (M13)", async () => {
+    const { actions } = await import("./+page.server");
+    const login = actions.default;
+    if (!login) {
+      throw new Error("default action is undefined");
+    }
+
+    const { cookies, set } = createCookies();
+    await expect(
+      login({
+        request: createRequest({ username: "admin", password: "valid-password" }),
+        cookies,
+        url: new URL("http://192.168.1.10:3000/login"),
+        getClientAddress: () => "127.0.0.1",
+      } as unknown as Parameters<typeof login>[0]),
+    ).rejects.toMatchObject({ status: 303, location: "/dashboard" });
+
+    expect(set).toHaveBeenCalledWith(
+      "otpravkarr_session",
+      "session-id",
+      expect.objectContaining({ secure: false, sameSite: "strict" }),
+    );
   });
 
   it("creates session cookie and redirects to /dashboard on success", async () => {
@@ -234,6 +265,7 @@ describe("login page server", () => {
       login({
         request: createRequest({ username: "  admin  ", password: "valid-password" }),
         cookies,
+        url: LOGIN_URL,
         getClientAddress: () => "127.0.0.1",
       } as unknown as Parameters<typeof login>[0]),
     ).rejects.toMatchObject({
@@ -275,6 +307,7 @@ describe("login page server", () => {
       login({
         request: createRequest({ username: "admin", password: "valid-password" }),
         cookies,
+        url: LOGIN_URL,
         getClientAddress: () => "127.0.0.1",
       } as unknown as Parameters<typeof login>[0]),
     ).rejects.toMatchObject({
@@ -301,6 +334,7 @@ describe("login page server", () => {
       login({
         request: createRequest({ username: "admin", password: "valid-password" }),
         cookies,
+        url: LOGIN_URL,
         getClientAddress: () => "127.0.0.1",
       } as unknown as Parameters<typeof login>[0]),
     ).rejects.toMatchObject({ status: 303 });

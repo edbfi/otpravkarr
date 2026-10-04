@@ -67,12 +67,15 @@ export default defineConfig({
     command: [
       ...(process.env.E2E_SKIP_BUILD === "1" ? [] : ["bun --bun run build"]),
       `bun e2e/seed-db.ts "${testDbPath}"`,
-      "bun ./build/index.js",
+      "bun scripts/serve.ts",
     ].join(" && "),
     port: E2E_PORT,
     // Always launch a fresh E2E server so each run uses its seeded temp DB
     // and never attaches to an arbitrary pre-existing process on 4173.
     reuseExistingServer: false,
+    // SIGTERM (not Playwright's default SIGKILL) lets scripts/serve.ts drain and
+    // remove its private socket directory.
+    gracefulShutdown: { signal: "SIGTERM", timeout: 10_000 },
     env: {
       // ISSUE-001: run the E2E suite against the same production path the docs
       // ship (NODE_ENV=production), so the gate can't silently mask the prod

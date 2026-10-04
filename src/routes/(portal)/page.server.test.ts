@@ -138,7 +138,8 @@ vi.mock("$lib/dispatcharr/endpoints/channels", () => ({
 vi.mock("$lib/server/auth", async () => {
   const { redirect } = await import("@sveltejs/kit");
   return {
-    isSecure: false,
+    // Same as src/lib/server/auth.ts: Secure follows the request's scheme (M13).
+    isSecureRequest: (url: URL) => url.protocol === "https:",
     requireUser: vi.fn(async (_event: unknown) => {
       if (!state.requireUserResult) {
         throw redirect(303, "/");
@@ -185,6 +186,8 @@ function createUser(overrides?: Partial<UserMapping>): UserMapping {
     ...overrides,
   };
 }
+
+const PORTAL_URL = new URL("http://localhost/");
 
 function createCookies() {
   const set = vi.fn();
@@ -234,6 +237,7 @@ describe("portal page server", () => {
         load({
           locals: { admin: { id: 1, username: "admin" } },
           cookies,
+          url: PORTAL_URL,
         } as unknown as Parameters<typeof load>[0]),
       ).rejects.toMatchObject({ status: 303, location: "/dashboard" });
     });
@@ -245,6 +249,7 @@ describe("portal page server", () => {
       const result = await load({
         locals: {},
         cookies,
+        url: PORTAL_URL,
       } as unknown as Parameters<typeof load>[0]);
 
       expect(result).toEqual({ authenticated: false });
@@ -258,6 +263,7 @@ describe("portal page server", () => {
       const result = await load({
         locals: { user: null, revokedUser },
         cookies,
+        url: PORTAL_URL,
       } as unknown as Parameters<typeof load>[0]);
 
       expect(result).toEqual({ authenticated: true, revoked: true });
@@ -273,6 +279,7 @@ describe("portal page server", () => {
       const result = await load({
         locals: { user },
         cookies,
+        url: PORTAL_URL,
       } as unknown as Parameters<typeof load>[0]);
 
       expect(result).toMatchObject({
@@ -295,6 +302,7 @@ describe("portal page server", () => {
       const result = await load({
         locals: { user },
         cookies,
+        url: PORTAL_URL,
       } as unknown as Parameters<typeof load>[0]);
 
       expect(result).toMatchObject({
@@ -303,7 +311,10 @@ describe("portal page server", () => {
         initialPassword: "TempPassword!23",
       });
       expect(mocks.openInitialPasswordFlash).toHaveBeenCalledWith("sealed-initial-password");
-      expect(deleteFn).toHaveBeenCalledWith("otpravkarr_initial_password", { path: "/" });
+      expect(deleteFn).toHaveBeenCalledWith("otpravkarr_initial_password", {
+        path: "/",
+        secure: false,
+      });
     });
 
     it("clears invalid one-time password flash without returning it", async () => {
@@ -315,6 +326,7 @@ describe("portal page server", () => {
       const result = await load({
         locals: { user },
         cookies,
+        url: PORTAL_URL,
       } as unknown as Parameters<typeof load>[0]);
 
       expect(result).toMatchObject({
@@ -322,7 +334,10 @@ describe("portal page server", () => {
         mode: "self_managed",
         initialPassword: null,
       });
-      expect(deleteFn).toHaveBeenCalledWith("otpravkarr_initial_password", { path: "/" });
+      expect(deleteFn).toHaveBeenCalledWith("otpravkarr_initial_password", {
+        path: "/",
+        secure: false,
+      });
     });
 
     it("returns error when automatic user has no credentials", async () => {
@@ -333,6 +348,7 @@ describe("portal page server", () => {
       const result = await load({
         locals: { user },
         cookies,
+        url: PORTAL_URL,
       } as unknown as Parameters<typeof load>[0]);
 
       expect(result).toMatchObject({
@@ -351,6 +367,7 @@ describe("portal page server", () => {
       const result = await load({
         locals: { user },
         cookies,
+        url: PORTAL_URL,
       } as unknown as Parameters<typeof load>[0]);
 
       expect(result).toMatchObject({
@@ -376,6 +393,7 @@ describe("portal page server", () => {
       await load({
         locals: { user },
         cookies,
+        url: PORTAL_URL,
       } as unknown as Parameters<typeof load>[0]);
 
       expect(mocks.getDispatcharrPublicUrl).toHaveBeenCalled();
@@ -393,6 +411,7 @@ describe("portal page server", () => {
       const result = await load({
         locals: { user },
         cookies,
+        url: PORTAL_URL,
       } as unknown as Parameters<typeof load>[0]);
 
       expect(result).toMatchObject({
@@ -411,6 +430,7 @@ describe("portal page server", () => {
       await load({
         locals: { user },
         cookies,
+        url: PORTAL_URL,
       } as unknown as Parameters<typeof load>[0]);
 
       expect(mocks.updateLastAccessed).toHaveBeenCalledWith(1);
@@ -467,6 +487,57 @@ describe("portal page server", () => {
           maxAge: 600,
         }),
       );
+    });
+
+    it.each([
+      ["https://otpravkarr.example.com", true],
+      ["http://192.168.1.10:3000", false],
+    ])("sets the OAuth cookie for %s with secure: %s (M13)", async (origin, secure) => {
+      const { actions } = await import("./+page.server");
+      const action = actions.signInWithPlex;
+      if (!action) throw new Error("signInWithPlex action is undefined");
+
+      const { cookies, set } = createCookies();
+      await expect(
+        Promise.resolve().then(() =>
+          action({
+            url: new URL(origin),
+            cookies,
+            getClientAddress: () => "127.0.0.1",
+          } as unknown as Parameters<typeof action>[0]),
+        ),
+      ).rejects.toMatchObject({ status: 303 });
+
+      expect(set).toHaveBeenCalledWith(
+        "otpravkarr_oauth_id",
+        "oauth-pin-id",
+        expect.objectContaining({ secure, httpOnly: true, sameSite: "lax", path: "/" }),
+      );
+    });
+
+    it("refuses to redirect anywhere but app.plex.tv", async () => {
+      mocks.initiateOAuth.mockResolvedValueOnce({
+        id: "oauth-pin-id",
+        uri: "https://plex.example.com/auth#?clientID=xxx&code=yyy",
+      });
+      const { actions } = await import("./+page.server");
+      const action = actions.signInWithPlex;
+      if (!action) throw new Error("signInWithPlex action is undefined");
+
+      const { cookies } = createCookies();
+      const outcome = await Promise.resolve()
+        .then(() =>
+          action({
+            url: new URL("http://localhost"),
+            cookies,
+            getClientAddress: () => "127.0.0.1",
+          } as unknown as Parameters<typeof action>[0]),
+        )
+        .catch((error: unknown) => error);
+
+      const { isRedirect } = await import("@sveltejs/kit");
+      expect(isRedirect(outcome)).toBe(false);
+      expect(String((outcome as Error).message)).toContain("plex.example.com");
     });
 
     it("returns 502 on PlexAuthError", async () => {

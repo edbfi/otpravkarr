@@ -109,26 +109,31 @@ vi.mock("$lib/scheduler/runner", () => ({
   },
 }));
 
-vi.mock("$lib/server/auth", () => ({
-  SESSION_COOKIE_NAME: "otpravkarr_session",
-  ADMIN_SESSION_TTL: 3600,
-  USER_SESSION_TTL: 14400,
-  ADMIN_COOKIE_OPTIONS: {
-    path: "/",
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
-    maxAge: 3600,
-  },
-  USER_COOKIE_OPTIONS: {
-    path: "/",
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax",
-    maxAge: 14400,
-  },
-  isSetupComplete: () => true,
-}));
+vi.mock("$lib/server/auth", () => {
+  // Same shape as src/lib/server/auth.ts: Secure follows the request's scheme (M13).
+  const secure = (url: URL) => url.protocol === "https:";
+  return {
+    SESSION_COOKIE_NAME: "otpravkarr_session",
+    ADMIN_SESSION_TTL: 3600,
+    USER_SESSION_TTL: 14400,
+    adminCookieOptions: (url: URL) => ({
+      path: "/",
+      httpOnly: true,
+      secure: secure(url),
+      sameSite: "strict",
+      maxAge: 3600,
+    }),
+    userCookieOptions: (url: URL) => ({
+      path: "/",
+      httpOnly: true,
+      secure: secure(url),
+      sameSite: "lax",
+      maxAge: 14400,
+    }),
+    sessionCookieDeleteOptions: (url: URL) => ({ path: "/", secure: secure(url) }),
+    isSetupComplete: () => true,
+  };
+});
 
 vi.mock("$lib/server/env", () => ({
   validateEnv: vi.fn(),
@@ -276,7 +281,7 @@ describe("hooks sessionResolver", () => {
 
   it("reconverges the admin cookie to SameSite=Strict on the next authenticated request (ISSUE-001)", async () => {
     // After the owner OAuth handoff issues a SameSite=Lax admin cookie, the very
-    // next authenticated request must re-issue it with ADMIN_COOKIE_OPTIONS
+    // next authenticated request must re-issue it with adminCookieOptions
     // (SameSite=Strict), so the Lax window lasts exactly one navigation.
     mockSession = { ...validAdminSession };
     mockAdmin = { ...validAdmin };
@@ -291,6 +296,23 @@ describe("hooks sessionResolver", () => {
       "otpravkarr_session",
       "sess-admin-1",
       expect.objectContaining({ sameSite: "strict" }),
+    );
+  });
+
+  it.each([
+    ["https://otpravkarr.example.com/dashboard", true],
+    ["http://192.168.1.10:3000/dashboard", false],
+  ])("re-issues the session cookie for %s with secure: %s (M13)", async (url, secure) => {
+    mockSession = { ...validAdminSession };
+    mockAdmin = { ...validAdmin };
+    const event = createMockEvent({ sessionId: "sess-admin-1", url });
+
+    await handle({ event, resolve: async () => new Response(null, { status: 200 }) });
+
+    expect(event.cookies.set).toHaveBeenCalledWith(
+      "otpravkarr_session",
+      "sess-admin-1",
+      expect.objectContaining({ secure }),
     );
   });
 
@@ -338,7 +360,10 @@ describe("hooks sessionResolver", () => {
     expect(event.locals.user).toBeNull();
     expect(event.locals.revokedUser).toBeNull();
     expect(mockDeleteSession).toHaveBeenCalledWith("sess-user-1");
-    expect(event.cookies.delete).toHaveBeenCalledWith("otpravkarr_session", { path: "/" });
+    expect(event.cookies.delete).toHaveBeenCalledWith("otpravkarr_session", {
+      path: "/",
+      secure: false,
+    });
     expect(mockRefreshSession).not.toHaveBeenCalled();
     expect(event.cookies.set).not.toHaveBeenCalled();
   });
@@ -403,9 +428,7 @@ describe("hooks security headers", () => {
     const response = await handle({ event, resolve: resolveSpy });
 
     expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({
-      message: "origin not allowed",
-    });
+    expect(await response.json()).toEqual({ message: "origin not allowed", status: 403 });
     expectStandardSecurityHeaders(response);
     expect(event.setHeaders).not.toHaveBeenCalled();
     expect(resolveSpy).not.toHaveBeenCalled();
@@ -428,9 +451,7 @@ describe("hooks security headers", () => {
     });
 
     expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({
-      message: "missing origin header",
-    });
+    expect(await response.json()).toEqual({ message: "missing origin header", status: 403 });
     expectStandardSecurityHeaders(response);
     expect(event.setHeaders).not.toHaveBeenCalled();
     expect(resolveSpy).not.toHaveBeenCalled();
@@ -452,9 +473,7 @@ describe("hooks security headers", () => {
     const response = await handle({ event, resolve: resolveSpy });
 
     expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({
-      message: "cross-site request blocked",
-    });
+    expect(await response.json()).toEqual({ message: "cross-site request blocked", status: 403 });
     expectStandardSecurityHeaders(response);
     expect(resolveSpy).not.toHaveBeenCalled();
   });
@@ -476,6 +495,34 @@ describe("hooks security headers", () => {
     expect(response.status).toBe(204);
     expectStandardSecurityHeaders(response);
     expect(resolveSpy).toHaveBeenCalledOnce();
+  });
+
+  // M15: ORIGIN is always allowed and the stored allowed_origins only add to it, so changing
+  // ORIGIN after setup (the list still holds the old address) cannot lock out every write.
+  it.each([
+    ["the new ORIGIN", "http://new.example:3000", 204],
+    ["an origin the stored list adds", "http://old.example:3000", 204],
+    ["any other origin", "http://evil.example", 403],
+  ])("checks writes against ORIGIN plus the stored list: %s", async (_case, origin, status) => {
+    mockSession = { ...validAdminSession };
+    mockAdmin = { ...validAdmin };
+    env.ORIGIN = "http://new.example:3000";
+    mockGetConfig.mockImplementation(async (key: string) =>
+      key === "allowed_origins" ? JSON.stringify(["http://old.example:3000"]) : null,
+    );
+    const event = createMockEvent({
+      sessionId: "sess-admin-1",
+      method: "POST",
+      origin,
+      secFetchSite: "same-origin",
+      url: "http://new.example:3000/api/internal/sync",
+    });
+    const resolveSpy = vi.fn(async () => new Response(null, { status: 204 }));
+
+    const response = await handle({ event, resolve: resolveSpy });
+
+    expect(response.status).toBe(status);
+    expect(resolveSpy).toHaveBeenCalledTimes(status === 204 ? 1 : 0);
   });
 
   it("returns 401 for unauthenticated requests to internal API endpoints", async () => {

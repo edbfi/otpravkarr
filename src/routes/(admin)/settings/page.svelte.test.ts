@@ -88,6 +88,7 @@ const defaultData = {
   },
   security: {
     allowedOrigins: "",
+    configuredOrigin: null,
   },
   audit: {
     retentionDays: "90",
@@ -197,6 +198,22 @@ describe("admin settings page", () => {
     expect(error).toBeTruthy();
     expect(syncInput.getAttribute("aria-invalid")).toBe("true");
     expect(syncInput.getAttribute("aria-describedby")).toBe(error.id);
+  });
+
+  it("says that ORIGIN is always allowed beside the listed origins", () => {
+    const { container, unmount } = render(SettingsPage, { props: { data: defaultData } });
+    expect(container.textContent).not.toContain("is always allowed");
+    unmount();
+
+    const withOrigin = {
+      ...defaultData,
+      security: { allowedOrigins: "", configuredOrigin: "http://192.168.1.10:3000" },
+    };
+    const { container: fronted } = render(SettingsPage, { props: { data: withOrigin } });
+    expect(fronted.textContent).toContain(
+      "The ORIGIN environment variable (http://192.168.1.10:3000) is always allowed as well",
+    );
+    expect(fronted.textContent).not.toContain("falls back to the ORIGIN");
   });
 
   it("keeps the Allowed Origins textarea populated after a successful save (ISSUE-008)", async () => {
