@@ -46,20 +46,30 @@ to create a replacement if that path is missing.
 
 ### Public origin (`ORIGIN`)
 
-SvelteKit 3 checks the origin of every form post. Without `ORIGIN`, the server
-assumes it sits behind an HTTPS proxy that preserves the `Host` header and
-takes the origin as `https://<Host>`; plain-HTTP form posts and writes are then
-rejected with 403, and startup logs a warning when neither `ORIGIN` nor
+**Set `ORIGIN` to the address people open in the browser**, for example
+`http://192.168.1.10:3000`. It is required when you serve plain HTTP. Leave it
+unset only behind an HTTPS reverse proxy that passes the original `Host`
+header: without `ORIGIN` the server takes the origin to be `https://<Host>`, so
+over plain HTTP signing in and saving changes fail (SvelteKit rejects the form
+posts with 403). Startup logs a warning when neither `ORIGIN` nor
 `PROTOCOL_HEADER` is set.
 
-**When you serve plain HTTP, set `ORIGIN` to the public URL** (for example
-`http://192.168.1.10:3000`). `scripts/serve.ts` then listens on `HOST`/`PORT`
-itself, runs the app on a private Unix socket and passes the configured origin
-to it on every request. `ORIGIN` must be a bare origin: no path, query,
-credentials or default port. The origin is never taken from the request's
-`Host` header. Leave `ORIGIN` unset only behind a TLS-terminating proxy that
-preserves `Host` (or set `PROTOCOL_HEADER` for a trusted proxy that sends it).
-Cookies are marked `Secure` only when the public origin is `https`.
+With `ORIGIN` set, `scripts/serve.ts` listens on `HOST`/`PORT` itself, runs the
+app on a private Unix socket and passes the configured origin to it on every
+request; the origin is never taken from the request's `Host` header.
+Surrounding spaces, letter case, a default port and a trailing `/` are
+normalised (`HTTP://Example.com:80/` means `http://example.com`). A path,
+query, fragment or credentials stop startup with an error that does not repeat
+the value. The app's own origin check always allows `ORIGIN`; the allowed
+origins saved in the setup wizard or in Settings add origins to it and never
+replace it, so changing `ORIGIN` later cannot lock you out. Cookies are marked
+`Secure` only when the public origin is `https`.
+
+Behind a reverse proxy, set `ADDRESS_HEADER=x-forwarded-for` (and `XFF_DEPTH`
+to the number of proxies, default 1) only when every request goes through the
+proxy: the app then rate-limits on the client address the proxy appended.
+Set `PROTOCOL_HEADER`/`HOST_HEADER` only without `ORIGIN`, for a trusted proxy
+that sends them; with `ORIGIN` the app supplies them itself.
 
 ## Environment Variables
 
@@ -69,12 +79,12 @@ Cookies are marked `Secure` only when the public origin is `https`.
 | `DATABASE_PATH` | No | `./data/otpravkarr.sqlite` | SQLite database file path |
 | `HOST` | No | `0.0.0.0` | Listen address |
 | `PORT` | No | `3000` | Listen port |
-| `ORIGIN` | No | unset | Public URL, for example `http://192.168.1.10:3000`. Required when serving plain HTTP; see [Public origin](#public-origin-origin). After setup, the app's own origin check uses the allowed origins saved by the setup wizard |
+| `ORIGIN` | Plain HTTP: **yes** | unset | The address people open in the browser, for example `http://192.168.1.10:3000`. Leave unset only behind an HTTPS reverse proxy that passes the original `Host`; see [Public origin](#public-origin-origin). Always allowed by the app's origin check; saved allowed origins add to it |
 | `IDLE_TIMEOUT` | No | `10` | Seconds before an idle client connection closes (0–255; `0` disables). Mapped to the adapter's `CONNECTION_IDLE_TIMEOUT`, which wins if both are set. Event streams are exempt |
-| `SHUTDOWN_TIMEOUT` | No | `30` | Seconds to drain in-flight requests on `SIGTERM`/`SIGINT` before closing them |
+| `SHUTDOWN_TIMEOUT` | No | `30` | Seconds to drain in-flight requests on `SIGTERM`/`SIGINT` before closing them; a second signal exits at once |
 | `BODY_SIZE_LIMIT` | No | `512K` | Maximum request body (`K`/`M`/`G` suffixes, `Infinity` to disable) |
-| `PROTOCOL_HEADER` | No | unset | Only behind a trusted proxy and without `ORIGIN`: header carrying `http`/`https` (for example `x-forwarded-proto`). With `ORIGIN` set the app supplies it itself |
-| `ADDRESS_HEADER`, `XFF_DEPTH` | No | unset, `1` | Only behind a trusted proxy that clients cannot bypass: header with the client address (for example `x-forwarded-for`, counted `XFF_DEPTH` hops from the right). Used for rate limiting; without it the TCP peer is used |
+| `ADDRESS_HEADER`, `XFF_DEPTH` | No | unset, `1` | Behind a reverse proxy, only when every request goes through it: `ADDRESS_HEADER=x-forwarded-for`, with `XFF_DEPTH` the number of proxies (the client address is read that many hops from the right). Used for rate limiting; without it the TCP peer is used |
+| `PROTOCOL_HEADER`, `HOST_HEADER` | No | unset | Only without `ORIGIN`, behind a trusted proxy: the headers carrying the public scheme (`http`/`https`, for example `x-forwarded-proto`) and host. With `ORIGIN` set the app supplies them itself |
 
 ## Docker Deployment
 
@@ -93,7 +103,7 @@ services:
     environment:
       - NODE_ENV=production
       - OTPRAVKARR_SECRET=<your-secret>
-      - ORIGIN=https://otpravkarr.example.com
+      - ORIGIN=http://192.168.1.10:3000 # the address people open in the browser
     restart: unless-stopped
 ```
 
@@ -110,10 +120,10 @@ Complete the wizard immediately; the bootstrap token is single-use.
 ## Production Checklist
 
 - [ ] Strong `OTPRAVKARR_SECRET` (>= 32 random bytes, base64-encoded)
-- [ ] Plain HTTP: `ORIGIN` set to the public URL. HTTPS proxy: `ORIGIN` set to the public URL, or unset if the proxy preserves `Host`
+- [ ] `ORIGIN` set to the address people open in the browser (required for plain HTTP); unset only behind an HTTPS reverse proxy that passes the original `Host`
 - [ ] Persistent volume mounted for `./data` (SQLite lives here)
-- [ ] Behind a reverse proxy: it appends `X-Forwarded-For`, clients cannot reach the app directly, and `ADDRESS_HEADER=x-forwarded-for` is set (rate limiting keys on the client address)
-- [ ] With `ORIGIN` set, do not set `PROTOCOL_HEADER`/`HOST_HEADER`; the app supplies them. Without `ORIGIN`, set `PROTOCOL_HEADER` only for a proxy you control
+- [ ] Behind a reverse proxy that every request goes through: `ADDRESS_HEADER=x-forwarded-for`, and `XFF_DEPTH` set to the number of proxies if more than one (rate limiting keys on the client address)
+- [ ] With `ORIGIN` set, do not set `PROTOCOL_HEADER`/`HOST_HEADER`; the app supplies them. Without `ORIGIN`, set them only for a proxy you control
 - [ ] Verify bootstrap token appears in container logs on first run
 - [ ] Complete setup wizard immediately after first start
 
