@@ -28,7 +28,14 @@ const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
 
 /** @param {Request} request */
 async function handle(request) {
-  const url = new URL(request.url);
+  // Like adapter-bun, answer 400 when the request URL does not parse (a Host header that is not
+  // a valid host).
+  let url;
+  try {
+    url = new URL(request.url);
+  } catch {
+    return new Response("Bad Request", { status: 400 });
+  }
   switch (url.pathname) {
     case "/echo":
       return Response.json({

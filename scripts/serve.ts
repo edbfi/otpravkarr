@@ -93,6 +93,17 @@ export function endQuietly(body: ReadableStream<Uint8Array>): ReadableStream<Uin
   });
 }
 
+/**
+ * The path and query of a request exactly as the client sent them, sliced from the URL string
+ * after any authority. `new URL(request.url)` would throw when the client's Host header is not a
+ * valid host (Bun then gives a bare path or an unparsable URL), and would re-serialise the path.
+ */
+export function forwardPath(requestUrl: string): string {
+  const scheme = requestUrl.indexOf("://");
+  const start = scheme === -1 ? 0 : requestUrl.indexOf("/", scheme + 3);
+  return start === -1 ? "/" : requestUrl.slice(start);
+}
+
 export type Plan =
   | { mode: "direct"; warning: string | null }
   | {
@@ -185,7 +196,6 @@ export async function serve(
       maxRequestBodySize: Number.MAX_SAFE_INTEGER,
       async fetch(request, server) {
         await ready;
-        const url = new URL(request.url);
         const headers = new Headers(request.headers);
         headers.set(PROTOCOL_HEADER, origin.protocol.slice(0, -1));
         headers.set(HOST_HEADER, origin.host);
@@ -193,7 +203,7 @@ export async function serve(
         else headers.delete(PEER_HEADER);
         let response: Response;
         try {
-          response = await fetch(`http://localhost${url.pathname}${url.search}`, {
+          response = await fetch(`http://localhost${forwardPath(request.url)}`, {
             method: request.method,
             headers,
             body: request.method === "GET" || request.method === "HEAD" ? null : request.body,

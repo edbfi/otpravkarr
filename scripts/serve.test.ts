@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { computeInteractiveTimeoutMs } from "../src/lib/dispatcharr/client";
 import {
   endQuietly,
+  forwardPath,
   HOST_HEADER,
   MISSING_ORIGIN_WARNING,
   ORIGIN_ERROR,
@@ -367,6 +368,21 @@ describe("prepare", () => {
   });
 });
 
+describe("forwardPath", () => {
+  it.each([
+    ["http://x/echo?x=1", "/echo?x=1"],
+    ["http://x/_app/immutable/a%20b.js?v=%2F&q", "/_app/immutable/a%20b.js?v=%2F&q"],
+    ["http://x//double", "//double"],
+    ["http://x/a/../b", "/a/../b"],
+    ["http://x", "/"],
+    // What Bun gives when the client's Host header is not a valid host.
+    ["/p%2Fq?x=%20", "/p%2Fq?x=%20"],
+    ["http://[::1/p?x", "/p?x"],
+  ])("forwards %s as %s", (url, path) => {
+    expect(forwardPath(url)).toBe(path);
+  });
+});
+
 describe("endQuietly", () => {
   it("passes chunks through and ends normally instead of erroring", async () => {
     let step = 0;
@@ -488,6 +504,22 @@ describe("serve.ts process", () => {
     const gzip = await call(server.port, "/gzip", { headers: { "accept-encoding": "gzip" } });
     expect(gzip.headers["content-encoding"]).toBe("gzip");
     expect(gzip.body.subarray(0, 2)).toEqual(Buffer.from([0x1f, 0x8b]));
+  });
+
+  // Bun gives a bare path or an unparsable URL for such a request; the front must still forward
+  // it and pass on the adapter's own answer (adapter-bun: 400), not fail itself with a 500.
+  it("forwards a request whose Host header is not a valid host", async () => {
+    const port = await freePort();
+    const server = await start({ ORIGIN: `http://127.0.0.1:${port}`, PORT: String(port) });
+    for (const host of ["exa mple.com", "[::1", "a:99999"]) {
+      const reply = await call(server.port, "/echo?x=%20", { headers: { host } });
+      expect(reply.status, host).toBe(400);
+      expect(reply.body.toString(), host).toBe("Bad Request");
+    }
+    const valid = await echo(server.port, { headers: { host: "evil.example" } });
+    expect(valid.search).toBe("?x=1");
+    expect(valid.headers[HOST_HEADER]).toBe(`127.0.0.1:${port}`);
+    expect(server.output()).not.toMatch(/Invalid URL|TypeError/);
   });
 
   it("propagates a client abort to the adapter", async () => {
