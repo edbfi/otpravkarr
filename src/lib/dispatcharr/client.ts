@@ -1,6 +1,7 @@
 import { type FetchOptions, ofetch } from "ofetch";
 import type { z } from "zod";
 
+import { env } from "$lib/server/private-env";
 import { isSafeHttpSecretUrl } from "$lib/server/validation";
 import type { DispatcharrResult } from "./types";
 
@@ -22,9 +23,10 @@ function formatResponseDataForLog(responseData: unknown): string {
 // that window is severed mid-flight (ERR_EMPTY_RESPONSE) before its graceful
 // degraded state can reach the browser. scripts/serve.ts maps IDLE_TIMEOUT to
 // CONNECTION_IDLE_TIMEOUT and keeps IDLE_TIMEOUT equal to the effective window
-// (an explicit CONNECTION_IDLE_TIMEOUT wins), so this reads IDLE_TIMEOUT.
+// (an explicit CONNECTION_IDLE_TIMEOUT wins) before the app loads, so this reads
+// IDLE_TIMEOUT, declared in src/env.ts.
 function parseIdleTimeoutSeconds(): number {
-  const raw = Number.parseInt(process.env.IDLE_TIMEOUT ?? "", 10);
+  const raw = Number.parseInt(env.IDLE_TIMEOUT ?? "", 10);
   return Number.isFinite(raw) && raw > 0 ? raw : 10;
 }
 

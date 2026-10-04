@@ -10,6 +10,8 @@ const mockOfetch = vi.fn();
 vi.mock("ofetch", () => ({
   ofetch: (...args: unknown[]) => mockOfetch(...args),
 }));
+// The client reads IDLE_TIMEOUT through SvelteKit's declared private env.
+vi.mock("$lib/server/private-env", () => ({ env: {} }));
 
 // Import after mocking
 const { DispatcharrClient } = await import("../client");

@@ -8,6 +8,7 @@ const optional = { schema: (value: string | undefined) => value };
 export const variables = defineEnvVars({
   DATABASE_PATH: optional,
   HOST: optional,
+  IDLE_TIMEOUT: optional,
   NODE_ENV: optional,
   ORIGIN: optional,
   OTPRAVKARR_SECRET: optional,

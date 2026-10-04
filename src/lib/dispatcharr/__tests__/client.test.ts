@@ -11,6 +11,10 @@ vi.mock("ofetch", () => ({
   ofetch: (...args: unknown[]) => mockOfetch(...args),
 }));
 
+// The client reads IDLE_TIMEOUT through SvelteKit's declared private env (src/env.ts).
+const privateEnv = vi.hoisted(() => ({ env: {} as Record<string, string | undefined> }));
+vi.mock("$lib/server/private-env", () => privateEnv);
+
 // Import after mocking
 const {
   DispatcharrClient,
@@ -538,12 +542,22 @@ describe("client factories", () => {
 describe("interactive timeout invariant", () => {
   it("the default INTERACTIVE_TIMEOUT_MS is strictly below the adapter idle window", () => {
     expect(INTERACTIVE_TIMEOUT_MS).toBeLessThan(IDLE_TIMEOUT_MS);
-    // The constants are baked from process.env.IDLE_TIMEOUT at module-load time,
-    // so only assert the exact default values when the env is untuned.
-    if (process.env.IDLE_TIMEOUT === undefined) {
-      // Default IDLE_TIMEOUT is 10s → interactive caps at 6s.
-      expect(IDLE_TIMEOUT_MS).toBe(10_000);
-      expect(INTERACTIVE_TIMEOUT_MS).toBe(6_000);
+    // Default IDLE_TIMEOUT is 10s → interactive caps at 6s.
+    expect(IDLE_TIMEOUT_MS).toBe(10_000);
+    expect(INTERACTIVE_TIMEOUT_MS).toBe(6_000);
+  });
+
+  it("reads IDLE_TIMEOUT from the declared env, not from process.env", async () => {
+    vi.stubEnv("IDLE_TIMEOUT", "5");
+    privateEnv.env.IDLE_TIMEOUT = "20";
+    try {
+      vi.resetModules();
+      const tuned = await import("../client");
+      expect(tuned.IDLE_TIMEOUT_MS).toBe(20_000);
+      expect(tuned.INTERACTIVE_TIMEOUT_MS).toBe(6_000);
+    } finally {
+      delete privateEnv.env.IDLE_TIMEOUT;
+      vi.unstubAllEnvs();
     }
   });
 

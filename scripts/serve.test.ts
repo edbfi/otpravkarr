@@ -8,7 +8,7 @@ import { request as httpRequest, type IncomingMessage } from "node:http";
 import { connect, createServer, type Server } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { computeInteractiveTimeoutMs } from "../src/lib/dispatcharr/client";
 import {
   endQuietly,
@@ -22,6 +22,9 @@ import {
   prepare,
   shutdownTimeoutSeconds,
 } from "./serve";
+
+// The Dispatcharr client reads IDLE_TIMEOUT through SvelteKit's declared private env.
+vi.mock("$lib/server/private-env", () => ({ env: {} }));
 
 const SERVE = resolve("scripts/serve.ts");
 const STANDIN = resolve("scripts/fixtures/standin-adapter.js");
