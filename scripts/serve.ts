@@ -56,6 +56,32 @@ export function shutdownTimeoutSeconds(environment: Environment): number {
   return value !== undefined && /^\d+$/.test(value) ? Number(value) : 30;
 }
 
+/**
+ * Wraps an event-stream body so that it ends normally when the adapter breaks it off. At the
+ * end of its shutdown drain the adapter force-closes the streams still open; passed through as
+ * is, that failure reaches the client as a broken connection (a browser reports a reset), while
+ * a normal end lets EventSource reconnect as after any end of stream. A client that goes away
+ * still cancels the upstream. Only event streams get this: any other body must still fail
+ * visibly, so a truncated download is never mistaken for a complete one.
+ */
+export function endQuietly(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+  const reader = body.getReader();
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const { done, value } = await reader.read();
+        if (done) controller.close();
+        else controller.enqueue(value);
+      } catch {
+        controller.close();
+      }
+    },
+    cancel(reason) {
+      return reader.cancel(reason);
+    },
+  });
+}
+
 export type Plan =
   | { mode: "direct"; warning: string | null }
   | {
@@ -163,8 +189,18 @@ export async function serve(
         } catch {
           return new Response("Service Unavailable", { status: 503 });
         }
-        if (response.headers.get("content-type")?.startsWith("text/event-stream")) {
+        // The public listener enforces the client idle timeout, so event streams are exempted
+        // here, and they end normally if the adapter breaks them off (endQuietly).
+        if (
+          response.headers.get("content-type")?.startsWith("text/event-stream") &&
+          response.body
+        ) {
           server.timeout(request, 0);
+          return new Response(endQuietly(response.body), {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
+          });
         }
         return response;
       },

@@ -11,6 +11,7 @@ import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { computeInteractiveTimeoutMs } from "../src/lib/dispatcharr/client";
 import {
+  endQuietly,
   HOST_HEADER,
   MISSING_ORIGIN_WARNING,
   PEER_HEADER,
@@ -126,6 +127,28 @@ async function echo(port: number, options: Parameters<typeof call>[2] = {}) {
     headers: Record<string, string>;
     env: Record<string, string | null>;
   };
+}
+
+type Streamed = { body: string; complete: boolean; error?: unknown };
+
+/** Reads a streamed reply to its end, recording whether it ended normally or broke off. */
+function stream(port: number, path: string): Promise<Streamed> {
+  return new Promise((done) => {
+    const req = httpRequest({ host: "127.0.0.1", port, path }, (res) => {
+      let body = "";
+      let error: unknown;
+      res.setEncoding("utf8");
+      res.on("data", (chunk: string) => {
+        body += chunk;
+      });
+      res.on("error", (failure) => {
+        error = failure;
+      });
+      res.on("close", () => done({ body, complete: res.complete, error }));
+    });
+    req.on("error", (error) => done({ body: "", complete: false, error }));
+    req.end();
+  });
 }
 
 const socketDirectories = (temp: string) =>
@@ -290,6 +313,36 @@ describe("prepare", () => {
   it("reads SHUTDOWN_TIMEOUT as the adapter does", () => {
     expect(shutdownTimeoutSeconds({})).toBe(30);
     expect(shutdownTimeoutSeconds({ SHUTDOWN_TIMEOUT: "5" })).toBe(5);
+  });
+});
+
+describe("endQuietly", () => {
+  it("passes chunks through and ends normally instead of erroring", async () => {
+    let step = 0;
+    const broken = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        step++;
+        if (step === 1) controller.enqueue(new TextEncoder().encode("data: one\n\n"));
+        else controller.error(new Error("socket closed"));
+      },
+    });
+    expect(await new Response(endQuietly(broken)).text()).toBe("data: one\n\n");
+  });
+
+  it("cancels the upstream when the client goes away", async () => {
+    let cancelled = false;
+    const upstream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.enqueue(new TextEncoder().encode("."));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const reader = endQuietly(upstream).getReader();
+    await reader.read();
+    await reader.cancel();
+    expect(cancelled).toBe(true);
   });
 });
 
@@ -496,6 +549,44 @@ describe("serve.ts process", () => {
     expect(await download).toBeLessThan(8 * 1024 * 1024);
     expect(socketDirectories(server.temp)).toEqual([]);
   }, 30_000);
+
+  // The adapter force-closes the streams still open at the end of its shutdown drain. A browser
+  // sees that failure, passed on as is, as a connection reset; the front ends an event stream
+  // normally instead, and lets every other body fail so a truncated download stays visible.
+  it("ends an event stream normally when the adapter breaks it off, and fails other bodies", async () => {
+    const ssePort = await freePort();
+    const sse = await start({ ORIGIN: `http://127.0.0.1:${ssePort}`, PORT: String(ssePort) });
+    const ended = await stream(sse.port, "/break?type=text/event-stream");
+    expect(ended).toEqual({ body: "data: one\n\n", complete: true, error: undefined });
+    expect(sse.output()).not.toContain("ECONNRESET");
+
+    const plainPort = await freePort();
+    const plain = await start({ ORIGIN: `http://127.0.0.1:${plainPort}`, PORT: String(plainPort) });
+    const broken = await stream(plain.port, "/break?type=text/plain");
+    // Passed on as a failure: the client sees the body break off (a reset), never a normal end.
+    expect(broken.complete).toBe(false);
+    expect(broken.error).toBeDefined();
+  }, 20_000);
+
+  it("on SIGTERM ends a held event stream normally at the drain deadline", async () => {
+    const port = await freePort();
+    const server = await start({
+      ORIGIN: `http://127.0.0.1:${port}`,
+      PORT: String(port),
+      SHUTDOWN_TIMEOUT: "2",
+    });
+    const held = stream(server.port, "/sse-hold");
+    await new Promise((done) => setTimeout(done, 300));
+    const signalled = Date.now();
+    server.child.kill("SIGTERM");
+
+    expect(await held).toEqual({ body: "data: one\n\n", complete: true, error: undefined });
+    expect(await server.exited).toEqual({ code: 0, signal: null });
+    const elapsed = (Date.now() - signalled) / 1000;
+    expect(elapsed).toBeGreaterThanOrEqual(1.5);
+    expect(elapsed).toBeLessThan(5);
+    expect(socketDirectories(server.temp)).toEqual([]);
+  }, 20_000);
 
   it("shuts down cleanly when SIGTERM arrives while the adapter is still loading", async () => {
     const port = await freePort();

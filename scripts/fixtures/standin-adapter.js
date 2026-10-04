@@ -55,6 +55,27 @@ async function handle(request) {
       });
       return new Response(stream, { headers: { "content-type": "text/event-stream" } });
     }
+    case "/sse-hold": {
+      // One event, then open until the server closes it (at the end of its shutdown drain).
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode("data: one\n\n"));
+        },
+      });
+      return new Response(stream, { headers: { "content-type": "text/event-stream" } });
+    }
+    case "/break": {
+      // One chunk, then the server is torn down mid-body, as the adapter's force-close does.
+      const stream = new ReadableStream({
+        async start(controller) {
+          controller.enqueue(new TextEncoder().encode("data: one\n\n"));
+          await sleep(300);
+          server.stop(true);
+        },
+      });
+      const type = url.searchParams.get("type") || "text/event-stream";
+      return new Response(stream, { headers: { "content-type": type } });
+    }
     case "/hold": {
       // Streams until the client goes away, then records the abort.
       request.signal.addEventListener("abort", () => {
