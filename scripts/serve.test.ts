@@ -14,6 +14,7 @@ import {
   endQuietly,
   HOST_HEADER,
   MISSING_ORIGIN_WARNING,
+  ORIGIN_ERROR,
   PEER_HEADER,
   PROTOCOL_HEADER,
   parseOrigin,
@@ -155,24 +156,42 @@ const socketDirectories = (temp: string) =>
   readdirSync(temp).filter((name) => name.startsWith("otpravkarr-"));
 
 describe("parseOrigin", () => {
-  it.each(["http://192.168.1.10:3000", "https://otpravkarr.example.com", "http://localhost:4173/"])(
-    "accepts %s",
-    (value) => {
-      expect(parseOrigin(value).origin).toBe(value.replace(/\/$/, ""));
-    },
-  );
+  it.each([
+    ["a LAN address with a port", "http://192.168.1.10:3000", "http://192.168.1.10:3000"],
+    ["an https host", "https://otpravkarr.example.com", "https://otpravkarr.example.com"],
+    ["a trailing slash", "http://localhost:4173/", "http://localhost:4173"],
+    [
+      "whitespace, uppercase and a default port",
+      "  HTTP://Otpravkarr.Example:80/ ",
+      "http://otpravkarr.example",
+    ],
+    ["an explicit https default port", "https://example.com:443", "https://example.com"],
+    ["an IDN host", "http://bücher.example:8080", "http://xn--bcher-kva.example:8080"],
+    ["an IPv6 host", "http://[::1]:3000", "http://[::1]:3000"],
+  ])("accepts %s and returns the canonical origin", (_reason, value, canonical) => {
+    expect(parseOrigin(value)).toBe(canonical);
+  });
+
+  it.each(["", "   "])("treats %j as unset", (value) => {
+    expect(parseOrigin(value)).toBeUndefined();
+  });
 
   it.each([
     ["a path", "http://example.com/app"],
     ["a query", "http://example.com/?a=1"],
+    ["an empty query", "http://example.com?"],
     ["a fragment", "http://example.com/#top"],
+    ["an empty fragment", "http://example.com#"],
     ["credentials", "http://user:pass@example.com"],
-    ["an explicit default port", "https://example.com:443"],
-    ["an uppercase host", "http://Example.com"],
+    ["a user name only", "http://user@example.com"],
     ["a non-http(s) scheme", "ftp://example.com"],
+    ["no host", "http://"],
     ["garbage", "not a url"],
-  ])("rejects %s with a clear startup error", (_reason, value) => {
-    expect(() => parseOrigin(value)).toThrow(/^ORIGIN must be a bare http\(s\) origin/);
+  ])("rejects %s with the shared startup error", (_reason, value) => {
+    expect(() => parseOrigin(value)).toThrow(
+      "ORIGIN must be a bare http(s) origin such as http://192.168.1.10:3000 (no path, query, fragment or credentials).",
+    );
+    expect(() => parseOrigin(value)).toThrow(new Error(ORIGIN_ERROR));
   });
 
   it("never echoes credentials, even when the URL parser rejects the value", () => {
@@ -224,6 +243,30 @@ describe("prepare", () => {
       mode: "direct",
       warning: null,
     });
+  });
+
+  it("treats a blank ORIGIN as unset, for the app too", () => {
+    const environment: Record<string, string | undefined> = { ORIGIN: "  " };
+    expect(prepare(environment)).toEqual({ mode: "direct", warning: MISSING_ORIGIN_WARNING });
+    expect(environment).not.toHaveProperty("ORIGIN");
+  });
+
+  it("exports the canonical ORIGIN, so the app compares the string the front sends", () => {
+    const environment: Record<string, string | undefined> = {
+      ORIGIN: " HTTP://LAN.Example:80/ ",
+    };
+    const plan = prepare(environment);
+    if (plan.mode !== "front") throw new Error("expected the front");
+    cleanups.push(() => rmSync(plan.directory, { recursive: true, force: true }));
+    expect(environment.ORIGIN).toBe("http://lan.example");
+    expect(plan.origin.origin).toBe("http://lan.example");
+  });
+
+  it("rejects a malformed ORIGIN before creating a socket directory", () => {
+    const before = readdirSync(tmpdir()).filter((entry) => entry.startsWith("otpravkarr-"));
+    expect(() => prepare({ ORIGIN: "http://example.com/app" })).toThrow(new Error(ORIGIN_ERROR));
+    const after = readdirSync(tmpdir()).filter((entry) => entry.startsWith("otpravkarr-"));
+    expect(after).toEqual(before);
   });
 
   it("with ORIGIN prepares a private socket and the front's headers", () => {
@@ -393,6 +436,17 @@ describe("serve.ts process", () => {
     expect(seen.headers[PEER_HEADER]).toBe("127.0.0.1");
     // Forwarded headers pass through untouched; the adapter only trusts the ones it is told to.
     expect(seen.headers["x-forwarded-for"]).toBe("203.0.113.9");
+  });
+
+  // The app reads ORIGIN for its own allowlist and the bootstrap banner (`${ORIGIN}/setup`), so
+  // a trailing slash in the operator's value must not reach it.
+  it("gives the adapter the canonical ORIGIN before it loads", async () => {
+    const port = await freePort();
+    const server = await start({ ORIGIN: `http://127.0.0.1:${port}/`, PORT: String(port) });
+    const seen = await echo(server.port);
+    expect(seen.env.ORIGIN).toBe(`http://127.0.0.1:${port}`);
+    expect(`${seen.env.ORIGIN}/setup`).toBe(`http://127.0.0.1:${port}/setup`);
+    expect(server.output()).toContain(`for http://127.0.0.1:${port}\n`);
   });
 
   it("passes an operator ADDRESS_HEADER through and drops a client-supplied peer header", async () => {
@@ -660,8 +714,8 @@ describe("serve.ts process", () => {
       { waitFor: "exit" },
     );
     const { code } = await server.exited;
-    expect(code).not.toBe(0);
-    expect(server.output()).toContain("ORIGIN must be a bare http(s) origin");
+    expect(code).toBe(1);
+    expect(server.output().trim()).toBe(ORIGIN_ERROR);
     expect(server.output()).not.toContain(secret);
     expect(server.output()).not.toContain("standin listening");
   });

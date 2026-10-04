@@ -19,28 +19,39 @@ export const MISSING_ORIGIN_WARNING =
   "(for example http://192.168.1.10:3000) when serving plain HTTP; leave it unset only behind " +
   "an HTTPS proxy that preserves Host.";
 
+export const ORIGIN_ERROR =
+  "ORIGIN must be a bare http(s) origin such as http://192.168.1.10:3000 (no path, query, " +
+  "fragment or credentials).";
+
 /**
- * Parses ORIGIN, which must be a bare http(s) origin. The error never echoes the value, which
- * may carry credentials, and never wraps the URL parser's error (it keeps the raw input).
+ * Parses ORIGIN as every edbfi front does: surrounding whitespace is ignored, so is an uppercase
+ * scheme or host, a default port and one trailing `/`; a path, query, fragment, credentials or a
+ * non-http(s) scheme is a startup error. Returns the canonical origin (`url.origin`: lowercase
+ * scheme and host, no default port, IDN as punycode), or undefined when the value is empty. The
+ * error never echoes the value, which may carry credentials, and never wraps the URL parser's
+ * error (it keeps the raw input).
  */
-export function parseOrigin(value: string): URL {
+export function parseOrigin(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
   let url: URL | undefined;
   try {
-    url = new URL(value);
+    url = new URL(trimmed);
   } catch {
     // fall through to the redacted error below
   }
-  if (!url) throw new Error("ORIGIN must be a bare http(s) origin: it is not a valid URL.");
-  if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new Error("ORIGIN must be a bare http(s) origin: the scheme must be http or https.");
+  if (
+    !url ||
+    (url.protocol !== "http:" && url.protocol !== "https:") ||
+    url.username ||
+    url.password ||
+    url.pathname !== "/" ||
+    // An empty query or fragment leaves no trace on the parsed URL, so check the value itself.
+    /[?#]/.test(trimmed)
+  ) {
+    throw new Error(ORIGIN_ERROR);
   }
-  if (url.origin !== value.replace(/\/$/, "")) {
-    throw new Error(
-      "ORIGIN must be a bare http(s) origin: remove any credentials, path, query, fragment or " +
-        "default port, and write the host in lowercase.",
-    );
-  }
-  return url;
+  return url.origin;
 }
 
 function integer(name: string, value: string, max: number): number {
@@ -108,13 +119,18 @@ export function prepare(environment: Environment): Plan {
     environment.IDLE_TIMEOUT = environment.CONNECTION_IDLE_TIMEOUT;
   }
 
-  if (!environment.ORIGIN) {
-    // The origin is never derived from the request's Host header here (DNS rebinding).
+  const canonical = parseOrigin(environment.ORIGIN ?? "");
+  if (canonical === undefined) {
+    // Empty means unset, for the app too. The origin is never derived from the request's Host
+    // header here (DNS rebinding).
+    delete environment.ORIGIN;
     const warning = environment.PROTOCOL_HEADER ? null : MISSING_ORIGIN_WARNING;
     return { mode: "direct", warning };
   }
-
-  const origin = parseOrigin(environment.ORIGIN);
+  // The app (CSRF allowlist, bootstrap banner) reads ORIGIN too: give it the same canonical
+  // string the front sends, before the adapter loads.
+  environment.ORIGIN = canonical;
+  const origin = new URL(canonical);
   const hostname = environment.HOST || "0.0.0.0";
   const port = integer("PORT", environment.PORT || "3000", 65535);
   const idle = environment.CONNECTION_IDLE_TIMEOUT;
@@ -260,4 +276,15 @@ export async function serve(
   console.log(`Listening on ${listener.url} for ${origin.origin}`);
 }
 
-if (import.meta.main) await serve();
+if (import.meta.main) {
+  try {
+    await serve();
+  } catch (error) {
+    // A malformed ORIGIN is reported by this exact sentence alone, before anything is bound.
+    if (error instanceof Error && error.message === ORIGIN_ERROR) {
+      console.error(ORIGIN_ERROR);
+      process.exit(1);
+    }
+    throw error;
+  }
+}

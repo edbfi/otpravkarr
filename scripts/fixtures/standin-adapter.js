@@ -20,6 +20,7 @@ const seen = Object.fromEntries(
     "PORT_HEADER",
     "ADDRESS_HEADER",
     "CONNECTION_IDLE_TIMEOUT",
+    "ORIGIN",
   ].map((name) => [name, env[name] ?? null]),
 );
 const big = new Uint8Array(Number(env.STANDIN_BIG_BYTES || 8 * 1024 * 1024)).fill(97);
