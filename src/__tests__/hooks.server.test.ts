@@ -497,6 +497,34 @@ describe("hooks security headers", () => {
     expect(resolveSpy).toHaveBeenCalledOnce();
   });
 
+  // M15: ORIGIN is always allowed and the stored allowed_origins only add to it, so changing
+  // ORIGIN after setup (the list still holds the old address) cannot lock out every write.
+  it.each([
+    ["the new ORIGIN", "http://new.example:3000", 204],
+    ["an origin the stored list adds", "http://old.example:3000", 204],
+    ["any other origin", "http://evil.example", 403],
+  ])("checks writes against ORIGIN plus the stored list: %s", async (_case, origin, status) => {
+    mockSession = { ...validAdminSession };
+    mockAdmin = { ...validAdmin };
+    env.ORIGIN = "http://new.example:3000";
+    mockGetConfig.mockImplementation(async (key: string) =>
+      key === "allowed_origins" ? JSON.stringify(["http://old.example:3000"]) : null,
+    );
+    const event = createMockEvent({
+      sessionId: "sess-admin-1",
+      method: "POST",
+      origin,
+      secFetchSite: "same-origin",
+      url: "http://new.example:3000/api/internal/sync",
+    });
+    const resolveSpy = vi.fn(async () => new Response(null, { status: 204 }));
+
+    const response = await handle({ event, resolve: resolveSpy });
+
+    expect(response.status).toBe(status);
+    expect(resolveSpy).toHaveBeenCalledTimes(status === 204 ? 1 : 0);
+  });
+
   it("returns 401 for unauthenticated requests to internal API endpoints", async () => {
     const event = createMockEvent({
       method: "POST",

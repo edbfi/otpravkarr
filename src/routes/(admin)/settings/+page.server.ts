@@ -12,7 +12,12 @@ import { PlexAuthError, PlexConnectionError } from "$lib/plex/types";
 import { createSyncJob } from "$lib/scheduler/jobs/sync";
 import { scheduler } from "$lib/scheduler/runner";
 import { requireAdmin } from "$lib/server/auth";
-import { parseAndNormalizeOrigins } from "$lib/server/origins";
+import {
+  canonicalOrigin,
+  effectiveAllowedOrigins,
+  parseAndNormalizeOrigins,
+} from "$lib/server/origins";
+import { env } from "$lib/server/private-env";
 import {
   ALLOW_USER_SELF_SELECT_KEY,
   DEFAULT_SELECTABLE_GROUPS_KEY,
@@ -147,6 +152,8 @@ export const load: PageServerLoad = async (event) => {
     },
     security: {
       allowedOrigins: originsText,
+      // ORIGIN is always allowed in addition to the list; the page says so.
+      configuredOrigin: canonicalOrigin(env.ORIGIN),
     },
     audit: {
       retentionDays: auditRetentionDays ?? "90",
@@ -539,14 +546,16 @@ export const actions: Actions = {
       return fail(400, { error: "At least one origin is required" });
     }
 
-    // The lockout guard must match what CSRF validation actually checks:
-    // the request Origin header (not url.origin, which may differ behind a reverse proxy).
-    // Fall back to event.url.origin when Origin header is absent (e.g. same-origin or
-    // non-browser clients) so the guard is never silently skipped.
+    // The lockout guard must match what CSRF validation actually checks: the request Origin
+    // header (not url.origin, which may differ behind a reverse proxy) against the effective
+    // allowlist, which always includes ORIGIN when it is set. Fall back to event.url.origin when
+    // the Origin header is absent (e.g. same-origin or non-browser clients) so the guard is
+    // never silently skipped.
     const requestOrigin = request.headers.get("Origin") ?? event.url.origin;
-    const normalizedRequestOrigin = requestOrigin.replace(/\/+$/, "").toLowerCase();
-    const normalizedAllowed = origins.map((o) => o.replace(/\/+$/, "").toLowerCase());
-    if (!normalizedAllowed.includes(normalizedRequestOrigin)) {
+    const allowed = effectiveAllowedOrigins(origins, env.ORIGIN, event.url.origin).map(
+      canonicalOrigin,
+    );
+    if (!allowed.includes(canonicalOrigin(requestOrigin) ?? requestOrigin)) {
       return fail(400, {
         error: `Current origin (${requestOrigin}) must be included in the allowed origins list to avoid locking yourself out.`,
       });

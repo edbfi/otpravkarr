@@ -26,6 +26,7 @@ import { validateFetchMetadata, validateOrigin } from "$lib/server/csrf";
 import { validateEnv } from "$lib/server/env";
 import { handleError as serverErrorHandler } from "$lib/server/error-handler";
 import { createRequestLogger } from "$lib/server/logging";
+import { effectiveAllowedOrigins } from "$lib/server/origins";
 import { env } from "$lib/server/private-env";
 import { markServerStarted } from "$lib/server/uptime";
 
@@ -291,15 +292,12 @@ const csrfValidator: Handle = async ({ event, resolve }) => {
       }
     }
     try {
-      if (parsedOrigins.length === 0) {
-        // Fail closed: prefer ORIGIN env var (set by deployer) over request URL
-        // to avoid mismatches behind reverse proxies where the internal URL
-        // (e.g. http://127.0.0.1:3000) differs from the public origin.
-        const fallbackOrigin = env.ORIGIN || new URL(event.request.url).origin;
-        validateOrigin(event.request, [fallbackOrigin]);
-      } else {
-        validateOrigin(event.request, parsedOrigins);
-      }
+      // ORIGIN (set by the deployer) is always allowed; the stored list only adds origins.
+      // Without either, fail closed on the request's own origin.
+      validateOrigin(
+        event.request,
+        effectiveAllowedOrigins(parsedOrigins, env.ORIGIN, new URL(event.request.url).origin),
+      );
     } catch (error) {
       const forbiddenResponse = toForbiddenResponse(error);
       if (forbiddenResponse) {

@@ -3,6 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
+  env: {} as Record<string, string | undefined>,
   configValues: new Map<string, string>(),
   bundles: new Map<
     string,
@@ -103,6 +104,8 @@ const mocks = vi.hoisted(() => {
   };
 });
 
+vi.mock("$lib/server/private-env", () => ({ env: state.env }));
+
 vi.mock("$lib/server/auth", () => ({
   requireAdmin: mocks.requireAdmin,
 }));
@@ -162,6 +165,7 @@ vi.mock("$lib/scheduler/runner", () => ({
 }));
 
 function resetStateAndMocks() {
+  for (const name of Object.keys(state.env)) delete state.env[name];
   state.configValues.clear();
   state.bundles.clear();
   mocks.requireAdmin.mockClear();
@@ -373,6 +377,28 @@ describe("admin settings actions", () => {
     });
     expect(mocks.setConfig).not.toHaveBeenCalled();
     expect(mocks.invalidateConfigCache).not.toHaveBeenCalled();
+  });
+
+  // M15: ORIGIN is always allowed, so a list without it cannot lock out the admin who uses it.
+  it("accepts a list without the current origin when that origin is ORIGIN", async () => {
+    const { actions } = await import("./+page.server");
+    const updateSecurity = actions.updateSecurity;
+    if (!updateSecurity) throw new Error("updateSecurity action is undefined");
+    state.env.ORIGIN = "http://localhost";
+
+    const body = new FormData();
+    body.set("allowed_origins", "https://other.example");
+
+    const result = await updateSecurity(
+      createActionEvent(body, "http://localhost") as unknown as Parameters<
+        typeof updateSecurity
+      >[0],
+    );
+
+    expect(result).toEqual({ success: true, message: "Security settings saved." });
+    expect(state.configValues.get("allowed_origins")).toBe(
+      JSON.stringify(["https://other.example"]),
+    );
   });
 
   it("falls back to url.origin for lockout guard when Origin header is missing", async () => {

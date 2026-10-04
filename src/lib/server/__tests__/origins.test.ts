@@ -1,7 +1,11 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
-import { selectActivePublicOrigin } from "$lib/server/origins";
+import {
+  canonicalOrigin,
+  effectiveAllowedOrigins,
+  selectActivePublicOrigin,
+} from "$lib/server/origins";
 
 describe("selectActivePublicOrigin", () => {
   it("uses configured non-loopback origin when present", () => {
@@ -36,5 +40,35 @@ describe("selectActivePublicOrigin", () => {
     expect(selectActivePublicOrigin("http://localhost:3000", "http://127.evil.com:3000")).toBe(
       "http://localhost:3000",
     );
+  });
+});
+
+describe("effectiveAllowedOrigins", () => {
+  it("always includes ORIGIN, in canonical form, before the stored origins", () => {
+    expect(
+      effectiveAllowedOrigins(["http://old.example:3000"], "HTTP://New.Example:80/", "x"),
+    ).toEqual(["http://new.example", "http://old.example:3000"]);
+  });
+
+  it("allows ORIGIN alone when nothing is stored", () => {
+    expect(effectiveAllowedOrigins([], "http://192.168.1.10:3000", "https://ignored")).toEqual([
+      "http://192.168.1.10:3000",
+    ]);
+  });
+
+  it("without ORIGIN uses the stored origins, or the request origin when none are stored", () => {
+    expect(effectiveAllowedOrigins(["https://a.example"], undefined, "https://b.example")).toEqual([
+      "https://a.example",
+    ]);
+    expect(effectiveAllowedOrigins([], "", "https://b.example")).toEqual(["https://b.example"]);
+  });
+});
+
+describe("canonicalOrigin", () => {
+  it("lowercases, drops a default port and a trailing slash, and rejects non-origins", () => {
+    expect(canonicalOrigin(" HTTPS://Example.COM:443/ ")).toBe("https://example.com");
+    expect(canonicalOrigin("null")).toBeNull();
+    expect(canonicalOrigin("not a url")).toBeNull();
+    expect(canonicalOrigin(undefined)).toBeNull();
   });
 });

@@ -26,6 +26,7 @@ interface Props {
     };
     security: {
       allowedOrigins: string;
+      configuredOrigin: string | null;
     };
     audit: {
       retentionDays: string;
@@ -336,7 +337,7 @@ function makeEnhance(
   <Card.Root>
     <Card.Header>
       <Card.Title class="text-base">Security</Card.Title>
-      <Card.Description>Configure CORS and origin validation.</Card.Description>
+      <Card.Description>Choose which origins may submit forms and other changes.</Card.Description>
     </Card.Header>
     <form
       method="POST"
@@ -353,7 +354,12 @@ function makeEnhance(
             class="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-3 outline-none"
             placeholder="https://example.com"
           >{data.security.allowedOrigins}</textarea>
-          <p class="text-xs text-muted-foreground">One origin per line (e.g. https://example.com). If empty, falls back to the ORIGIN environment variable.</p>
+          <p class="text-xs text-muted-foreground">
+            One origin per line (e.g. https://example.com). Changes from any other origin are rejected.
+            {#if data.security.configuredOrigin}
+              The ORIGIN environment variable (<code class="font-mono">{data.security.configuredOrigin}</code>) is always allowed as well, so this list can only add origins.
+            {/if}
+          </p>
         </div>
       </Card.Content>
       <Card.Footer class="flex items-center gap-3">
