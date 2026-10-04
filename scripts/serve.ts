@@ -249,15 +249,19 @@ export async function serve(
   };
   // adapter-bun installs its own SIGTERM/SIGINT handlers only when it has finished loading. A
   // signal that arrives earlier is remembered and delivered again once they exist, so the
-  // adapter still drains and emits sveltekit:shutdown.
+  // adapter still drains and emits sveltekit:shutdown. A second signal before then exits with
+  // status 1, as the adapter does for a second signal. These handlers stay registered, so a
+  // signal never falls through to the default action, which would skip the exit cleanup.
   let loaded = false;
   let earlySignal: NodeJS.Signals | undefined;
   const onSignal = (signal: NodeJS.Signals) => {
     startDrain();
-    if (!loaded) earlySignal ??= signal;
+    if (loaded) return;
+    if (earlySignal) process.exit(1);
+    earlySignal = signal;
   };
-  process.once("SIGTERM", onSignal);
-  process.once("SIGINT", onSignal);
+  process.on("SIGTERM", onSignal);
+  process.on("SIGINT", onSignal);
   // Every exit removes the socket directory, including the adapter's process.exit(1) on a second
   // signal, which skips sveltekit:shutdown (synchronously, as exit handlers must).
   process.once("exit", removeSocketDirectory);
