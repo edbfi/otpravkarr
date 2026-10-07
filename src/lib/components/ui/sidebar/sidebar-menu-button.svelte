@@ -26,78 +26,84 @@ export type SidebarMenuButtonSize = VariantProps<typeof sidebarMenuButtonVariant
 </script>
 
 <script lang="ts">
-	import { mergeProps } from "bits-ui";
-	import type { ComponentProps, Snippet } from "svelte";
-	import type { HTMLAttributes } from "svelte/elements";
-	import * as Tooltip from "$lib/components/ui/tooltip/index.js";
-	import { cn, type WithElementRef, type WithoutChildrenOrChild } from "$lib/utils.js";
-	import { useSidebar } from "./context.svelte.js";
+import { mergeProps } from "bits-ui";
+import type { ComponentProps, Snippet } from "svelte";
+import type { HTMLAttributes } from "svelte/elements";
+import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+import { cn, type WithElementRef, type WithoutChildrenOrChild } from "$lib/utils.js";
+import { useSidebar } from "./context.svelte.js";
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		children,
-		child,
-		variant = "default",
-		size = "default",
-		isActive = false,
-		tooltipContent,
-		tooltipContentProps,
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLButtonElement>, HTMLButtonElement> & {
-		isActive?: boolean;
-		variant?: SidebarMenuButtonVariant;
-		size?: SidebarMenuButtonSize;
-		tooltipContent?: Snippet | string;
-		tooltipContentProps?: WithoutChildrenOrChild<ComponentProps<typeof Tooltip.Content>>;
-		child?: Snippet<[{ props: Record<string, unknown> }]>;
-	} = $props();
+let {
+  ref = $bindable(null),
+  class: className,
+  children,
+  child,
+  variant = "default",
+  size = "default",
+  isActive = false,
+  tooltipContent,
+  tooltipContentProps,
+  ...restProps
+}: WithElementRef<HTMLAttributes<HTMLButtonElement>, HTMLButtonElement> & {
+  isActive?: boolean;
+  variant?: SidebarMenuButtonVariant;
+  size?: SidebarMenuButtonSize;
+  tooltipContent?: Snippet | string;
+  tooltipContentProps?: WithoutChildrenOrChild<ComponentProps<typeof Tooltip.Content>>;
+  child?: Snippet<[{ props: Record<string, unknown> }]>;
+} = $props();
 
-	const sidebar = useSidebar();
+const sidebar = useSidebar();
 
-	const buttonProps = $derived({
-		class: cn(sidebarMenuButtonVariants({ variant, size }), className),
-		"data-slot": "sidebar-menu-button",
-		"data-sidebar": "menu-button",
-		"data-size": size,
-		"data-active": isActive || undefined,
-		// ISSUE-009: expose the active nav item to assistive tech, not just styling.
-		"aria-current": isActive ? ("page" as const) : undefined,
-		...restProps,
-	});
+const buttonProps = $derived({
+  class: cn(sidebarMenuButtonVariants({ variant, size }), className),
+  "data-slot": "sidebar-menu-button",
+  "data-sidebar": "menu-button",
+  "data-size": size,
+  "data-active": isActive || undefined,
+  // ISSUE-009: expose the active nav item to assistive tech, not just styling.
+  "aria-current": isActive ? ("page" as const) : undefined,
+  ...restProps,
+});
 </script>
 
-{#snippet Button({ props }: { props?: Record<string, unknown> })}
-	{@const mergedProps = mergeProps(buttonProps, props)}
-	{#if child}
-		{@render child({ props: mergedProps })}
-	{:else}
-		<button type="button" bind:this={ref} {...mergedProps}>
-			{@render children?.()}
-		</button>
-	{/if}
+{#snippet Button({
+  props,
+}: {
+  props?: Record<string, unknown>;
+})}
+  {@const mergedProps = mergeProps(buttonProps, props)}
+  {#if child}
+    {@render child({ props: mergedProps })}
+  {:else}
+    <button type="button" bind:this={ref} {...mergedProps}>
+      {@render children?.()}
+    </button>
+  {/if}
 {/snippet}
 
 {#if !tooltipContent}
-	{@render Button({})}
+  {@render Button({})}
 {:else}
-	<Tooltip.Root>
-		<Tooltip.Trigger>
-			{#snippet child({ props })}
-				{@render Button({ props })}
-			{/snippet}
-		</Tooltip.Trigger>
-		<Tooltip.Content
-			side="right"
-			align="center"
-			hidden={sidebar.state !== "collapsed" || sidebar.isMobile}
-			{...tooltipContentProps}
-		>
-			{#if typeof tooltipContent === "string"}
-				{tooltipContent}
-			{:else if tooltipContent}
-				{@render tooltipContent()}
-			{/if}
-		</Tooltip.Content>
-	</Tooltip.Root>
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      {#snippet child({
+        props,
+      })}
+        {@render Button({ props })}
+      {/snippet}
+    </Tooltip.Trigger>
+    <Tooltip.Content
+      side="right"
+      align="center"
+      hidden={sidebar.state !== "collapsed" || sidebar.isMobile}
+      {...tooltipContentProps}
+    >
+      {#if typeof tooltipContent === "string"}
+        {tooltipContent}
+      {:else if tooltipContent}
+        {@render tooltipContent()}
+      {/if}
+    </Tooltip.Content>
+  </Tooltip.Root>
 {/if}

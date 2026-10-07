@@ -45,7 +45,11 @@ let badge = $derived.by(() => {
 </script>
 
 <span
-  class={cn("inline-flex items-center rounded-md px-2 py-1 text-xs font-medium", badge.class, className)}
+  class={cn(
+    "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium",
+    badge.class,
+    className,
+  )}
 >
   {badge.label}
 </span>

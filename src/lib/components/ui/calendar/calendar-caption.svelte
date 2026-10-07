@@ -46,11 +46,11 @@ function formatMonth(date: DateValue) {
     monthFormat={monthFormat as never}
     value={month.month}
     onchange={(e) => {
-  if (!placeholder) return;
-  const v = Number.parseInt(e.currentTarget.value);
-  const newPlaceholder = placeholder.set({ month: v });
-  placeholder = newPlaceholder.subtract({ months: monthIndex });
-}}
+      if (!placeholder) return;
+      const v = Number.parseInt(e.currentTarget.value);
+      const newPlaceholder = placeholder.set({ month: v });
+      placeholder = newPlaceholder.subtract({ months: monthIndex });
+    }}
   />
 {/snippet}
 

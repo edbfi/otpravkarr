@@ -13,9 +13,9 @@ let {
 
 <span
   class={cn(
-  "has-focus:border-ring border-input has-focus:ring-ring/50 relative flex rounded-md border shadow-xs has-focus:ring-[3px]",
-  className,
-)}
+    "has-focus:border-ring border-input has-focus:ring-ring/50 relative flex rounded-md border shadow-xs has-focus:ring-[3px]",
+    className,
+  )}
 >
   <CalendarPrimitive.YearSelect
     bind:ref
@@ -23,15 +23,17 @@ let {
     {...restProps}
   >
     {#snippet child({
-  props,
-  yearItems,
-  selectedYearItem,
-})}
+      props,
+      yearItems,
+      selectedYearItem,
+    })}
       <select {...props} {value}>
         {#each yearItems as yearItem (yearItem.value)}
           <option
             value={yearItem.value}
-            selected={value !== undefined ? yearItem.value === value : yearItem.value === selectedYearItem.value}
+            selected={value !== undefined
+              ? yearItem.value === value
+              : yearItem.value === selectedYearItem.value}
           >
             {yearItem.label}
           </option>

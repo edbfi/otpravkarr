@@ -50,18 +50,18 @@ get along, so we shut typescript up by casting `value` to `never`.
   {weekdayFormat}
   {disableDaysOutsideMonth}
   class={cn(
-  "p-2 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(7)] bg-background group/calendar in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",
-  className,
-)}
+    "p-2 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(7)] bg-background group/calendar in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",
+    className,
+  )}
   {locale}
   {monthFormat}
   {yearFormat}
   {...restProps}
 >
   {#snippet children({
-  months,
-  weekdays,
-})}
+    months,
+    weekdays,
+  })}
     <Calendar.Months>
       <Calendar.Nav>
         <Calendar.PrevButton variant={buttonVariant} />
@@ -99,9 +99,9 @@ get along, so we shut typescript up by casting `value` to `never`.
                     <Calendar.Cell {date} month={month.value}>
                       {#if day}
                         {@render day({
-  day: date,
-  outsideMonth: !isEqualMonth(date, month.value),
-})}
+                          day: date,
+                          outsideMonth: !isEqualMonth(date, month.value),
+                        })}
                       {:else}
                         <Calendar.Day />
                       {/if}

@@ -131,8 +131,8 @@ vi.mock("$lib/db/repositories/config", () => ({ getConfig: mocks.getConfig }));
 
 ## Biome configuration
 
-Biome is pinned to 2.5.13. The configuration uses Git ignores, the recommended lint and assist presets, and experimental full Svelte support. Keep type checking separate from Biome. Project quote, comma and indentation conventions remain explicit in the configuration.
+Biome is pinned to 2.5.15. The configuration uses Git ignores, the recommended lint and assist presets, and experimental full Svelte support. Keep type checking separate from Biome. Project quote, comma and indentation conventions remain explicit in the configuration.
 
-The exact-file formatter overrides protect components containing `{@const ...}`: Biome 2.5.14 inserts parentheses that Svelte rejects with `expected_pattern`. These files still receive lint and import checks. Recheck them with the Svelte compiler when upgrading Biome before removing the exceptions. Do not run a formatter with these overrides bypassed.
+The exact-file formatter overrides keep six route pages hand-formatted because Biome re-wraps their prose and inline text, which changes the compiled text nodes (on `setup/+page.svelte` it adds visible spaces before punctuation); the `{@const}` bug that needed the wider list was fixed in 2.5.15. These files still receive lint and import checks; before removing one, confirm with the Svelte compiler that formatting leaves its output unchanged.
 
 Inline accessibility suppressions cover href forwarded through polymorphic props, named link groups and the native search form. They do not disable accessibility checks across all Svelte files.

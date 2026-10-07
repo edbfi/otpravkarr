@@ -43,7 +43,10 @@ afterNavigate(() => {
 <Tooltip.Provider delayDuration={0}>
   <div
     data-slot="sidebar-wrapper"
-    class={cn("group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full", className)}
+    class={cn(
+      "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
+      className,
+    )}
     bind:this={ref}
     {...restProps}
   >

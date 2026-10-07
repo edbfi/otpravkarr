@@ -86,9 +86,9 @@ let { data }: Props = $props();
               {#each plugin.advisories as advisory, i (i)}
                 <div
                   class="flex items-start gap-2 rounded-md border px-3 py-2 text-sm {advisory.level ===
-                  'warning'
-                    ? 'border-amber-500/40 bg-amber-500/5'
-                    : 'border-border'}"
+                  "warning"
+                    ? "border-amber-500/40 bg-amber-500/5"
+                    : "border-border"}"
                 >
                   {#if advisory.level === "warning"}
                     <TriangleAlertIcon class="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />

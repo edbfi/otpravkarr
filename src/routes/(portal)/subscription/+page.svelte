@@ -68,8 +68,8 @@ const lockedSelectedNames = $derived(data.assignedGroups.map((g) => g.name));
     </h1>
     <p class="mt-1 text-sm text-muted-foreground">
       {data.policy === "core_bundles"
-  ? "Your core Danish lineup is always included. Add optional bundles below."
-  : "Choose which channel groups appear in your player. Changes apply right away."}
+        ? "Your core Danish lineup is always included. Add optional bundles below."
+        : "Choose which channel groups appear in your player. Changes apply right away."}
     </p>
   </div>
 
@@ -158,7 +158,8 @@ const lockedSelectedNames = $derived(data.assignedGroups.map((g) => g.name));
                       type="checkbox"
                       class="mt-0.5 rounded"
                       checked={selectedBundles.has(bundle.id)}
-                      onchange={(event) => toggleBundle(bundle.id, (event.currentTarget as HTMLInputElement).checked)}
+                      onchange={(event) =>
+                        toggleBundle(bundle.id, (event.currentTarget as HTMLInputElement).checked)}
                     >
                     <span>
                       <span class="block text-sm font-medium">{bundle.displayName}</span>
