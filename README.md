@@ -34,12 +34,19 @@ The dev server binds to `PORT` (default `3000`) and fails fast if that port is b
 
 ## Production Startup
 
-Use `bun run build`, then `bun run start` with the same pinned Bun version.
-The start script sets `NODE_ENV=production` and runs `scripts/serve.ts`, which
-starts the `@sveltejs/adapter-bun` server in `build/`. Ship `scripts/serve.ts`
-with production `node_modules/`, `package.json` and the complete `build/`
-directory; `build/server/migrations/` contains the SQL copied by the build
-command.
+Build, then start the server directly, with the same pinned Bun version:
+
+```bash
+bun run build
+NODE_ENV=production bun scripts/serve.ts
+```
+
+This is what the `start` script runs. Run it directly: with Bun 1.4.2's default
+shell, `bun run start` and `bun start` deliver one Ctrl+C twice, which skips the
+`SHUTDOWN_TIMEOUT` drain and stops at once. `scripts/serve.ts` starts the
+`@sveltejs/adapter-bun` server in `build/`. Ship `scripts/serve.ts` with
+production `node_modules/`, `package.json` and the complete `build/` directory;
+`build/server/migrations/` contains the SQL copied by the build command.
 Keep the same `OTPRAVKARR_SECRET` and database across restarts. A configured
 `DATABASE_PATH` must point to an existing database; the production guard refuses
 to create a replacement if that path is missing.
@@ -81,7 +88,7 @@ that sends them; with `ORIGIN` the app supplies them itself.
 | `PORT` | No | `3000` | Listen port |
 | `ORIGIN` | Plain HTTP: **yes** | unset | The address people open in the browser, for example `http://192.168.1.10:3000`. Leave unset only behind an HTTPS reverse proxy that passes the original `Host`; see [Public origin](#public-origin-origin). Always allowed by the app's origin check; saved allowed origins add to it |
 | `IDLE_TIMEOUT` | No | `10` | Seconds before an idle client connection closes (0–255; `0` disables). Mapped to the adapter's `CONNECTION_IDLE_TIMEOUT`, which wins if both are set. Event streams are exempt |
-| `SHUTDOWN_TIMEOUT` | No | `30` | Seconds to drain in-flight requests on `SIGTERM`/`SIGINT` before closing them; with `ORIGIN` set, also on `SIGHUP` (closing the terminal), and the process exits at that deadline even if the app still has work in flight. A second `SIGTERM`/`SIGINT` exits at once; a repeated `SIGHUP` does not |
+| `SHUTDOWN_TIMEOUT` | No | `30` | Seconds to drain in-flight requests on `SIGTERM`/`SIGINT` before closing them; with `ORIGIN` set, also on `SIGHUP` (closing the terminal), and the process exits at that deadline even if the app still has work in flight. With `NODE_ENV=production bun scripts/serve.ts`, a second `SIGTERM`/`SIGINT` exits at once (under `bun run start` the first Ctrl+C already does); a repeated `SIGHUP` does not |
 | `BODY_SIZE_LIMIT` | No | `512K` | Maximum request body (`K`/`M`/`G` suffixes, `Infinity` to disable) |
 | `ADDRESS_HEADER`, `XFF_DEPTH` | No | unset, `1` | Behind a reverse proxy, only when every request goes through it: `ADDRESS_HEADER=x-forwarded-for`, with `XFF_DEPTH` the number of proxies (the client address is read that many hops from the right). Used for rate limiting; without it the TCP peer is used |
 | `PROTOCOL_HEADER`, `HOST_HEADER` | No | unset | Only without `ORIGIN`, behind a trusted proxy: the headers carrying the public scheme (`http`/`https`, for example `x-forwarded-proto`) and host. With `ORIGIN` set the app supplies them itself |
