@@ -100,6 +100,7 @@ async function handle(request) {
     case "/slow": {
       // Like a load waiting on Dispatcharr: reads the body, then answers after `ms`.
       const body = await request.text();
+      console.log("standin slow request started");
       await sleep(Number(url.searchParams.get("ms") || 3000));
       return new Response(`slow ${body.length}`);
     }
@@ -126,6 +127,7 @@ console.log(`standin listening on ${env.SOCKET_PATH || server.url}`);
 
 let stopping = false;
 async function shutdown(reason) {
+  console.log(`standin got ${reason}`);
   if (stopping) return process.exit(1);
   stopping = true;
   const timeout = Number(env.SHUTDOWN_TIMEOUT || 30) * 1000;
@@ -143,3 +145,5 @@ async function shutdown(reason) {
 }
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
+// Like the app's own sveltekit:shutdown listener (the scheduler stops there).
+process.on("sveltekit:shutdown", (reason) => console.log(`standin shutdown hook (${reason})`));

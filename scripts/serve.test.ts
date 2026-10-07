@@ -159,6 +159,23 @@ function stream(port: number, path: string): Promise<Streamed> {
 const socketDirectories = (temp: string) =>
   readdirSync(temp).filter((name) => name.startsWith("otpravkarr-"));
 
+/**
+ * Whether the public port accepts a TCP connection. The front binds it before loading the adapter
+ * and stops accepting when a shutdown begins; an HTTP request would wait for the adapter instead.
+ */
+function accepts(port: number): Promise<boolean> {
+  return new Promise<boolean>((done) => {
+    const socket = connect(port, "127.0.0.1");
+    socket.once("connect", () => {
+      socket.destroy();
+      done(true);
+    });
+    socket.once("error", () => done(false));
+  });
+}
+
+const count = (text: string, part: string) => text.split(part).length - 1;
+
 describe("parseOrigin", () => {
   it.each([
     ["a LAN address with a port", "http://192.168.1.10:3000", "http://192.168.1.10:3000"],
@@ -784,16 +801,7 @@ describe("serve.ts process", () => {
     );
     // The public port is bound before the adapter loads: wait for a TCP connect (an HTTP request
     // would be held until the adapter is ready), then signal mid-load.
-    const accepting = () =>
-      new Promise<boolean>((done) => {
-        const socket = connect(port, "127.0.0.1");
-        socket.once("connect", () => {
-          socket.destroy();
-          done(true);
-        });
-        socket.once("error", () => done(false));
-      });
-    await expect.poll(accepting, { timeout: 5000, interval: 25 }).toBe(true);
+    await expect.poll(() => accepts(port), { timeout: 5000, interval: 25 }).toBe(true);
     expect(server.output()).not.toContain("standin listening");
     server.child.kill("SIGTERM");
     const signalled = Date.now();
@@ -812,16 +820,7 @@ describe("serve.ts process", () => {
       { ORIGIN: `http://127.0.0.1:${port}`, PORT: String(port), STANDIN_LOAD_DELAY_MS: "3000" },
       { waitFor: "exit" },
     );
-    const accepting = () =>
-      new Promise<boolean>((done) => {
-        const socket = connect(port, "127.0.0.1");
-        socket.once("connect", () => {
-          socket.destroy();
-          done(true);
-        });
-        socket.once("error", () => done(false));
-      });
-    await expect.poll(accepting, { timeout: 5000, interval: 25 }).toBe(true);
+    await expect.poll(() => accepts(port), { timeout: 5000, interval: 25 }).toBe(true);
     expect(socketDirectories(server.temp)).toHaveLength(1);
     server.child.kill("SIGTERM");
     await new Promise((done) => setTimeout(done, 200));
@@ -855,6 +854,137 @@ describe("serve.ts process", () => {
     expect(await server.exited).toEqual({ code: 1, signal: null });
     expect(socketDirectories(server.temp)).toEqual([]);
   }, 20_000);
+
+  // Closing the terminal of a direct run sends SIGHUP, whose default action killed the process:
+  // no drain, no sveltekit:shutdown (the app stops its scheduler there) and the socket directory
+  // left behind. The stand-in, like adapter-bun, handles only SIGTERM and SIGINT, and logs each
+  // signal it gets, so every test below can wait for the front to have handled the first hangup
+  // before it sends the next signal (two signals sent back to back may arrive as one).
+  it("on SIGHUP drains an active request, emits sveltekit:shutdown and exits 0", async () => {
+    const port = await freePort();
+    const server = await start({
+      ORIGIN: `http://127.0.0.1:${port}`,
+      PORT: String(port),
+      SHUTDOWN_TIMEOUT: "15",
+    });
+    const pending = call(server.port, "/slow?ms=1500").catch((error: unknown) => error);
+    await expect.poll(() => server.output(), { timeout: 5000 }).toContain("standin slow");
+    server.child.kill("SIGHUP");
+
+    const exited = await Promise.race([
+      server.exited,
+      new Promise<"still running">((done) => setTimeout(() => done("still running"), 8000)),
+    ]);
+    expect(exited).toEqual({ code: 0, signal: null });
+    const reply = (await pending) as Reply;
+    expect([reply.status, reply.body?.toString()]).toEqual([200, "slow 0"]);
+    expect(count(server.output(), "standin got ")).toBe(1);
+    expect(server.output()).toContain("standin got SIGTERM");
+    expect(server.output()).toContain("standin shutdown hook (SIGTERM)");
+    expect(socketDirectories(server.temp)).toEqual([]);
+  }, 20_000);
+
+  // Under `bun run start` the terminal's hangup arrives twice: from the terminal and forwarded by
+  // `bun run`. A second SIGHUP must not become the adapter's second signal (an exit 1 at once).
+  it("ignores a later SIGHUP: the drain and the response stay complete", async () => {
+    const port = await freePort();
+    const server = await start({
+      ORIGIN: `http://127.0.0.1:${port}`,
+      PORT: String(port),
+      SHUTDOWN_TIMEOUT: "15",
+    });
+    const pending = call(server.port, "/slow?ms=2500").catch((error: unknown) => error);
+    await expect.poll(() => server.output(), { timeout: 5000 }).toContain("standin slow");
+    server.child.kill("SIGHUP");
+    // The first hangup has reached the adapter (as SIGTERM) before the second is sent.
+    await expect.poll(() => server.output(), { timeout: 5000 }).toContain("standin got SIGTERM");
+    server.child.kill("SIGHUP");
+
+    expect(await server.exited).toEqual({ code: 0, signal: null });
+    const reply = (await pending) as Reply;
+    expect([reply.status, reply.body?.toString()]).toEqual([200, "slow 0"]);
+    expect(count(server.output(), "standin got ")).toBe(1);
+    expect(server.output()).toContain("standin shutdown hook (SIGTERM)");
+    expect(socketDirectories(server.temp)).toEqual([]);
+  }, 20_000);
+
+  it("delivers a SIGHUP received during the adapter load as SIGTERM once it has loaded", async () => {
+    const port = await freePort();
+    const server = await start(
+      { ORIGIN: `http://127.0.0.1:${port}`, PORT: String(port), STANDIN_LOAD_DELAY_MS: "2000" },
+      { waitFor: "exit" },
+    );
+    await expect.poll(() => accepts(port), { timeout: 5000, interval: 25 }).toBe(true);
+    server.child.kill("SIGHUP");
+    // The front has handled the hangup once it stops accepting connections.
+    await expect.poll(() => accepts(port), { timeout: 5000, interval: 25 }).toBe(false);
+    expect(server.output()).not.toContain("standin listening");
+    // Another hangup during the load is not a second signal.
+    server.child.kill("SIGHUP");
+
+    const exited = await Promise.race([
+      server.exited,
+      new Promise<"still running">((done) => setTimeout(() => done("still running"), 8000)),
+    ]);
+    expect(exited).toEqual({ code: 0, signal: null });
+    expect(server.output()).toContain("standin listening");
+    expect(count(server.output(), "standin got ")).toBe(1);
+    expect(server.output()).toContain("standin got SIGTERM");
+    expect(server.output()).toContain("standin shutdown hook (SIGTERM)");
+    expect(socketDirectories(server.temp)).toEqual([]);
+  }, 20_000);
+
+  it.each(["SIGTERM", "SIGINT"] as const)(
+    "exits 1 on %s after a SIGHUP during the adapter load, leaving no socket directory",
+    async (signal) => {
+      const port = await freePort();
+      const server = await start(
+        { ORIGIN: `http://127.0.0.1:${port}`, PORT: String(port), STANDIN_LOAD_DELAY_MS: "3000" },
+        { waitFor: "exit" },
+      );
+      await expect.poll(() => accepts(port), { timeout: 5000, interval: 25 }).toBe(true);
+      expect(socketDirectories(server.temp)).toHaveLength(1);
+      server.child.kill("SIGHUP");
+      await expect.poll(() => accepts(port), { timeout: 5000, interval: 25 }).toBe(false);
+      server.child.kill(signal);
+
+      expect(await server.exited).toEqual({ code: 1, signal: null });
+      expect(server.output()).not.toContain("standin listening");
+      expect(socketDirectories(server.temp)).toEqual([]);
+    },
+    20_000,
+  );
+
+  it.each(["SIGTERM", "SIGINT"] as const)(
+    "exits 1 on %s after a SIGHUP once the adapter has loaded, leaving no socket directory",
+    async (signal) => {
+      const port = await freePort();
+      const server = await start({
+        ORIGIN: `http://127.0.0.1:${port}`,
+        PORT: String(port),
+        SHUTDOWN_TIMEOUT: "30",
+      });
+      // Keep a request in flight so the drain the hangup starts does not finish.
+      await new Promise<void>((done) => {
+        const req = httpRequest({ host: "127.0.0.1", port: server.port, path: "/hold" }, (res) => {
+          res.once("data", () => done());
+          res.on("error", () => {});
+        });
+        req.on("error", () => {});
+        req.end();
+      });
+      expect(socketDirectories(server.temp)).toHaveLength(1);
+      server.child.kill("SIGHUP");
+      await expect.poll(() => server.output(), { timeout: 5000 }).toContain("standin got SIGTERM");
+      server.child.kill(signal);
+
+      expect(await server.exited).toEqual({ code: 1, signal: null });
+      expect(server.output()).toContain(`standin got ${signal}`);
+      expect(server.output()).not.toContain("standin drained");
+      expect(socketDirectories(server.temp)).toEqual([]);
+    },
+    20_000,
+  );
 
   it("leaves nothing behind when the adapter fails to load", async () => {
     const port = await freePort();
