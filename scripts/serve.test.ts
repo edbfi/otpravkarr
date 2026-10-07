@@ -885,7 +885,8 @@ describe("serve.ts process", () => {
   }, 20_000);
 
   // Under `bun run start` the terminal's hangup arrives twice: from the terminal and forwarded by
-  // `bun run`. A second SIGHUP must not become the adapter's second signal (an exit 1 at once).
+  // `bun run` (under the production command, `NODE_ENV=production bun scripts/serve.ts`, once).
+  // A second SIGHUP must not become the adapter's second signal (an exit 1 at once).
   it("ignores a later SIGHUP: the drain and the response stay complete", async () => {
     const port = await freePort();
     const server = await start({
