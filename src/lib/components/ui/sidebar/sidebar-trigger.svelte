@@ -40,9 +40,9 @@ const controls = $derived(
   aria-expanded={expanded}
   aria-controls={controls}
   onclick={(e) => {
-  onclick?.(e);
-  _sidebar.toggle();
-}}
+    onclick?.(e);
+    _sidebar.toggle();
+  }}
   {...restProps}
 >
   <PanelLeftIcon />

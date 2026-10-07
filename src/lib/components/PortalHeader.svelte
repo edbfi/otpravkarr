@@ -14,7 +14,7 @@ interface Props {
 let { plexUsername, plexThumb, class: className }: Props = $props();
 </script>
 
-<header class="glass-header flex h-14 items-center justify-between px-4 {className ?? ''}">
+<header class="glass-header flex h-14 items-center justify-between px-4 {className ?? ""}">
   <AppLogo />
 
   <nav aria-label="Account" class="flex items-center gap-3">

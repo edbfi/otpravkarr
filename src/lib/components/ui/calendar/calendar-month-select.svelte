@@ -14,9 +14,9 @@ let {
 
 <span
   class={cn(
-  "has-focus:border-ring border-input has-focus:ring-ring/50 relative flex rounded-md border shadow-xs has-focus:ring-[3px]",
-  className,
-)}
+    "has-focus:border-ring border-input has-focus:ring-ring/50 relative flex rounded-md border shadow-xs has-focus:ring-[3px]",
+    className,
+  )}
 >
   <CalendarPrimitive.MonthSelect
     bind:ref
@@ -24,15 +24,17 @@ let {
     {...restProps}
   >
     {#snippet child({
-  props,
-  monthItems,
-  selectedMonthItem,
-})}
+      props,
+      monthItems,
+      selectedMonthItem,
+    })}
       <select {...props} {value} {onchange}>
         {#each monthItems as monthItem (monthItem.value)}
           <option
             value={monthItem.value}
-            selected={value !== undefined ? monthItem.value === value : monthItem.value === selectedMonthItem.value}
+            selected={value !== undefined
+              ? monthItem.value === value
+              : monthItem.value === selectedMonthItem.value}
           >
             {monthItem.label}
           </option>

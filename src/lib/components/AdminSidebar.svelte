@@ -81,7 +81,9 @@ const navItems = [
                         "bg-sidebar-accent/60 before:absolute before:left-0 before:top-1/2 before:h-5 before:w-0.5 before:-translate-y-1/2 before:rounded-r before:bg-primary [&_svg]:text-primary",
                     )}
                   >
-                    {#snippet child({ props })}
+                    {#snippet child({
+                      props,
+                    })}
                       <a href={item.href} {...props}>
                         <item.icon />
                         <span>{item.label}</span>

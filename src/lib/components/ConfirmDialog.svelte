@@ -28,7 +28,9 @@ let {
 <Dialog.Root bind:open>
   {#if trigger}
     <Dialog.Trigger>
-      {#snippet child({ props })}
+      {#snippet child({
+        props,
+      })}
         {@render trigger({ props })}
       {/snippet}
     </Dialog.Trigger>
