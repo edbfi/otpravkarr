@@ -8,6 +8,7 @@
     "build": "bun --bun vite build && rm -rf build/server/migrations && cp -r src/lib/db/migrations build/server/migrations",
     "preview": "bun --bun vite preview",
     "start": "NODE_ENV=production bun scripts/serve.ts",
+    "smoke": "bun run scripts/smoke.ts",
     "prepare": "svelte-kit sync",
     "check": "biome check .",
     "format": "biome format --write .",
