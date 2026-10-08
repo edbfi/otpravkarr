@@ -47,7 +47,23 @@ const env: Record<string, string | undefined> = {
   // A throwaway key for this disposable database, never stored.
   OTPRAVKARR_SECRET: Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("base64"),
 };
-for (const name of ["ORIGIN", "SOCKET_PATH", "PROTOCOL_HEADER", "HOST_HEADER", "PORT_HEADER"]) {
+// Drop every other variable adapter-bun reads (DEVELOPMENT, for one, turns on development mode),
+// so the smoke tests the production defaults whatever the caller's shell sets.
+for (const name of [
+  "ORIGIN",
+  "SOCKET_PATH",
+  "REUSE_PORT",
+  "IPV6_ONLY",
+  "CONNECTION_IDLE_TIMEOUT",
+  "BODY_SIZE_LIMIT",
+  "SHUTDOWN_TIMEOUT",
+  "DEVELOPMENT",
+  "XFF_DEPTH",
+  "ADDRESS_HEADER",
+  "PROTOCOL_HEADER",
+  "HOST_HEADER",
+  "PORT_HEADER",
+]) {
   delete env[name];
 }
 
