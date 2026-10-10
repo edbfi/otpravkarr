@@ -6,14 +6,17 @@ import { defineConfig } from "@playwright/test";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const testDbDir = mkdtempSync(resolve(tmpdir(), "otpravkarr-e2e-"));
-const testDbPath = resolve(testDbDir, "test.sqlite");
+// scripts/check-e2e.sh gives each run its own directory and deletes it afterwards.
+// Workers re-evaluate this file but inherit the variable, so they reuse the path;
+// only a bare `playwright test` creates (and leaves) a directory here.
+const testDbPath =
+  process.env.E2E_DATABASE_PATH ??
+  resolve(mkdtempSync(resolve(tmpdir(), "otpravkarr-e2e-")), "test.sqlite");
 const E2E_PORT = 4173;
 const freshSetup = process.env.E2E_SEED_SETUP_PRE_ADMIN === "1";
 
 const ADMIN_STORAGE_STATE = resolve(__dirname, "e2e", ".auth", "admin.json");
 
-// Make the DB path available to test files
 process.env.E2E_DATABASE_PATH = testDbPath;
 
 export default defineConfig({
