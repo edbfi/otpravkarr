@@ -25,6 +25,7 @@
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/svelte": "^5.3.1",
     "@types/qrcode": "^1.5.6",
+    "@unocss/extractor-svelte": "^66.10.5",
     "@unocss/preset-icons": "^66.6.8",
     "@unocss/preset-typography": "^66.6.8",
     "@unocss/preset-wind4": "^66.6.8",
