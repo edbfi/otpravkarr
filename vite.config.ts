@@ -27,6 +27,7 @@ export default defineConfig({
   // SvelteKit 3 no longer generates $lib; tsconfig.json declares the same path.
   resolve: { alias: { $lib: fileURLToPath(new URL("./src/lib", import.meta.url)) } },
   plugins: [
+    UnoCSS(),
     sveltekit({
       preprocess: vitePreprocess(),
       adapter: adapter({ out: "build", precompress: true }),
@@ -51,7 +52,6 @@ export default defineConfig({
         },
       },
     }),
-    UnoCSS(),
   ],
   server: { port: resolveDevPort(process.env.PORT), strictPort: true },
 });

@@ -1,3 +1,4 @@
+import extractorSvelte from "@unocss/extractor-svelte";
 import { presetWind4 } from "@unocss/preset-wind4";
 import { createRemToPxProcessor } from "@unocss/preset-wind4/utils";
 import { defineConfig, presetIcons, presetTypography } from "unocss";
@@ -5,6 +6,7 @@ import presetAnimations from "unocss-preset-animations";
 import presetShadcn from "unocss-preset-shadcn";
 
 export default defineConfig({
+  extractors: [extractorSvelte()],
   presets: [
     presetWind4(),
     presetTypography(),
