@@ -118,7 +118,7 @@ Use this as a proposed implementation target. The chosen direction comes from th
 - **warning:** `#EFC785`.
 - **danger:** `#FFACB5`.
 
-Primary fills use background-colored text. Secondary color marks information, links and keyboard focus. Success, warning and danger have fixed semantic roles; danger is for failures and destructive action. Use subdued tinted backgrounds for badges, with readable semantic text. Chart series get text labels and markers. Do not put imagery behind data, text fields or tables. Comradarr's Missing tier is a library classification, not a destructive failure.
+Primary fills use background-colored text. Secondary color marks information, links and keyboard focus. Success, warning and danger have fixed semantic roles; danger is for failures and destructive action. Use subdued tinted backgrounds for badges, with readable semantic text. Chart series get text labels and markers. Do not put imagery behind data, text fields or tables.
 
 ## Typography
 
