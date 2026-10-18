@@ -1,7 +1,7 @@
 # Spec: otpravkarr
 
-**Status:** the ground floor (skeleton) is specified here and waits for the orchestrator's
-approval. Product modules aren't specified yet (see the capability map).
+**Status:** the ground floor (skeleton) is specified here and approved by the orchestrator
+(2026-10-18). Product modules aren't specified yet (see the capability map).
 
 ## Objective
 
@@ -161,14 +161,13 @@ otpravkarr moves from the Content tier to Bun web with this work
 5. CI on the PR runs `checks`, `smoke` and `ci-ok` green; `audit` runs outside PRs.
 6. AGENTS.md has its structure section, and `tasks/` is deleted when the work stream closes.
 
-## Open questions
+## Ground-floor choices
 
-1. **Fonts.** DESIGN.md wants Fraunces, Instrument Sans and IBM Plex Mono bundled locally. Proposal:
-   the skeleton defines the font tokens with system fallbacks, and the first surface adds the font
-   files (a dependency choice the owner approves then).
-2. **Ark UI before its first use.** Proposal: install `@ark-ui/svelte` now, so the Panda and Ark
-   pairing and `check-peers` are settled in the skeleton, and add the first `ui/` wrapper with the
-   first surface that needs one.
+1. **Fonts.** DESIGN.md wants Fraunces, Instrument Sans and IBM Plex Mono bundled locally. The
+   skeleton defines the font tokens with system fallbacks; the first surface adds the font files (a
+   dependency the owner approves then).
+2. **Ark UI before its first use.** The skeleton installs `@ark-ui/svelte`, so the Panda and Ark
+   pairing and `check-peers` are settled early; the first `ui/` wrapper comes with the first surface
+   that needs one.
 3. **Security headers and CSP.** The legacy app set a strict CSP and security headers (legacy spec
-   §10). Proposal: they belong to the first module that serves real pages (sign-in), not the
-   skeleton.
+   §10). They belong to the first module that serves real pages (sign-in), not the skeleton.

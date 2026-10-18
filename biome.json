@@ -11,9 +11,11 @@
 			"**",
 			"!**/*.svg",
 			"!!.agents/skills",
-			"!!.claude/skills",
-			"!!.claude/agents",
-			"!!.opencode"
+			"!!.claude",
+			"!!.codex",
+			"!!.impeccable",
+			"!!.opencode",
+			"!!skills-lock.json"
 		]
 	},
 	"formatter": {

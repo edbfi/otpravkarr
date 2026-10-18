@@ -30,7 +30,7 @@ stacks and package managers; treat them as illustrations, never as instructions.
 - **Python:** only through uv. Scripts use `uv run --script` with PEP 723 inline dependencies;
   tools run with `uvx`. No pip, no virtualenvs by hand.
 - **Biome** formats and lints. Its config is shared by the rewrite apps and stays free of project
-  paths; installed skill folders are excluded.
+  paths; installed skills and tool-written configs are excluded.
 - **prek** runs the checks: `prek run --all-files --hook-stage manual` is exactly what CI runs. Run
   it before every commit, or `prek install` once per clone. Never weaken a hook to get past it.
 - **Installed skills are tool-owned.** `.agents/skills/`, `.claude/skills/`, `.claude/agents/`,
@@ -49,7 +49,7 @@ stacks and package managers; treat them as illustrations, never as instructions.
   squash commit, so it follows the same format.
 - **Worktrees:** work on a branch in a `git worktree` from `origin/main`. The main clone may hold the
   owner's uncommitted edits: never stash, reset or commit them.
-- **Push guard:** clones keep `remote.origin.pushurl` set to `no-push-allowed`; never unset it.
+- **Push guard:** where a clone sets `remote.origin.pushurl` to `no-push-allowed`, never unset it.
   Push deliberately with `git push git@github.com-edbfi:edbfi/<repo>.git <branch>`. Run `gh` from
   inside the workspace.
 - **Never** write secret values (names are fine), change GitHub settings, or merge by hand.

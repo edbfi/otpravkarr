@@ -61,7 +61,7 @@ Every check below runs with failing `node`, `npm` and `npx` shims on `PATH`. Pla
 `svelte-kit sync` (`bun --bun panda codegen`), and put every value from `docs/design/tokens.json`
 into `panda.config.ts`: colours as semantic tokens behind a dark-by-default colour-mode condition,
 type styles, spacing, radii, layout sizes, motion durations. The root layout loads the stylesheet;
-the placeholder page uses only tokens. Fonts follow the answer to the spec's open question 1.
+the placeholder page uses only tokens. Font tokens use system fallbacks (spec, ground-floor choice 1).
 
 **Acceptance criteria:**
 - [ ] Every token in `tokens.json` exists in `panda.config.ts` under DESIGN.md's names.
@@ -101,7 +101,7 @@ and repoint every link to them (AGENTS.md, docs/SPEC.md) at `panda.config.ts`.
 
 ### T5: Ark UI
 
-**Description:** Add `@ark-ui/svelte`, following the answer to the spec's open question 2.
+**Description:** Add `@ark-ui/svelte`, now, before its first use (spec, ground-floor choice 2).
 
 **Acceptance criteria:**
 - [ ] It installs with no unmet peer dependency.
@@ -146,13 +146,13 @@ logs no console errors, and that `/healthz` returns `ok`.
 
 ### T7: Biome
 
-**Description:** Add `@biomejs/biome` as a dev dependency and the `lint` script. Ask the orchestrator
-first how to treat the tool-written JSON files Biome flags (plan, risks). Format the app code.
-`biome.json` changes only if the orchestrator decides so for all five apps.
+**Description:** Add `@biomejs/biome` as a dev dependency and the `lint` script. Format the app code.
+The shared `biome.json` already skips the installed skills and the tool-written configs
+(`.claude/`, `.codex/`, `.impeccable/`, `skills-lock.json`); it changes only for all five apps at once.
 
 **Acceptance criteria:**
 - [ ] `bun run --bun lint` passes.
-- [ ] Biome skips the installed skill folders.
+- [ ] Biome skips the installed skills and the tool-written configs.
 
 **Verification:**
 - [ ] `bun run --bun lint`

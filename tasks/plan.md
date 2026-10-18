@@ -49,11 +49,5 @@ T2, T3 and T5 can run in parallel after T1. Everything else is sequential.
 | Panda codegen, `svelte-kit sync` and the Vite plugin order differs under SvelteKit 3 and Vite 8 | High | `prepare` runs sync before codegen (proven in the stack validation); T3 checks a clean clone |
 | Playwright or Vitest calls Node somewhere | High | run every check with failing `node`/`npm`/`npx` shims on `PATH`, as CI does |
 | Hydration isn't proven by server-rendered HTML alone | Medium | the smoke test waits for a client-side signal, not only the HTML |
-| Biome flags the tool-written JSON files (`skills-lock.json`, `.claude/settings.json`, `.codex/hooks.json`, `.impeccable/config.json`); their tools rewrite them in two-space JSON | Medium | T7 asks the orchestrator: format them once, or exclude them in the shared `biome.json` across all five apps |
 | `check-peers` fails on a required peer | Medium | fix the peer before the hook is enabled (edbfi-ci prek rule 12) |
 | The adapter-bun output or preview command differs from `bun ./build` | Low | T1 records the working command in the `preview` script |
-
-## Open questions
-
-- The spec's three open questions (fonts, Ark before first use, CSP) need answers before T3 and T5.
-- How the tool-written JSON files and the shared `biome.json` fit together (T7).
