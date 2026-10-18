@@ -26,7 +26,7 @@ Temporary research input (plan step G5). Delete it once its outcomes are in `doc
   - Their stream URLs (`/proxy/ts/stream/<uuid>`) are also unauthenticated.
 - **The API is unversioned, and it changes often.**
   - There is no `/api/v1`, the OpenAPI `VERSION` is a constant `1.0.0`, and the project is still 0.x.
-  - A minor release lands every 2–4 weeks and routinely changes behaviour that otpravkarr depends on.
+  - A minor release lands every 2–5 weeks and routinely changes behaviour that otpravkarr depends on.
   - The best compatibility hook is `GET /api/core/version/`, which needs no authentication.
 - **API keys are per user, unscoped, stored in plaintext, and inherit the user's level.** Every admin `GET /api/accounts/users/` response includes *every* user's `api_key`.
 - **Plugins:** most of the spec's §7.3 rows need corrections (§6). No plugin creates profiles, touches users, or writes to all profiles. ECM, Lineuparr and Stream Mapparr only write to profiles named in their own settings.
@@ -175,7 +175,7 @@ The legacy health probe, `GET /api/accounts/users/?page=1&page_size=1`, ignores 
 - **Semver.** The project is still 0.x ("adheres to Semantic Versioning", CHANGELOG), so any minor release may break things. The changelog has no "Breaking" section; behaviour changes are listed under Changed/Fixed.
 - **Cadence** ([releases](https://github.com/Dispatcharr/Dispatcharr/releases)):
   - Recent releases: v0.27.0 2026-06-16, v0.28.0 07-19, v0.29.0 08-09, v0.30.0 08-29, v0.31.0 09-13, v0.32.0 10-07.
-  - That is a minor every 2–4 weeks, with patches in between.
+  - That is a minor every 2–5 weeks, with patches in between.
   - `main` carries releases and `dev` is the integration branch. dev is 95 commits ahead of v0.32.0.
 - **Changes in the last six minors that touched otpravkarr's surface** (from [`CHANGELOG.md`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/CHANGELOG.md)):
   - **v0.23.0:**
@@ -257,7 +257,7 @@ All seven are listed in the official registry [Dispatcharr/Plugins](https://gith
 | EPGeditARR → **EPG & Sports Editor** (`epg_and_sports_editor`, legacy `epgeditarr`) | [jstevenscl/epg-and-sports-editor](https://github.com/jstevenscl/epg-and-sports-editor/tree/1a644c59f1b90409566d8bb30c03067b770a78d5) v0.5.08 (`1a644c5`) | Virtual/fill/sports EPG sources, EPGData and ProgramData; sets `Channel.epg_data`; renames only auto-created channels in Sports-Editor groups; logos; **`hidden_from_output`** for past-date event channels (opt-in per group), a global hide that otpravkarr's profiles can't override; a `restart_dispatcharr` action. | None | **Key renamed**: the old adapter's `epgeditarr` key no longer matches, and settings migrate to the new key. "Keep its rename/sort actions away from Lineuparr" is stale: v0.5.x has no rename/sort *actions*. Add: `hidden_from_output` and logos. |
 | Lineuparr (`lineuparr`) | [PiratesIRC/…Lineuparr-Plugin](https://github.com/PiratesIRC/Dispatcharr-Lineuparr-Plugin/tree/b4d129d497619ebc8fe47bc8b36029c7ad3c2974) v1.26.2901915 (`b4d129d`) | Groups (`get_or_create` by name, so it adopts existing groups); channels (`get_or_create`, renumbers); replaces streams; EPG and logos; **deletes every zero-stream channel in groups matching its lineup names, including ones it didn't create**, on Apply Stream Match as well as Full Sync. | Only profiles named in `channel_profiles` (default `_none`, meaning none). It creates enabled rows and flips disabled ones on. | Confirmed, with two refinements: profile enabling covers only the configured profiles, and deletion isn't limited to Full Sync. |
 
-**Plugin REST surface** ([`apps/plugins/api_urls.py#L23-L41`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/plugins/api_urls.py#L23-L41), [`api_views.py#L95-L116`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/plugins/api_views.py#L95-L116), `loader.py#L420-L541`):
+**Plugin REST surface** ([`apps/plugins/api_urls.py#L23-L41`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/plugins/api_urls.py#L23-L41), [`api_views.py#L95-L116`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/plugins/api_views.py#L95-L116), [`loader.py#L420-L541`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/plugins/loader.py#L420-L541)):
 
 - **Listing.** `GET /api/plugins/plugins/` (Standard or above) returns `{"plugins":[…]}`. Each entry has:
   - `key, name, version, description, author, help_url`;
@@ -270,7 +270,7 @@ All seven are listed in the official registry [Dispatcharr/Plugins](https://gith
 - **Disabled plugins aren't imported.** They report only the `fields` in their `plugin.json`. Stream Mapparr, Lineuparr and ESE ship `fields: []` and build them at runtime.
 - **Writes.** `POST …/<key>/settings/` replaces the whole dict; there is no per-plugin GET. `…/run/` and `…/enabled/` are admin-only. otpravkarr stays read-only.
 - **Events.** Plugins subscribe through an action's `events` list, using the same names as Connect (`m3u_refresh`, `epg_refresh`, `channel_*`, `client_*`, …; [`apps/connect/models.py#L3-L24`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/connect/models.py#L3-L24)). There are **no channel, group or profile change events**.
-- **Trust.** Plugins are in-process, trusted Django code with unrestricted ORM access, threads and signals (`Plugins.md`; `loader.py#L299-L387`). "What a plugin may write" is therefore convention, not something Dispatcharr enforces.
+- **Trust.** Plugins are in-process, trusted Django code with unrestricted ORM access, threads and signals (`Plugins.md`; [`loader.py#L299-L387`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/plugins/loader.py#L299-L387)). "What a plugin may write" is therefore convention, not something Dispatcharr enforces.
 
 **The ownership split, corrected.**
 
@@ -357,7 +357,7 @@ Option A, hardened:
 13. **Use a dedicated Dispatcharr admin service user for otpravkarr's API key, with `allowed_networks.UI` pinned to otpravkarr's address.** Keys are unscoped, plaintext, full-admin and never expire, so limit where one can be used and keep it off the owner's personal account.
 14. **Send `X-API-Key`. Strip `api_key` from every user payload at the schema boundary, and never log user responses.** Every admin user-list response carries every user's key.
 15. **Replace the health probe with `GET /api/core/version/` plus one cheap authenticated call, such as `GET /api/channels/profiles/{empty_id}/`.** The legacy users-list probe returns every user and key; the version endpoint also feeds the compatibility check.
-16. **Add a compatibility gate and contract tests.** Gate on a supported version range, warning above the tested range. Run the §3 operations in CI against pinned Dispatcharr images (floor and latest), plus a `/api/schema/` snapshot diff. The API is unversioned, 0.x, and changes every 2–4 weeks.
+16. **Add a compatibility gate and contract tests.** Gate on a supported version range, warning above the tested range. Run the §3 operations in CI against pinned Dispatcharr images (floor and latest), plus a `/api/schema/` snapshot diff. The API is unversioned, 0.x, and changes every 2–5 weeks.
 17. **Update the plugin registry.**
     - Rename `epgeditarr` to `epg_and_sports_editor`, keeping the legacy alias.
     - Accept dashed keys.
