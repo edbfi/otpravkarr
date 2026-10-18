@@ -1,0 +1,20 @@
+{
+	"note": "Fictional historical fixture, deliberately independent of the current date. Production values come from server responses; screenshots never define calculations.",
+	"snapshotDate": "2025-10-15",
+	"otpravkarr": {
+		"users": 42,
+		"active": 38,
+		"inactive": 4,
+		"bundles": {
+			"core": 86,
+			"sports": 42,
+			"cinema": 28,
+			"international": 31
+		},
+		"selected": ["sports", "cinema"],
+		"selectedUniqueChannels": 156,
+		"disjointDemoBundles": true,
+		"credentialExamplesMasked": true,
+		"qrInitiallyRendered": false
+	}
+}
