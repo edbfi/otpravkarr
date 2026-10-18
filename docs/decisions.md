@@ -50,7 +50,7 @@ The database is embedded Turso (`@tursodatabase/database`) through Drizzle
 Kit generates SQL migrations, which are reviewed and committed. Migrations run before the app
 accepts requests or starts jobs, with one migration owner per database.
 
-Drizzle must be later than `1.0.0-rc.5-5935859` and keep its Turso transaction fix (Drizzle
+Drizzle must be `1.0.0-rc.5-5935859` (the verified reference, D15) or a later release that keeps its Turso transaction fix (Drizzle
 [`25abe07`](https://github.com/drizzle-team/drizzle-orm/commit/25abe0785e09cb562d999c9b6b8d92d85e3e7053),
 using the API from [Turso #7898](https://github.com/tursodatabase/turso/pull/7898)). Never
 `1.0.0-rc.4`: it can roll back unrelated writes that share the connection, and upgrading Turso alone
