@@ -156,10 +156,20 @@ export default defineConfig({
 				value: { fontFamily: "body", fontSize: "body", fontWeight: "regular", lineHeight: "body" },
 			},
 			label: {
-				value: { fontFamily: "body", fontSize: "label", fontWeight: "semibold", lineHeight: "label" },
+				value: {
+					fontFamily: "body",
+					fontSize: "label",
+					fontWeight: "semibold",
+					lineHeight: "label",
+				},
 			},
 			table: {
-				value: { fontFamily: "body", fontSize: "table", fontWeight: "regular", lineHeight: "table" },
+				value: {
+					fontFamily: "body",
+					fontSize: "table",
+					fontWeight: "regular",
+					lineHeight: "table",
+				},
 			},
 			caption: {
 				value: {
