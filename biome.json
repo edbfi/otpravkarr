@@ -7,7 +7,14 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"includes": ["**", "!**/*.svg"]
+		"includes": [
+			"**",
+			"!**/*.svg",
+			"!!.agents/skills",
+			"!!.claude/skills",
+			"!!.claude/agents",
+			"!!.opencode"
+		]
 	},
 	"formatter": {
 		"enabled": true,
