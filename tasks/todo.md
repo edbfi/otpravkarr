@@ -65,13 +65,13 @@ type styles, spacing, radii, layout sizes, motion durations. The root layout loa
 the placeholder page uses only tokens. Font tokens use system fallbacks (spec, ground-floor choice 1).
 
 **Acceptance criteria:**
-- [ ] Every token in `tokens.json` exists in `panda.config.ts` under DESIGN.md's names.
-- [ ] No raw colour, size or font value in `src/`.
-- [ ] A clean clone builds (`styled-system/` is generated, never committed).
+- [x] Every token in `tokens.json` exists in `panda.config.ts` under DESIGN.md's names.
+- [x] No raw colour, size or font value in `src/`.
+- [x] A clean clone builds (`styled-system/` is generated, never committed).
 
 **Verification:**
-- [ ] `rm -rf node_modules styled-system && bun ci && bun run --bun check && bun run --bun build`
-- [ ] Manual: the built page's background is `#1B1724` and the heading uses the display style.
+- [x] `rm -rf node_modules styled-system && bun ci && bun run --bun check && bun run --bun build`
+- [x] Manual: the built page's background is `#1B1724` and the heading uses the display style.
 
 **Dependencies:** T1
 
@@ -86,12 +86,12 @@ the placeholder page uses only tokens. Font tokens use system fallbacks (spec, g
 and repoint every link to them (AGENTS.md, docs/SPEC.md) at `panda.config.ts`.
 
 **Acceptance criteria:**
-- [ ] No doc links to the deleted tokens (`rg 'tokens\.(json|css)' AGENTS.md DESIGN.md PRODUCT.md docs .impeccable` finds nothing).
-- [ ] Nothing in `tokens.json` is missing from `panda.config.ts` (preservation gate in the PR body).
+- [x] No doc links to the deleted tokens (`rg 'tokens\.(json|css)' AGENTS.md DESIGN.md PRODUCT.md docs .impeccable` finds nothing).
+- [x] Nothing in `tokens.json` is missing from `panda.config.ts` (preservation gate in the PR body).
 
 **Verification:**
-- [ ] `rg -n 'tokens\.(json|css)' AGENTS.md DESIGN.md PRODUCT.md docs .impeccable`
-- [ ] `prek run --all-files --hook-stage manual`
+- [x] `rg -n 'tokens\.(json|css)' AGENTS.md DESIGN.md PRODUCT.md docs .impeccable`
+- [x] `prek run --all-files --hook-stage manual`
 
 **Dependencies:** T3
 

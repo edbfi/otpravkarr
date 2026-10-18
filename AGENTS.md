@@ -179,6 +179,6 @@ only.
 **Read next.**
 - Product: [PRODUCT.md](PRODUCT.md), [legacy spec](docs/product/legacy-spec.md).
 - Design: [DESIGN.md](DESIGN.md), the [surface briefs](.impeccable/surfaces/) (one per route),
-  [screens and references](docs/design/), [seed tokens](docs/design/tokens.json),
+  [screens and references](docs/design/), [design tokens](panda.config.ts),
   [demo fixtures](tests/fixtures/demo-fixtures.json).
 - Decisions: [docs/decisions.md](docs/decisions.md). Research: [docs/research/](docs/research/).
