@@ -17,8 +17,8 @@ test-results/
 playwright-report/
 coverage/
 
-# Agent tooling (D11). The owner's global gitignore ignores .claude/ and .codex/,
-# so re-include them; the commit list is in AGENTS.md.
+# Agent tooling. A global gitignore may ignore .claude/ and .codex/, so re-include
+# them; only machine-local settings stay ignored.
 !.claude/
 !.codex/
 .claude/settings.local.json
