@@ -75,7 +75,8 @@ Also installed, for when their description fits: `context-engineering`,
 **Gates.**
 1. The orchestrator approves ground-floor specs and task lists; the owner approves product-feature
    specs (`docs/SPEC-<id>.md`) and the capability map.
-2. Every PR goes through the `babysit-pr` skill until it merges. Where they differ, edbfi-ci's
+2. Every PR is shepherded until it merges: with the owner's `babysit-pr` skill where it's installed,
+   and always by the review rules below. Where they differ, edbfi-ci's
    [auto-merge rules](https://github.com/edbfi/edbfi-ci/blob/main/design/auto-merge.md) 8–13 win.
 
 **Spec boundaries.**
