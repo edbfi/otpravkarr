@@ -144,7 +144,6 @@ edbfi-ci's Bun web templates:
    uses a raw colour, size or font value.
 4. Only folders with real files exist; `#lib` resolves in app code, tests and `svelte-check`.
 5. CI on the PR runs `checks`, `smoke` and `ci-ok` green; `audit` runs outside PRs.
-6. AGENTS.md has its structure section, and `tasks/` is deleted when the work stream closes.
 
 ## Ground-floor choices
 
