@@ -1,6 +1,6 @@
 # Implementation plan: otpravkarr ground floor (skeleton)
 
-**Status:** waiting for the orchestrator's approval, together with [docs/SPEC.md](../docs/SPEC.md).
+**Status:** approved with [docs/SPEC.md](../docs/SPEC.md) (2026-10-18).
 The tasks, with acceptance criteria and checks, are in [todo.md](todo.md).
 
 ## Overview

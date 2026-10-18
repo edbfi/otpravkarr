@@ -85,11 +85,11 @@ the placeholder page uses only tokens. Font tokens use system fallbacks (spec, g
 and repoint every link to them (AGENTS.md, docs/SPEC.md) at `panda.config.ts`.
 
 **Acceptance criteria:**
-- [ ] No file links to the deleted tokens (`rg 'tokens\.(json|css)'` finds nothing).
+- [ ] No doc links to the deleted tokens (`rg 'tokens\.(json|css)' AGENTS.md DESIGN.md PRODUCT.md docs .impeccable` finds nothing).
 - [ ] Nothing in `tokens.json` is missing from `panda.config.ts` (preservation gate in the PR body).
 
 **Verification:**
-- [ ] `rg -n 'tokens\.(json|css)'`
+- [ ] `rg -n 'tokens\.(json|css)' AGENTS.md DESIGN.md PRODUCT.md docs .impeccable`
 - [ ] `prek run --all-files --hook-stage manual`
 
 **Dependencies:** T3
