@@ -129,6 +129,28 @@ integration.
 Why: a maintained library covers most operations, and one provider boundary keeps the access rules
 (friendship, not server share) explicit and testable.
 
+### D19. Friends get per-user XC URLs only; otpravkarr warns about Dispatcharr exposure
+
+otpravkarr hands friends only per-user XC URLs: `get.php`, `player_api.php`, `xmltv.php` and the
+`/live/…` lines they contain. It never hands out Dispatcharr's `/output/*`, `/hdhr/*` or `/proxy/*`
+URLs.
+
+How Dispatcharr is reachable from the internet is the owner's setup, not otpravkarr's to fix.
+otpravkarr's docs tell the owner to expose only the XC and artwork paths, following Dispatcharr's
+[reverse-proxy guide](https://github.com/Dispatcharr/Dispatcharr-Docs/blob/192061c43443365771425d114484608cc3d01f51/docs/en/reverse-proxies.md). otpravkarr's
+Dispatcharr health check has one exposure item: it sends `HEAD /output/m3u` and
+`GET /hdhr/discover.json` to the public Dispatcharr URL, anonymously and without following redirects.
+A 2xx answer is a red warning with the fix. Anything else is neutral ("not reachable from here"),
+with a tip to open the playlist URL on a phone off Wi-Fi. The check never reports the setup as safe,
+and otpravkarr changes no Dispatcharr setting.
+
+Why: those paths take no credentials and can't be revoked per person. Reachable from the internet,
+they expose the lineup and, through `/output/m3u?direct=true` and Redirect-mode `/proxy` streams, the
+provider's credentials. Behind a reverse proxy, Dispatcharr's local-only rule can admit everyone (a
+missing or client-supplied `X-Real-IP`), so a path allowlist at the proxy is the reliable fix. From
+the owner's network otpravkarr can't prove that strangers are locked out, so it warns about visible
+exposure instead of certifying safety.
+
 ## Open
 
 ### D13. Producing the OpenAPI document
@@ -169,3 +191,19 @@ The Plex operations otpravkarr needs (D12) still have to be audited against a pi
 version, checked for Bun and TypeScript 6 compatibility, and tested for request payloads and
 response parsing. Sign-in and the friends list must be verified against Plex before they replace a
 working flow. Closes with the Plex provider.
+
+### D20. Dispatcharr exposure: scope and a better approach
+
+D19 is the simple version; the owner expects a better overall approach may exist. To investigate:
+
+- Scope: how much otpravkarr's docs say beyond pointing to Dispatcharr's guide (its own path list, a
+  Caddy example), and how the exposure item fits the Dispatcharr health check (when it runs, how it
+  is shown).
+- Dispatcharr dev moves XC streams from the `STREAMS` to the `XC_API` network rule. Once released,
+  the owner can limit `STREAMS` (`/proxy/*`) to the LAN without breaking friends, and Dispatcharr's
+  own settings may cover most of the risk.
+- Upstream proposals: a token, login or off switch for `/output`, `/hdhr` and `/proxy`, and not
+  trusting a client-supplied `X-Real-IP`.
+- Reading, not writing, Dispatcharr's network-access settings to warn about risky values.
+
+Closes with the Dispatcharr feature spec.

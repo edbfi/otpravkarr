@@ -110,7 +110,7 @@ The legacy client set `user_level: 1` and used the XC password as the Django log
 | XC VOD / timeshift | `/movie/…`, `/series/…`, `/timeshift/…`, `/streaming/timeshift.php` | path/query credentials | VOD flags; timeshift is profile-scoped | `STREAMS`/`XC_API` |
 | Plain M3U | `/output/m3u[/<profile_name>]` | **none** | the named profile, or **everything** if no name | `M3U_EPG` (local networks by default) |
 | Plain XMLTV | `/output/epg[/<profile_name>]` | **none** | same | `M3U_EPG` |
-| HDHomeRun | `/hdhr[/<profile>]/{discover,lineup}.json` | **none** | profile | — |
+| HDHomeRun | `/hdhr[/<profile>]/{discover,lineup}.json`, also `/api/hdhr/…` | **none** | profile | `M3U_EPG` |
 | Proxy stream | `/proxy/ts/stream/<channel_uuid>` | **none** (`AllowAny`) | none (anyone who knows the UUID) | `STREAMS` (all addresses by default) |
 
 Sources:
@@ -352,7 +352,7 @@ Option A, hardened:
    - Reason: each M3U refresh otherwise re-enables auto-synced channels in every otpravkarr profile, including the empty one.
 9. **Trigger a reconcile from Dispatcharr's Connect `m3u_refresh` webhook, with a shared-secret header, as well as the timer.** This shrinks the exposure window to seconds after each refresh. The timer stays as the safety net.
 10. **Treat any managed user with an empty `channel_profiles` list, or `user_level >= 10`, as an incident.** Check on every sync and before serving credentials, and fix it or disable the user first. Deleting a profile in Dispatcharr cascades into an empty list, which exposes everything.
-11. **Deliver only per-user XC URLs** (`get.php`, `player_api.php`, `xmltv.php`, `/live/…`). Never hand out `/output/*`, `/hdhr/*` or `/proxy/*` URLs. Those take no credentials, can't be revoked per person, and their streams are unauthenticated.
+11. **Decided: D19** (per-user XC URLs only; otpravkarr warns about Dispatcharr exposure). Follow-up: D20.
 12. **Don't proxy or re-sign playlists or streams.** The stream lines embed the XC credential anyway, and video proxying is a non-goal.
 13. **Use a dedicated Dispatcharr admin service user for otpravkarr's API key, with `allowed_networks.UI` pinned to otpravkarr's address.** Keys are unscoped, plaintext, full-admin and never expire, so limit where one can be used and keep it off the owner's personal account.
 14. **Send `X-API-Key`. Strip `api_key` from every user payload at the schema boundary, and never log user responses.** Every admin user-list response carries every user's key.
