@@ -151,6 +151,99 @@ missing or client-supplied `X-Real-IP`), so a path allowlist at the proxy is the
 the owner's network otpravkarr can't prove that strangers are locked out, so it warns about visible
 exposure instead of certifying safety.
 
+### D21. Subscribers are stream-only; everything goes through otpravkarr
+
+Every subscriber's Dispatcharr user is a Streamer (`user_level` 0). Its Dispatcharr login password
+is random, never stored or shown, and separate from `xc_password`, so no subscriber can sign in to
+Dispatcharr's web UI or REST API. Subscribers never need Dispatcharr: what they can see and change
+(credentials, channel groups, bundles) is in otpravkarr, inside the limits the owner sets there.
+otpravkarr has one provisioning mode; the legacy self-managed and staff modes are dropped. The
+owner's self-subscription is a Streamer like everyone else. otpravkarr doesn't proxy or re-sign
+playlists or streams.
+
+Why: Standard, the legacy "highest non-admin level", can sign in to Dispatcharr and see channels
+outside its profiles, provider stream URLs (v0.32.0), every plugin's settings and DVR recordings.
+Streamer is the XC-only level, and channels default to level 0, so XC loses nothing. The self-managed
+and staff modes need a Standard-or-higher user with a known password, which breaks that. Proxying
+would hide nothing (each stream line carries the XC credential), and serving video is a non-goal.
+
+### D22. Least-privilege content defaults: no movies or series unless the owner turns them on
+
+otpravkarr writes `vod_movies_enabled`, `vod_series_enabled`, `catchup_enabled`,
+`hide_adult_content` and `stream_limit` on every managed user, on create and on every sync. The
+defaults are movies and series off, catch-up off, adult content hidden and a stream limit of 2. The
+owner can change each one for all subscribers or for chosen ones; subscribers see what they have but
+can't change it.
+
+Why: channel profiles don't scope movies and series, and Dispatcharr turns them on for every user by
+default, so without this every friend gets the owner's whole library. The owner wants it off unless
+they choose otherwise. `stream_limit` is the only brake on a shared credential; 2 covers a TV plus
+one other device.
+
+### D23. Profiles and the subscriber lifecycle
+
+- **Empty profiles from the start.** Every profile otpravkarr creates is created with
+  `start_empty: true`.
+- **Disable keeps the account.** Disabling a subscriber (by the owner, or by sync when the friendship
+  ends) clears `xc_password` and leaves only the empty profile. The Dispatcharr user is deleted only
+  when the owner removes the person permanently.
+- **Ownership marker.** Every managed user carries
+  `custom_properties.otpravkarr = {instance, plex_account_id}`, moving to Dispatcharr's app-data API
+  once it's released. Sync uses it to find, adopt or remove users otpravkarr created but has no record
+  of.
+- **Unsafe users are incidents.** A managed user with an empty `channel_profiles` list or
+  `user_level >= 10` is an incident. Sync and credential display check for it, and fix the user or
+  disable it first.
+
+Why: a new profile otherwise starts with every channel until it's narrowed. Disabling by clearing
+`xc_password` stops every XC path, can be undone and keeps the Dispatcharr ID, where the legacy
+disable-by-delete churned users and left orphans when a local write failed. An empty profile list
+shows a non-admin user every channel, and deleting a profile in Dispatcharr can cause one.
+
+### D24. Keeping access from widening behind otpravkarr's back
+
+- **Auto-sync groups.** otpravkarr reads Dispatcharr's M3U auto-sync group settings and warns about
+  any group whose Channel Profiles is blank (all profiles). Its docs tell the owner to scope each
+  auto-sync group or set it to "No Profiles".
+- **Reconcile on refresh.** Dispatcharr's Connect `m3u_refresh` webhook, with a shared-secret
+  header, triggers a reconcile; the timer stays as the safety net.
+- **Plugins.** otpravkarr warns when a plugin's profile setting names a profile otpravkarr owns
+  (Event Channel Managarr scoped to event profiles is the expected exception). The plugin registry
+  reads `epg_and_sports_editor` (keeping `epgeditarr` as an alias), accepts dashed keys and merges
+  each field's default before reading settings.
+- **Hidden channels.** Channels marked `hidden_from_output` count as absent in pickers, counts and
+  the playlist snapshot.
+
+Why: every M3U refresh re-enables auto-synced channels in every profile, otpravkarr's and the empty
+one included, and channels created through the UI or API join every profile. Event Channel Managarr
+and Lineuparr would widen a profile otpravkarr owns, and Stream Mapparr would narrow it. The legacy
+plugin registry missed the renamed EPG plugin and misread settings left at their defaults.
+
+### D25. otpravkarr's own Dispatcharr credentials
+
+otpravkarr uses the API key of a dedicated Dispatcharr admin user, not the owner's own account, with
+that user's `allowed_networks.UI` pinned to otpravkarr's address. It sends the key as `X-API-Key`,
+strips `api_key` from every user payload where responses are validated, and never logs user
+responses.
+
+Why: Dispatcharr API keys are full-admin, unscoped, stored in plaintext and never expire, and every
+admin user-list response carries every user's key.
+
+### D26. Dispatcharr versions and health
+
+- **Version floor v0.30.0**, the first with `start_empty` and "No Profiles". otpravkarr reads
+  `GET /api/core/version/` (no authentication) and gates on a supported range, warning above the
+  newest tested version.
+- **Contract tests.** The Dispatcharr operations otpravkarr uses run in CI against pinned Dispatcharr
+  images (the floor and the latest tested), with a snapshot diff of `/api/schema/`.
+- **Health probe.** `GET /api/core/version/` plus one cheap authenticated call, such as reading the
+  empty profile; never the user list.
+- **No fake-credential probes.** Setup and health checks never try XC with made-up credentials.
+
+Why: Dispatcharr's API is unversioned and still 0.x, and a minor release every 2–5 weeks routinely
+changes behaviour otpravkarr depends on. The legacy probe fetched every user and API key. Dispatcharr
+dev adds failed-auth rate limits for XC and API keys, which fake-credential probes would trip.
+
 ## Open
 
 ### D13. Producing the OpenAPI document
