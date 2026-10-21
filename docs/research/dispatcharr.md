@@ -343,10 +343,10 @@ The owner has reviewed all 20; each is now a decision in [`docs/decisions.md`](.
 
 | Candidates | Decision |
 |---|---|
-| 1 (Streamer level), 2 (random login password), 3 (self-managed and staff modes, dropped), 12 (no proxying) | D21 |
+| 1 (Streamer level), 2 (random login password), 3 (self-managed and staff modes, dropped), 12 (no proxying), 20 (provider URLs hidden from Standard users: moot, as no subscriber is Standard) | D21 |
 | 7 (content flags and `stream_limit`) | D22 |
 | 4 (`start_empty`), 5 (disable by clearing `xc_password`), 6 (ownership marker), 10 (incidents) | D23 |
 | 8 (auto-sync widening), 9 (`m3u_refresh` webhook), 17 (plugin registry), 18 (plugin advisories), 19 (`hidden_from_output`) | D24 |
 | 13 (service user), 14 (`X-API-Key`, stripping `api_key`) | D25 |
-| 4 (version floor), 15 (health probe), 16 (compatibility gate, contract tests), 20 (dev changes) | D26 |
-| 11 (delivery and exposure) | D19, with D20 open |
+| 4 (version floor), 15 (health probe), 16 (compatibility gate, contract tests), 20 (failed-auth rate limits: no fake-credential probes) | D26 |
+| 11 (delivery and exposure), 20 (`XC_API` network rule: the owner's ingress notes) | D19, with D20 open |
