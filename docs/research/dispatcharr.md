@@ -300,7 +300,7 @@ The spec's §12 weaknesses in play: orphaned remote accounts, credentials in URL
 
 | Option | Per-user identity and revocation | Scoping | Credential handling | Orphans and drift | Fit |
 |---|---|---|---|---|---|
-| **A. Per-user Dispatcharr account, XC credentials, one profile per group (status quo, "Model A")** | Yes. Rotate or remove `xc_password`, or delete the user. | Union of group profiles; enforced at stream time; VOD needs the explicit flags. | Long-lived password in URLs; `stream_limit` limits sharing. | otpravkarr must reconcile remote users and profiles; core auto-sync widens profiles until the next reconcile. | **Best fit.** Strengthen with decisions 1–9. |
+| **A. Per-user Dispatcharr account, XC credentials, one profile per group (status quo, "Model A")** | Yes. Rotate or remove `xc_password`, or delete the user. | Union of group profiles; enforced at stream time; VOD needs the explicit flags. | Long-lived password in URLs; `stream_limit` limits sharing. | otpravkarr must reconcile remote users and profiles; core auto-sync widens profiles until the next reconcile. | **Best fit.** Strengthen with candidates 1–9 (D21–D24). |
 | A2. Like A, but one profile per *user* | Yes | The user's exact set | Same as A | N profiles to keep narrowed, and every one widened by auto-sync; ECM scope must list every user's profile; more profile churn. | Worse than A for ECM and for scale (tens of users, up to ~1000 groups). |
 | B. Per-profile `/output/m3u/<profile>` + `/output/epg/<profile>` (+HDHR) | **No.** Anyone with the URL gets the profile, and one person can't be revoked. | Profile | No credentials at all; streams use unauthenticated `/proxy/ts/stream/<uuid>`. | No user objects, but the profile name is effectively a shared secret. | **Reject.** Upstream docs advise against publishing it. |
 | C1. otpravkarr serves the playlist (fetches `get.php` server-side, or redirects from its own revocable token URL) | Yes, through otpravkarr tokens | Same as A | Stream lines still contain `/live/<user>/<xc_password>/…`, so the secret leaks anyway; a redirect also exposes it. | Adds an availability dependency on otpravkarr for every playlist refresh. | Low value. It would only help if otpravkarr also proxied video, which is a non-goal. |
@@ -339,34 +339,14 @@ Option A, hardened:
 
 ## Candidate decisions
 
-1. **Provision subscribers at Streamer (`user_level` 0), not Standard.** Standard grants Dispatcharr UI/REST access: other profiles' channels, provider URLs on v0.32.0, plugin settings, DVR view. Channels default to level 0, so XC loses nothing.
-2. **Make the Dispatcharr login password a random, never-stored value, separate from `xc_password`.** No subscriber can get a JWT, and XC rotation touches only `xc_password`.
-3. **Re-scope or drop the "self-managed" and "staff" modes.** Both need a Standard-or-higher account with a known login password, which sits outside the least-privilege promise. If kept, label them as "Dispatcharr UI users".
-4. **Create every owned profile with `start_empty: true`, and set the minimum Dispatcharr version to v0.30.0.** This removes the create-then-narrow exposure window and gives a version floor that also brings "No Profiles".
-5. **Disable a subscriber by clearing `xc_password` and assigning the empty profile, and delete the remote user only on permanent removal.** It is reversible, keeps the ID, and avoids create/delete churn and orphans.
-6. **Write an ownership marker on every managed remote user**: `custom_properties.otpravkarr = {instance, plex_account_id}` now, and the app-data API once released. Sync can then find, adopt or reap orphans, closing the §12 gap where a remote user outlives a failed local write.
-7. **Set least-privilege custom properties explicitly on create and on every sync.** That means `vod_movies_enabled`, `vod_series_enabled`, `catchup_enabled`, `hide_adult_content` and `stream_limit`, per policy, defaulting to VOD off and a small stream limit. VOD isn't profile-scoped and defaults on; `stream_limit` is the only brake on credential sharing.
-8. **Detect core widening and warn about it.**
-   - Read M3U auto-sync group settings and flag any group whose Channel Profiles is blank, meaning all profiles.
-   - Document that the operator should scope auto-sync groups, or set them to "No Profiles".
-   - Reason: each M3U refresh otherwise re-enables auto-synced channels in every otpravkarr profile, including the empty one.
-9. **Trigger a reconcile from Dispatcharr's Connect `m3u_refresh` webhook, with a shared-secret header, as well as the timer.** This shrinks the exposure window to seconds after each refresh. The timer stays as the safety net.
-10. **Treat any managed user with an empty `channel_profiles` list, or `user_level >= 10`, as an incident.** Check on every sync and before serving credentials, and fix it or disable the user first. Deleting a profile in Dispatcharr cascades into an empty list, which exposes everything.
-11. **Decided: D19** (per-user XC URLs only; otpravkarr warns about Dispatcharr exposure). Follow-up: D20.
-12. **Don't proxy or re-sign playlists or streams.** The stream lines embed the XC credential anyway, and video proxying is a non-goal.
-13. **Use a dedicated Dispatcharr admin service user for otpravkarr's API key, with `allowed_networks.UI` pinned to otpravkarr's address.** Keys are unscoped, plaintext, full-admin and never expire, so limit where one can be used and keep it off the owner's personal account.
-14. **Send `X-API-Key`. Strip `api_key` from every user payload at the schema boundary, and never log user responses.** Every admin user-list response carries every user's key.
-15. **Replace the health probe with `GET /api/core/version/` plus one cheap authenticated call, such as `GET /api/channels/profiles/{empty_id}/`.** The legacy users-list probe returns every user and key; the version endpoint also feeds the compatibility check.
-16. **Add a compatibility gate and contract tests.** Gate on a supported version range, warning above the tested range. Run the §3 operations in CI against pinned Dispatcharr images (floor and latest), plus a `/api/schema/` snapshot diff. The API is unversioned, 0.x, and changes every 2–5 weeks.
-17. **Update the plugin registry.**
-    - Rename `epgeditarr` to `epg_and_sports_editor`, keeping the legacy alias.
-    - Accept dashed keys.
-    - Merge `fields[].default` before reading settings.
-    - Rewrite the §7.3 rows as in §6.
-    - Reason: the current adapters miss ESE, misread default-only settings (for example, the quarantine names), and repeat wrong claims.
-18. **Advise when any plugin's profile setting names an otpravkarr-owned profile.** ECM scope on event profiles is the expected exception. ECM and Lineuparr would widen such a profile and Stream Mapparr would narrow it, which would make them co-owners.
-19. **Treat `hidden_from_output` channels as absent in pickers, counts and the playlist snapshot.** They are hidden from all output for everyone, for example by ESE for past events.
-20. **Plan for the unreleased dev changes.**
-    - The XC and API-key failed-auth rate limits mean otpravkarr's setup probes must never try XC with fake credentials.
-    - XC streams move to the `XC_API` network rule, so update the operator's ingress notes.
-    - Provider URLs become hidden from Standard users.
+The owner has reviewed all 20; each is now a decision in [`docs/decisions.md`](../decisions.md):
+
+| Candidates | Decision |
+|---|---|
+| 1 (Streamer level), 2 (random login password), 3 (self-managed and staff modes, dropped), 12 (no proxying), 20 (provider URLs hidden from Standard users: moot, as no subscriber is Standard) | D21 |
+| 7 (content flags and `stream_limit`) | D22 |
+| 4 (`start_empty`), 5 (disable by clearing `xc_password`), 6 (ownership marker), 10 (incidents) | D23 |
+| 8 (auto-sync widening), 9 (`m3u_refresh` webhook), 17 (plugin registry), 18 (plugin advisories), 19 (`hidden_from_output`) | D24 |
+| 13 (service user), 14 (`X-API-Key`, stripping `api_key`) | D25 |
+| 4 (version floor), 15 (health probe), 16 (compatibility gate, contract tests), 20 (failed-auth rate limits: no fake-credential probes) | D26 |
+| 11 (delivery and exposure), 20 (`XC_API` network rule: the owner's ingress notes) | D19, with D20 open |

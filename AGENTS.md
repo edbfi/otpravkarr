@@ -171,9 +171,10 @@ manual` is CI's `checks` job. `smoke` runs against the built server, so run `bui
 needs Chromium once per machine: `bunx --bun playwright install chromium`.
 
 **Boundaries.**
-- The Dispatcharr research ([`docs/research/dispatcharr.md`](docs/research/dispatcharr.md)) is
-  waiting for the owner's review. Its candidate decisions aren't decisions until they're in
-  `docs/decisions.md`, and no Dispatcharr feature spec starts before then.
+- The owner has reviewed the Dispatcharr research
+  ([`docs/research/dispatcharr.md`](docs/research/dispatcharr.md)); its outcomes are D19–D26 in
+  `docs/decisions.md`, with D20 open. The Dispatcharr feature spec builds on those decisions and the
+  research's corrections to the legacy spec, after which the research is deleted.
 - The legacy spec describes behaviour to keep, not the technology: its header names the superseded
   sections.
 - Never bring code over from `legacy-old/v1`; rebuild from the spec.

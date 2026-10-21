@@ -18,9 +18,9 @@ to make the first module spec cheap to build: every later PR adds behaviour, not
 
 Placeholder. Product modules come later, each through an owner-approved `docs/SPEC-<id>.md`. The map
 (module ids, dependencies, build order) is proposed with `spec-driven-development` Phase 0 after the
-skeleton has merged, from the legacy spec, the [surface briefs](../.impeccable/surfaces/) and the
-[Dispatcharr research](research/dispatcharr.md) once the owner has reviewed it. No module id exists
-yet.
+skeleton has merged, from the legacy spec, the [surface briefs](../.impeccable/surfaces/), the
+Dispatcharr decisions (D19–D26) and the [Dispatcharr research](research/dispatcharr.md). No module id
+exists yet.
 
 ## Tech stack
 
