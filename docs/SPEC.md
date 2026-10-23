@@ -76,7 +76,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 | `i18n` | the message files (where the D29 library keeps them), `lib/shared/i18n/` (language choice and formatting); choosing the language in `hooks.server.ts` |
 | `setup` | `db/` (client, migrations, settings, owner and audit schema), `config/`, `logging/`, `services/setup/`, `services/audit/record.ts`, `security/bootstrap-token.ts`; `routes/setup/`, and the setup gate in `hooks.server.ts` |
 | `sign-in` | `services/sign-in/`, `security/` (sessions, rate limits, origin check, headers); `routes/(admin)/` layout, `lib/components/layout/` |
-| `two-factor` | `services/two-factor/`, the owner schema's two-factor fields in `db/` |
+| `two-factor` | `services/two-factor/`, the owner schema's two-factor fields in `db/`; the offer in `routes/setup/`, the challenge page beside the sign-in page, its section of the owner's account settings, and the reminder in `lib/components/layout/` |
 | `plex-connection` | `providers/plex/`, `http/`, `services/connections/plex.ts`; `routes/(admin)/admin/settings/connections/` |
 | `dispatcharr-connection` | `providers/dispatcharr/`, `services/connections/dispatcharr.ts`; same route |
 | `health` | `services/health/` (replaces `services/health.ts`), `jobs/health.ts` |
