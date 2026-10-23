@@ -244,11 +244,12 @@ Why: Dispatcharr's API is unversioned and still 0.x, and a minor release every 2
 changes behaviour otpravkarr depends on. The legacy probe fetched every user and API key. Dispatcharr
 dev adds failed-auth rate limits for XC and API keys, which fake-credential probes would trip.
 
-### D27. Secrets, first-run setup and owner sign-in come first, in the same shape in every app
+### D27. Shared opening modules and owner sign-in, in the same shape in every app
 
-Every edbfi rewrite app builds three modules before any feature module, in this order: `secrets`,
-then `setup`, then `sign-in`. They have the same shape in all five apps. Each app keeps its own
-copy; there is no shared package.
+Every edbfi rewrite app builds five modules before any feature module, in this order: `secrets`,
+`i18n`, `setup`, `sign-in`, then `two-factor`. Each app also gets `oidc-sign-in` later. These
+modules have the same shape in all five apps, so signing in works the same way everywhere. Each
+app keeps its own copy; there is no shared package.
 
 - **One owner.** Each instance has exactly one owner account, with no other roles: no co-admins,
   viewers or operators, and none planned for later.
@@ -260,26 +261,57 @@ copy; there is no shared package.
   - Associated data ties each value to its record and field, so a value copied to another row or
     field fails to decrypt.
   - Every stored value carries its key ID, so the key can be rotated.
+- **`i18n`.** The translation groundwork (D28), in place before the first screen.
 - **`setup`.** If nobody has claimed the instance yet, the app prints a one-time bootstrap token to
   its log at startup. Whoever types that token claims the instance and creates the owner account.
   After that, setup no longer exists: its routes answer "not found".
 - **`sign-in`.** The owner signs in with the username and password created in `setup`. Sessions
   are server-side, and only a hash of each session token is stored.
+- **`two-factor`.** Optional, but strongly recommended: the last first-run step offers it, and the
+  admin shell keeps reminding the owner until it is on. It uses authenticator-app codes (TOTP), with
+  the secret encrypted by `secrets`, single-use backup codes stored only as hashes, each code
+  accepted once and a limit on failed attempts. When it is on, every way of signing in passes
+  through it, except where an `oidc-sign-in` spec decides to trust the identity provider's own
+  second factor.
 - **Plex for the owner is an option.** In the apps that use Plex (all of them except comradarr and
   zimuarr), the owner can link their account to their own Plex account in the admin settings once
   setup is done. After that, "Sign in with Plex" also signs them in as the owner. The password
   keeps working, and Plex sign-in for the owner stays off until they link. Where an app has users
   besides the owner, those users sign in with Plex.
+- **`oidc-sign-in`.** The owner can also link their account to one OpenID Connect provider, such as
+  Authentik, Authelia, Pocket ID or Tinyauth, which then signs them in as the owner. It uses
+  discovery and the authorization code flow with PKCE, and keys the link on the provider's issuer
+  and subject. As with Plex, linking never creates an owner, and the password keeps working.
+  Signing in through a reverse proxy's headers isn't supported.
 
 Each app's connection modules add their own first-run steps after `setup`, such as connecting Plex
 and Dispatcharr here.
 
 Why: the owner wants the five apps to look and work alike, and everything else depends on these
-three: every app stores upstream secrets, needs a safe first claim and has to know who its owner
-is. Encrypting in the app (D4: secrets are configured apart from the database) keeps stolen
-database files unreadable without the key. A copy per app is enough for five apps and avoids
+modules: every app stores upstream secrets, shows text that must be translatable, needs a safe
+first claim and has to know who its owner is. Encrypting in the app (D4: secrets are configured
+apart from the database) keeps stolen database files unreadable without the key. Two-factor and
+OIDC sign-in were the owner's call for every app; one standard OIDC flow covers the self-hosted
+identity providers without a client for each. A copy per app is enough for five apps and avoids
 building a shared package before it's needed (YAGNI). Associated data, key IDs and hashed session
 tokens fix weaknesses listed in legacy spec §12.
+
+### D28. Every interface is translatable, in English and Danish
+
+Every edbfi app is built for translation from its first screen. No user-facing text is written into
+components or services: it comes from message files, one per language. English is the source
+language and the default, and Danish is the second language. Each request uses the viewer's own
+choice, then the browser's preferred languages, then English. Dates, times and numbers are formatted
+for the viewer's locale through `Intl`, never in a fixed format. The message files use a format
+Weblate reads, plurals included, so a Weblate project can be connected later without changing code.
+Connecting Weblate is later work and belongs to no module yet. British spelling stays the English
+default, as in the legacy app. Lineup names come from the owner's configuration and aren't
+translated.
+
+Why: the owner wants full translation support in every app, with Weblate as the translation tool,
+and English and Danish now. Adding translation afterwards touches every screen; building it in from
+the first one costs little. The legacy app was British English only, with en-GB dates (legacy
+spec §8.4).
 
 ## Open
 
@@ -337,3 +369,10 @@ D19 is the simple version; the owner expects a better overall approach may exist
 - Reading, not writing, Dispatcharr's network-access settings to warn about risky values.
 
 Closes with the Dispatcharr feature spec.
+
+### D29. Translation library and message format
+
+Which translation library (D28) and which Weblate-readable file format to use isn't chosen. One
+candidate is Paraglide JS storing its messages as i18next JSON; gettext PO and XLIFF are others.
+The choice must work with SvelteKit 3 on Bun, with server rendering, plurals and TypeScript 6.
+Closes with the `i18n` module.
