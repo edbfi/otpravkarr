@@ -58,7 +58,9 @@ something they can use.
 
 ### Where modules live
 
-Under `src/lib/server/` unless the path starts with `routes/`, in the [Code structure](../AGENTS.md#code-structure) layout:
+Paths are under `src/lib/server/`, except those starting with `routes/` (under `src/`) or `lib/`
+(under `src/`), and `hooks.server.ts` (`src/hooks.server.ts`). They follow the
+[Code structure](../AGENTS.md#code-structure) layout:
 
 | Module | Main homes |
 |---|---|
