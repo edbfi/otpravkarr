@@ -244,6 +244,43 @@ Why: Dispatcharr's API is unversioned and still 0.x, and a minor release every 2
 changes behaviour otpravkarr depends on. The legacy probe fetched every user and API key. Dispatcharr
 dev adds failed-auth rate limits for XC and API keys, which fake-credential probes would trip.
 
+### D27. Secrets, first-run setup and owner sign-in come first, in the same shape in every app
+
+Every edbfi rewrite app builds three modules before any feature module, in this order: `secrets`,
+then `setup`, then `sign-in`. They have the same shape in all five apps. Each app keeps its own
+copy; there is no shared package.
+
+- **One owner.** Each instance has exactly one owner account, with no other roles: no co-admins,
+  viewers or operators, and none planned for later.
+- **`secrets`.** Secret values are encrypted in the app before they reach the database, with
+  AES-256-GCM through WebCrypto, so this works on any database engine:
+  - The key is 32 random bytes from an environment variable or a secret file. It is never derived
+    from a password, and a missing or malformed key stops the app at startup.
+  - Every encryption uses a fresh random 12-byte nonce.
+  - Associated data ties each value to its record and field, so a value copied to another row or
+    field fails to decrypt.
+  - Every stored value carries its key ID, so the key can be rotated.
+- **`setup`.** If nobody has claimed the instance yet, the app prints a one-time bootstrap token to
+  its log at startup. Whoever types that token claims the instance and creates the owner account.
+  After that, setup no longer exists: its routes answer "not found".
+- **`sign-in`.** The owner signs in with the username and password created in `setup`. Sessions
+  are server-side, and only a hash of each session token is stored.
+- **Plex for the owner is an option.** In the apps that use Plex (all of them except comradarr and
+  zimuarr), the owner can link their account to their own Plex account in the admin settings once
+  setup is done. After that, "Sign in with Plex" also signs them in as the owner. The password
+  keeps working, and Plex sign-in for the owner stays off until they link. Where an app has users
+  besides the owner, those users sign in with Plex.
+
+Each app's connection modules add their own first-run steps after `setup`, such as connecting Plex
+and Dispatcharr here.
+
+Why: the owner wants the five apps to look and work alike, and everything else depends on these
+three: every app stores upstream secrets, needs a safe first claim and has to know who its owner
+is. Encrypting in the app (D4: secrets are configured apart from the database) keeps stolen
+database files unreadable without the key. A copy per app is enough for five apps and avoids
+building a shared package before it's needed (YAGNI). Associated data, key IDs and hashed session
+tokens fix weaknesses listed in legacy spec §12.
+
 ## Open
 
 ### D13. Producing the OpenAPI document
