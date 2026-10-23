@@ -16,8 +16,9 @@ to make the first module spec cheap to build: every later PR adds behaviour, not
 
 ## Capability map
 
-**Status:** approved by the owner (2026-10-23). Module ids never change. Each module gets its own
-`docs/SPEC-<id>.md`, which the owner approves just before it is built.
+**Status:** approved by the owner (2026-10-23), with the shared opening widened on 2026-10-24
+(D27). Module ids never change. Each module gets its own `docs/SPEC-<id>.md`, which the owner
+approves just before it is built.
 Sources: [PRODUCT.md](../PRODUCT.md), [decisions.md](decisions.md), the
 [legacy spec](product/legacy-spec.md), the [Dispatcharr research](research/dispatcharr.md) and the
 [surface briefs](../.impeccable/surfaces/).
@@ -30,31 +31,38 @@ adds in that layout, and review checks them. In short:
 - Imports only go downwards. Routes, hooks and jobs stay thin and call services.
 - Tests sit next to their source.
 
+**Every module writes its text in English and Danish** through `i18n` (D28): no user-facing text in
+components or services, and dates and numbers formatted for the viewer's locale.
+
 | # | Module id | Responsibility | Depends on | Surfaces |
 |---|---|---|---|---|
-| 1 | `secrets` | Encrypts stored secrets (Plex token, Dispatcharr key, subscriber XC passwords) before they reach the database (D27) | — | — |
-| 2 | `setup` | Startup checks, database and migrations, the bootstrap token, and claiming the instance for its one owner, keeping the origin it was claimed from as the first allowed origin (legacy §6.1 pre-filled it). Also adds the audit trail: its table and the one service every later change writes through | `secrets` | first-run setup (no brief yet) |
-| 3 | `sign-in` | Owner sign-in with username and password, sessions, sign-out, rate limits, origin check and allowed origins (the first entry comes from `setup`), security headers and CSP, and the admin shell | `setup` | owner sign-in (no brief yet); the admin shell; the "Allowed website addresses" panel, which it builds first on `/admin/settings/lineup`; `lineup` adds its sections to that page later |
-| 4 | `plex-connection` | Plex provider (D12, D18), SSRF-safe outbound HTTP (D8), and connecting, testing and saving the Plex server | `sign-in` | `/admin/settings/connections` (Plex form) |
-| 5 | `dispatcharr-connection` | Dispatcharr provider with its service user (D25), version gate and contract tests (D26), and connecting, testing and saving the internal and public URLs and the key | `sign-in` | `/admin/settings/connections` (Dispatcharr form) |
-| 6 | `health` | Plex, Dispatcharr and database checks on a timer, public `/healthz` (`ok`, `degraded`, `unhealthy`), the exposure item (D19) and the version warning (D26) | `plex-connection`, `dispatcharr-connection` | `/admin` (health tiles); `/healthz` |
-| 7 | `lineup` | Lineup policies, core, fixed and approved groups, bundles, quarantine names, `hidden_from_output` (D24), content defaults (D22), and the offered and effective groups worked out from each person's choices | `dispatcharr-connection` | `/admin/settings/lineup` |
-| 8 | `scoping` | Owned group profiles and the empty profile (`start_empty`, D23), the single enforcement path, event groups, and finding unsafe users (D23) | `dispatcharr-connection` | — |
-| 9 | `accounts` | Subscriber records and their Streamer users (D21): create, disable by clearing `xc_password`, enable, remove permanently, rotate credentials, apply content flags (D22), and the ownership marker (D23) | `scoping` | — |
-| 10 | `plex-sign-in` | Sign in with Plex. For friends: the accepted-friend check, the revoked view, the picker for new friends and provisioning on first sign-in. For the owner: linking their Plex account in the admin settings, after which Plex signs them in as the owner (D27) | `sign-in`, `plex-connection`, `lineup`, `accounts` | `/`; the owner's account settings (no brief yet) |
-| 11 | `credentials` | The subscriber's XC URLs only (D19), reveal and copy, QR code on request, M3U snapshot, refreshing credentials, and the guide for free and open-source players | `plex-sign-in` | `/portal`, `/portal/setup` |
-| 12 | `channel-choices` | Subscribers pick bundles or groups within policy, or see a locked view | `plex-sign-in`, `lineup` | `/portal/channels` |
-| 13 | `subscriber-admin` | Users table with filters and drift, details, disable, enable, remove, rotate, changing groups and the lock, per-person content flags, and "Subscribe myself", keyed on the Plex account behind the server token (legacy §4 and §6.2), so it needs no owner Plex link. How the owner opens that subscriber view is settled in this module's spec | `accounts`, `lineup`, `plex-connection` | `/admin/users` |
-| 14 | `sync` | The reconcile job: friend sync, adopting or removing managed users through the marker (D23), quarantine refresh, the subscription sync, plugin scope checks, the `m3u_refresh` webhook (D24), the interval setting and running it by hand | `accounts`, `lineup`, `plex-connection` | `/admin` (sync card); `/admin/settings/connections` (sync interval) |
-| 15 | `audit-log` | The audit log page with filters, and the retention job (the writing comes with `setup`) | `sign-in` | audit log (no brief yet) |
-| 16 | `plugin-advisories` | Read-only plugin cards: ECM scope, plugins that target owned profiles, and auto-sync groups without a scope (D24) | `scoping`, `lineup` | plugins (no brief yet) |
-| 17 | `overview` | The owner dashboard: health, user counts, sync, recent activity, available friends | `health`, `accounts`, `sync`, `audit-log` | `/admin` |
+| 1 | `secrets` | Encrypts stored secrets (Plex token, Dispatcharr key, subscriber XC passwords, two-factor secrets, the OIDC client secret) before they reach the database (D27) | — | — |
+| 2 | `i18n` | The translation groundwork (D28, D29): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's locale, and a check that every message exists in both languages | — | the language switcher in each shell |
+| 3 | `setup` | Startup checks, database and migrations, the bootstrap token, and claiming the instance for its one owner, keeping the origin it was claimed from as the first allowed origin (legacy §6.1 pre-filled it). Also adds the audit trail: its table and the one service every later change writes through | `secrets`, `i18n` | first-run setup (no brief yet) |
+| 4 | `sign-in` | Owner sign-in with username and password, sessions, sign-out, rate limits, origin check and allowed origins (the first entry comes from `setup`), security headers and CSP, and the admin shell | `setup` | owner sign-in (no brief yet); the admin shell; the "Allowed website addresses" panel, which it builds first on `/admin/settings/lineup`; `lineup` adds its sections to that page later |
+| 5 | `two-factor` | Optional but strongly recommended (D27): authenticator codes, backup codes and the challenge after every way the owner signs in, with replay protection and a limit on failed attempts. Adds the offer to first-run setup, right after the owner account is created and before any connection step, and the reminder in the admin shell while it is off | `sign-in` | the two-factor offer in first-run setup; the owner's account settings (no brief yet); the reminder in the admin shell |
+| 6 | `plex-connection` | Plex provider (D12, D18), SSRF-safe outbound HTTP (D8), and connecting, testing and saving the Plex server | `sign-in` | `/admin/settings/connections` (Plex form) |
+| 7 | `dispatcharr-connection` | Dispatcharr provider with its service user (D25), version gate and contract tests (D26), and connecting, testing and saving the internal and public URLs and the key | `sign-in` | `/admin/settings/connections` (Dispatcharr form) |
+| 8 | `health` | Plex, Dispatcharr and database checks on a timer, public `/healthz` (`ok`, `degraded`, `unhealthy`), the exposure item (D19) and the version warning (D26) | `plex-connection`, `dispatcharr-connection` | `/admin` (health tiles); `/healthz` |
+| 9 | `lineup` | Lineup policies, core, fixed and approved groups, bundles, quarantine names, `hidden_from_output` (D24), content defaults (D22), and the offered and effective groups worked out from each person's choices | `dispatcharr-connection` | `/admin/settings/lineup` |
+| 10 | `scoping` | Owned group profiles and the empty profile (`start_empty`, D23), the single enforcement path, event groups, and finding unsafe users (D23) | `dispatcharr-connection` | — |
+| 11 | `accounts` | Subscriber records and their Streamer users (D21): create, disable by clearing `xc_password`, enable, remove permanently, rotate credentials, apply content flags (D22), and the ownership marker (D23) | `scoping` | — |
+| 12 | `plex-sign-in` | Sign in with Plex. For friends: the accepted-friend check, the revoked view, the picker for new friends and provisioning on first sign-in. For the owner: linking their Plex account in the admin settings, after which Plex signs them in as the owner, through two-factor when it is on (D27) | `two-factor`, `plex-connection`, `lineup`, `accounts` | `/`; the owner's account settings (no brief yet) |
+| 13 | `credentials` | The subscriber's XC URLs only (D19), reveal and copy, QR code on request, M3U snapshot, refreshing credentials, and the guide for free and open-source players | `plex-sign-in` | `/portal`, `/portal/setup` |
+| 14 | `channel-choices` | Subscribers pick bundles or groups within policy, or see a locked view | `plex-sign-in`, `lineup` | `/portal/channels` |
+| 15 | `subscriber-admin` | Users table with filters and drift, details, disable, enable, remove, rotate, changing groups and the lock, per-person content flags, and "Subscribe myself", keyed on the Plex account behind the server token (legacy §4 and §6.2), so it needs no owner Plex link. How the owner opens that subscriber view is settled in this module's spec | `accounts`, `lineup`, `plex-connection` | `/admin/users` |
+| 16 | `sync` | The reconcile job: friend sync, adopting or removing managed users through the marker (D23), quarantine refresh, the subscription sync, plugin scope checks, the `m3u_refresh` webhook (D24), the interval setting and running it by hand | `accounts`, `lineup`, `plex-connection` | `/admin` (sync card); `/admin/settings/connections` (sync interval) |
+| 17 | `audit-log` | The audit log page with filters, and the retention job (the writing comes with `setup`) | `sign-in` | audit log (no brief yet) |
+| 18 | `oidc-sign-in` | Connecting one OpenID Connect provider (Authentik, Authelia, Pocket ID, Tinyauth and others) by its issuer, client id and secret, and linking the owner's account to it, after which it signs them in as the owner (D27). Its spec decides whether the provider's own second factor replaces `two-factor` | `two-factor` | the owner's account settings (no brief yet); its button on owner sign-in |
+| 19 | `plugin-advisories` | Read-only plugin cards: ECM scope, plugins that target owned profiles, and auto-sync groups without a scope (D24) | `scoping`, `lineup` | plugins (no brief yet) |
+| 20 | `overview` | The owner dashboard: health, user counts, sync, recent activity, available friends | `health`, `accounts`, `sync`, `audit-log` | `/admin` |
 
-Build order: `secrets` → `setup` → `sign-in` → `plex-connection`, `dispatcharr-connection` → `health`,
-`lineup`, `scoping` → `accounts` → `plex-sign-in` → `credentials`, `channel-choices`,
-`subscriber-admin`, `sync` → `audit-log`, `plugin-advisories` → `overview`. A comma means either
-order works. `credentials` comes first in its group because it's the first time a friend gets
-something they can use.
+Build order: `secrets` → `i18n` → `setup` → `sign-in` → `two-factor` → `plex-connection`,
+`dispatcharr-connection` → `health`, `lineup`, `scoping` → `accounts` → `plex-sign-in` →
+`credentials`, `channel-choices`, `subscriber-admin`, `sync` → `audit-log`, `oidc-sign-in`,
+`plugin-advisories` → `overview`. A comma means either order works. The first five are the
+opening every edbfi app shares (D27). `credentials` comes first in its group because it's the first
+time a friend gets something they can use.
 
 ### Where modules live
 
@@ -65,8 +73,10 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 | Module | Main homes |
 |---|---|
 | `secrets` | `security/secrets/`; loading the key in `config/` |
+| `i18n` | the message files (where the D29 library keeps them), `lib/shared/i18n/` (language choice and formatting); choosing the language in `hooks.server.ts` |
 | `setup` | `db/` (client, migrations, settings, owner and audit schema), `config/`, `logging/`, `services/setup/`, `services/audit/record.ts`, `security/bootstrap-token.ts`; `routes/setup/`, and the setup gate in `hooks.server.ts` |
 | `sign-in` | `services/sign-in/`, `security/` (sessions, rate limits, origin check, headers); `routes/(admin)/` layout, `lib/components/layout/` |
+| `two-factor` | `services/two-factor/`, the owner schema's two-factor fields in `db/`; the offer in `routes/setup/`, the challenge page beside the sign-in page, its section of the owner's account settings, and the reminder in `lib/components/layout/` |
 | `plex-connection` | `providers/plex/`, `http/`, `services/connections/plex.ts`; `routes/(admin)/admin/settings/connections/` |
 | `dispatcharr-connection` | `providers/dispatcharr/`, `services/connections/dispatcharr.ts`; same route |
 | `health` | `services/health/` (replaces `services/health.ts`), `jobs/health.ts` |
@@ -79,11 +89,13 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 | `subscriber-admin` | `routes/(admin)/admin/users/` (uses `accounts`, `lineup` and `connections/plex.ts`) |
 | `sync` | `services/sync/`, `jobs/sync.ts`; the webhook under `routes/api/` |
 | `audit-log` | `services/audit/search.ts`, `jobs/audit-retention.ts`; `routes/(admin)/admin/audit/` |
+| `oidc-sign-in` | `services/sign-in/oidc.ts`, the provider settings and the owner's link in `db/`; its callback route beside the sign-in page |
 | `plugin-advisories` | `services/plugins/`; `routes/(admin)/admin/plugins/` |
 | `overview` | `routes/(admin)/admin/` |
 
 ### Open decisions each module closes
 
+- `i18n`: D29 (translation library and message format).
 - `setup`: D15 (Drizzle and Turso pair) and the logging library half of D14. The secrets half of
   D16's backup and restore goes with `secrets`.
 - The first module with a background job closes the job half of D14: `sign-in` if its session
@@ -101,6 +113,9 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 - The admin friends and detailed health APIs, and the unlinked owner "where would you like to go?"
   page (no consumer, legacy spec §12).
 - Any role beyond the one owner (owner decision).
+- Signing in through a reverse proxy's headers (D27): `oidc-sign-in` covers the same identity
+  providers.
+- Connecting Weblate (D28): later work, outside this map. The message files are ready for it.
 - Recognising the owner automatically as the Plex account behind the server token (legacy spec
   §6.2). The owner links their Plex account themselves, if they want to (D27, owner decision).
   The self-subscription still uses that account as its identity (`subscriber-admin`); it just
