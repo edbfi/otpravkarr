@@ -44,7 +44,7 @@ adds in that layout, and review checks them. In short:
 | 10 | `plex-sign-in` | Sign in with Plex. For friends: the accepted-friend check, the revoked view, the picker for new friends and provisioning on first sign-in. For the owner: linking their Plex account in the admin settings, after which Plex signs them in as the owner (D27) | `sign-in`, `plex-connection`, `lineup`, `accounts` | `/`; the owner's account settings (no brief yet) |
 | 11 | `credentials` | The subscriber's XC URLs only (D19), reveal and copy, QR code on request, M3U snapshot, refreshing credentials, and the guide for free and open-source players | `plex-sign-in` | `/portal`, `/portal/setup` |
 | 12 | `channel-choices` | Subscribers pick bundles or groups within policy, or see a locked view | `plex-sign-in`, `lineup` | `/portal/channels` |
-| 13 | `subscriber-admin` | Users table with filters and drift, details, disable, enable, remove, rotate, changing groups and the lock, per-person content flags, and "Subscribe myself" | `accounts`, `lineup` | `/admin/users` |
+| 13 | `subscriber-admin` | Users table with filters and drift, details, disable, enable, remove, rotate, changing groups and the lock, per-person content flags, and "Subscribe myself", keyed on the Plex account behind the server token (legacy §4), so it needs no owner Plex link. How the owner opens that subscriber view is settled in this module's spec | `accounts`, `lineup`, `plex-connection` | `/admin/users` |
 | 14 | `sync` | The reconcile job: friend sync, adopting or removing managed users through the marker (D23), quarantine refresh, the subscription sync, plugin scope checks, the `m3u_refresh` webhook (D24), the interval setting and running it by hand | `accounts`, `lineup`, `plex-connection` | `/admin` (sync card); `/admin/settings/connections` (sync interval) |
 | 15 | `audit-log` | The audit log page with filters, and the retention job (the writing comes with `setup`) | `sign-in` | audit log (no brief yet) |
 | 16 | `plugin-advisories` | Read-only plugin cards: ECM scope, plugins that target owned profiles, and auto-sync groups without a scope (D24) | `scoping`, `lineup` | plugins (no brief yet) |
@@ -74,7 +74,7 @@ Under `src/lib/server/` unless the path starts with `routes/`, in the [Code stru
 | `plex-sign-in` | `services/plex-sign-in/`; `routes/(public)/` and the Plex return route |
 | `credentials` | `services/credentials/`; `routes/(app)/portal/`, `routes/(app)/portal/setup/` |
 | `channel-choices` | `routes/(app)/portal/channels/` (uses `lineup` and `accounts`) |
-| `subscriber-admin` | `routes/(admin)/admin/users/` (uses `accounts` and `lineup`) |
+| `subscriber-admin` | `routes/(admin)/admin/users/` (uses `accounts`, `lineup` and `connections/plex.ts`) |
 | `sync` | `services/sync/`, `jobs/sync.ts`; the webhook under `routes/api/` |
 | `audit-log` | `services/audit/search.ts`, `jobs/audit-retention.ts`; `routes/(admin)/admin/audit/` |
 | `plugin-advisories` | `services/plugins/`; `routes/(admin)/admin/plugins/` |
