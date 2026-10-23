@@ -33,7 +33,7 @@ adds in that layout, and review checks them. In short:
 | # | Module id | Responsibility | Depends on | Surfaces |
 |---|---|---|---|---|
 | 1 | `secrets` | Encrypts stored secrets (Plex token, Dispatcharr key, subscriber XC passwords) before they reach the database (D27) | — | — |
-| 2 | `setup` | Startup checks, database and migrations, the bootstrap token, and claiming the instance for its one owner. Also adds the audit record that every later change writes to | `secrets` | first-run setup (no brief yet) |
+| 2 | `setup` | Startup checks, database and migrations, the bootstrap token, and claiming the instance for its one owner. Also adds the audit trail: its table and the one service every later change writes through | `secrets` | first-run setup (no brief yet) |
 | 3 | `sign-in` | Owner sign-in with username and password, sessions, sign-out, rate limits, origin check and allowed origins, security headers and CSP, and the admin shell | `setup` | owner sign-in (no brief yet); the admin shell; the "Allowed website addresses" panel on `/admin/settings/lineup` |
 | 4 | `plex-connection` | Plex provider (D12, D18), SSRF-safe outbound HTTP (D8), and connecting, testing and saving the Plex server | `sign-in` | `/admin/settings/connections` (Plex form) |
 | 5 | `dispatcharr-connection` | Dispatcharr provider with its service user (D25), version gate and contract tests (D26), and connecting, testing and saving the internal and public URLs and the key | `sign-in` | `/admin/settings/connections` (Dispatcharr form) |
@@ -46,7 +46,7 @@ adds in that layout, and review checks them. In short:
 | 12 | `channel-choices` | Subscribers pick bundles or groups within policy, or see a locked view | `plex-sign-in`, `lineup` | `/portal/channels` |
 | 13 | `subscriber-admin` | Users table with filters and drift, details, disable, enable, remove, rotate, changing groups and the lock, per-person content flags, and "Subscribe myself" | `accounts`, `lineup` | `/admin/users` |
 | 14 | `sync` | The reconcile job: friend sync, adopting or removing managed users through the marker (D23), quarantine refresh, the subscription sync, plugin scope checks, the `m3u_refresh` webhook (D24), the interval setting and running it by hand | `accounts`, `lineup`, `plex-connection` | `/admin` (sync card); `/admin/settings/connections` (sync interval) |
-| 15 | `audit-log` | The audit log page with filters, and the retention job | `sign-in` | audit log (no brief yet) |
+| 15 | `audit-log` | The audit log page with filters, and the retention job (the writing comes with `setup`) | `sign-in` | audit log (no brief yet) |
 | 16 | `plugin-advisories` | Read-only plugin cards: ECM scope, plugins that target owned profiles, and auto-sync groups without a scope (D24) | `scoping`, `lineup` | plugins (no brief yet) |
 | 17 | `overview` | The owner dashboard: health, user counts, sync, recent activity, available friends | `health`, `accounts`, `sync`, `audit-log` | `/admin` |
 
@@ -63,7 +63,7 @@ Under `src/lib/server/` unless the path starts with `routes/`, in the [Code stru
 | Module | Main homes |
 |---|---|
 | `secrets` | `security/secrets/`; loading the key in `config/` |
-| `setup` | `db/` (client, migrations, settings, owner and audit schema), `config/`, `logging/`, `services/setup/`, `security/bootstrap-token.ts`; `routes/setup/`, and the setup gate in `hooks.server.ts` |
+| `setup` | `db/` (client, migrations, settings, owner and audit schema), `config/`, `logging/`, `services/setup/`, `services/audit/record.ts`, `security/bootstrap-token.ts`; `routes/setup/`, and the setup gate in `hooks.server.ts` |
 | `sign-in` | `services/sign-in/`, `security/` (sessions, rate limits, origin check, headers); `routes/(admin)/` layout, `lib/components/layout/` |
 | `plex-connection` | `providers/plex/`, `http/`, `services/connections/plex.ts`; `routes/(admin)/admin/settings/connections/` |
 | `dispatcharr-connection` | `providers/dispatcharr/`, `services/connections/dispatcharr.ts`; same route |
@@ -76,7 +76,7 @@ Under `src/lib/server/` unless the path starts with `routes/`, in the [Code stru
 | `channel-choices` | `routes/(app)/portal/channels/` (uses `lineup` and `accounts`) |
 | `subscriber-admin` | `routes/(admin)/admin/users/` (uses `accounts` and `lineup`) |
 | `sync` | `services/sync/`, `jobs/sync.ts`; the webhook under `routes/api/` |
-| `audit-log` | `services/audit/`, `jobs/audit-retention.ts`; `routes/(admin)/admin/audit/` |
+| `audit-log` | `services/audit/search.ts`, `jobs/audit-retention.ts`; `routes/(admin)/admin/audit/` |
 | `plugin-advisories` | `services/plugins/`; `routes/(admin)/admin/plugins/` |
 | `overview` | `routes/(admin)/admin/` |
 
