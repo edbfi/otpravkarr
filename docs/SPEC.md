@@ -107,8 +107,8 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 ### Surfaces with no brief yet
 
 First-run setup, owner sign-in, the owner's account settings, `/admin/plugins` and `/admin/audit`
-are needed (the last two are in the legacy app and in PRODUCT.md's admin shell) but have no brief. Step 4 (`shape`) adds them before their modules are
-specced.
+are needed (the last two are in the legacy app and in PRODUCT.md's admin shell) but have no
+brief. Each gets one before its module is specced.
 
 ## Tech stack
 
