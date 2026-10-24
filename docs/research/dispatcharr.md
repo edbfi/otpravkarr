@@ -205,7 +205,7 @@ The legacy health probe, `GET /api/accounts/users/?page=1&page_size=1`, ignores 
     - Provider URLs hidden from Standard users.
     - The app-data API.
 - **What the rewrite should pin and check:**
-  - Read `GET /api/core/version/` at startup and in the health probe, and compare it with a declared supported range. The floor is v0.30.0, for `start_empty` and "No Profiles".
+  - Read `GET /api/core/version/` at startup and in the health probe, and compare it with the latest stable release (D30). `start_empty` and "No Profiles" exist from v0.30.0.
   - Show a "newer than tested" warning rather than failing.
   - Validate responses with strict schemas, failing closed on the fields enforcement depends on and staying lenient elsewhere.
   - Run a contract suite in CI against pinned Dispatcharr images (latest release plus the floor) that exercises every operation in the §3 table. Diff `/api/schema/` against a committed snapshot to flag drift.

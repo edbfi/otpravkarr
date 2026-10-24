@@ -231,11 +231,11 @@ admin user-list response carries every user's key.
 
 ### D26. Dispatcharr versions and health
 
-- **Version floor v0.30.0**, the first with `start_empty` and "No Profiles". otpravkarr reads
-  `GET /api/core/version/` (no authentication) and gates on a supported range, warning above the
-  newest tested version.
-- **Contract tests.** The Dispatcharr operations otpravkarr uses run in CI against pinned Dispatcharr
-  images (the floor and the latest tested), with a snapshot diff of `/api/schema/`.
+- **Version.** otpravkarr reads `GET /api/core/version/` (no authentication) and warns when
+  Dispatcharr isn't the latest stable release it is tested with (D30). `start_empty` and "No
+  Profiles", which otpravkarr needs, exist from v0.30.0, so every release it supports has them.
+- **Contract tests.** The Dispatcharr operations otpravkarr uses run in CI against the latest
+  stable Dispatcharr image (D30), with a snapshot diff of `/api/schema/`.
 - **Health probe.** `GET /api/core/version/` plus one cheap authenticated call, such as reading the
   empty profile; never the user list.
 - **No fake-credential probes.** Setup and health checks never try XC with made-up credentials.
@@ -360,6 +360,28 @@ correct plurals for English and Danish. gettext PO (through wuchale or Lingui) w
 notes for translators, which i18next JSON v4 can't, but those integrations are younger and keep the
 language in stores, which need care when the server renders concurrent requests; svelte-i18n
 resolves messages at runtime, without typed messages. The owner left the choice to the agents.
+
+### D30. Other software: the latest stable release only
+
+Each edbfi app works with the latest stable release of every service it talks to, and with nothing
+older. Its contract tests run against that release; when a new stable release ships, the tests and
+the app move to it in the app's next release, and support for the one before goes. The app adds no
+code for older versions and no workarounds for upstream bugs that a later release may fix: a bug
+that harms users is reported upstream and named in the app's docs. A service on any other version
+(older, newer than the one tested, a prerelease, or a version the app can't read) keeps working,
+and the app says plainly in setup and on its health page which version it is tested with.
+Responses are still validated, so a real difference in the API shows up as an error, not as wrong
+data.
+
+In otpravkarr the services are Dispatcharr and Plex Media Server. Dispatcharr's version check and
+contract tests follow this rule (D26), so Dispatcharr has no version floor or supported range.
+Plex Media Server is held to its latest public release in the same way; Plex's account service
+has no version to check.
+
+Why: the owner doesn't want a backlog of backwards compatibility in any app (owner decision). Code
+for old versions and for upstream bugs is seldom removed once it's in, and each workaround outlives
+the upstream fix as code to maintain. Warning instead of refusing keeps users who update a week
+late working.
 
 ## Open
 
