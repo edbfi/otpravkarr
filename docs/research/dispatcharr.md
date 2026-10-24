@@ -205,10 +205,10 @@ The legacy health probe, `GET /api/accounts/users/?page=1&page_size=1`, ignores 
     - Provider URLs hidden from Standard users.
     - The app-data API.
 - **What the rewrite should pin and check:**
-  - Read `GET /api/core/version/` at startup and in the health probe, and compare it with a declared supported range. The floor is v0.30.0, for `start_empty` and "No Profiles".
-  - Show a "newer than tested" warning rather than failing.
+  - Read `GET /api/core/version/` at startup and in the health probe, and compare it with the latest stable release (D30). `start_empty` and "No Profiles" exist from v0.30.0.
+  - Warn rather than fail when Dispatcharr runs any version other than the latest stable release (D30).
   - Validate responses with strict schemas, failing closed on the fields enforcement depends on and staying lenient elsewhere.
-  - Run a contract suite in CI against pinned Dispatcharr images (latest release plus the floor) that exercises every operation in the §3 table. Diff `/api/schema/` against a committed snapshot to flag drift.
+  - Run a contract suite in CI against the latest stable Dispatcharr image (D30) that exercises every operation in the §3 table. Diff `/api/schema/` against a committed snapshot to flag drift.
 
 ## 5. The empty-profile rule
 
@@ -348,5 +348,5 @@ The owner has reviewed all 20; each is now a decision in [`docs/decisions.md`](.
 | 4 (`start_empty`), 5 (disable by clearing `xc_password`), 6 (ownership marker), 10 (incidents) | D23 |
 | 8 (auto-sync widening), 9 (`m3u_refresh` webhook), 17 (plugin registry), 18 (plugin advisories), 19 (`hidden_from_output`) | D24 |
 | 13 (service user), 14 (`X-API-Key`, stripping `api_key`) | D25 |
-| 4 (version floor), 15 (health probe), 16 (compatibility gate, contract tests), 20 (failed-auth rate limits: no fake-credential probes) | D26 |
+| 4 (version floor, replaced by D30), 15 (health probe), 16 (compatibility gate, contract tests), 20 (failed-auth rate limits: no fake-credential probes) | D26 |
 | 11 (delivery and exposure), 20 (`XC_API` network rule: the owner's ingress notes) | D19, with D20 open |
