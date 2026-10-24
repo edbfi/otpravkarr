@@ -272,8 +272,7 @@ app keeps its own copy; there is no shared package.
   owner until it is on. It uses authenticator-app codes (TOTP), with
   the secret encrypted by `secrets`, single-use backup codes stored only as hashes, each code
   accepted once and a limit on failed attempts. When it is on, every way of signing in passes
-  through it, except where an `oidc-sign-in` spec decides to trust the identity provider's own
-  second factor.
+  through it, with one optional exception for OIDC (below).
 - **Plex for the owner is an option.** In the apps that use Plex (all of them except comradarr and
   zimuarr), the owner can link their account to their own Plex account in the admin settings once
   setup is done. After that, "Sign in with Plex" also signs them in as the owner. The password
@@ -284,18 +283,25 @@ app keeps its own copy; there is no shared package.
   discovery and the authorization code flow with PKCE, and keys the link on the provider's issuer
   and subject. As with Plex, linking never creates an owner, and the password keeps working.
   Signing in through a reverse proxy's headers isn't supported.
+  - **The provider's own second factor can replace the app's, if the owner chooses.** When the ID
+    token's `amr` claim (RFC 8176) reports that the owner used a second factor at the provider,
+    such as Authentik's or Authelia's TOTP or a passkey, the app offers to skip its own two-factor
+    for OIDC sign-ins. It stays on until the owner accepts. Every OIDC sign-in checks the claim
+    again, and one that reports no second factor goes through the app's two-factor. Password and
+    Plex sign-ins always do. A provider that doesn't send `amr` never gets the offer.
 
 Each app's connection modules add their own first-run steps after `setup`, such as connecting Plex
 and Dispatcharr here.
 
 Why: the owner wants the five apps to look and work alike, and everything else depends on these
-modules: every app stores upstream secrets, shows text that must be translatable, needs a safe
-first claim and has to know who its owner is. Encrypting in the app (D4: secrets are configured
-apart from the database) keeps stolen database files unreadable without the key. Two-factor and
-OIDC sign-in were the owner's call for every app; one standard OIDC flow covers the self-hosted
-identity providers without a client for each. A copy per app is enough for five apps and avoids
-building a shared package before it's needed (YAGNI). Associated data, key IDs and hashed session
-tokens fix weaknesses listed in legacy spec §12.
+modules: every app stores upstream secrets, shows text that must be translatable, needs a safe first
+claim and has to know who its owner is. Encrypting in the app (D4: secrets are configured apart from
+the database) keeps stolen database files unreadable without the key. Two-factor and OIDC sign-in
+were the owner's call for every app, and so was letting a provider's own second factor stand in for
+the app's, optionally; one standard OIDC flow covers the self-hosted identity providers without a
+client for each, and `amr` is the standard way to see the provider's factor. A copy per app is
+enough for five apps and avoids building a shared package before it's needed (YAGNI). Associated
+data, key IDs and hashed session tokens fix weaknesses listed in legacy spec §12.
 
 ### D28. Every interface is translatable, in English and Danish
 
@@ -313,6 +319,35 @@ Why: the owner wants full translation support in every app, with Weblate as the 
 and English and Danish now. Adding translation afterwards touches every screen; building it in from
 the first one costs little. The legacy app was British English only, with en-GB dates (legacy
 spec §8.4).
+
+### D29. Paraglide JS with i18next JSON v4 messages
+
+Translation (D28) uses Paraglide JS 2 (`@inlang/paraglide-js`) through its Vite plugin, SvelteKit's
+official i18n integration. Messages live in `messages/en.json` and `messages/da.json` in i18next
+JSON v4, through `@inlang/plugin-i18next` 6.2.0 or later (which fixed its plural handling), with
+plurals under CLDR suffixes. Weblate reads that format as "i18next JSON v4" (`i18nextv4`),
+monolingual, with `messages/en.json` as the base file.
+
+- Components and services call the typed message functions Paraglide compiles, so a missing
+  message is a type error. The compiled output is generated and gitignored.
+- On the server, `paraglideMiddleware` in `hooks.server.ts` picks each request's language (the
+  viewer's cookie, then the browser's preferred languages, then English) and keeps it in
+  AsyncLocalStorage, so concurrent requests can't mix languages. Under SvelteKit 3 it passes the
+  translated request on a copy of the event, because `event.request` is read-only.
+- Dates, times and numbers stay with `Intl` (D28).
+
+Still to validate in the `i18n` module: the pinned versions with SvelteKit 3, TypeScript 6 and Bun;
+building and serving through adapter-bun (Paraglide issue
+[#725](https://github.com/opral/paraglide-js/issues/725) reports the middleware returning nothing in
+builds that use instrumentation); and a Weblate round trip of a plural message.
+
+Why: it is the integration SvelteKit itself points to. Compiled, tree-shaken message functions add
+almost nothing to the bundle and are checked by strict TypeScript. A language per request through
+AsyncLocalStorage is safe for server rendering. i18next JSON v4 is a native Weblate format with
+correct plurals for English and Danish. gettext PO (through wuchale or Lingui) would also carry
+notes for translators, which i18next JSON v4 can't, but those integrations are younger and keep the
+language in stores, which need care when the server renders concurrent requests; svelte-i18n
+resolves messages at runtime, without typed messages. The owner left the choice to the agents.
 
 ## Open
 
@@ -370,10 +405,3 @@ D19 is the simple version; the owner expects a better overall approach may exist
 - Reading, not writing, Dispatcharr's network-access settings to warn about risky values.
 
 Closes with the Dispatcharr feature spec.
-
-### D29. Translation library and message format
-
-Which translation library (D28) and which Weblate-readable file format to use isn't chosen. One
-candidate is Paraglide JS storing its messages as i18next JSON; gettext PO and XLIFF are others.
-The choice must work with SvelteKit 3 on Bun, with server rendering, plurals and TypeScript 6.
-Closes with the `i18n` module.

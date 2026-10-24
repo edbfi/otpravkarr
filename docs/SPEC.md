@@ -37,7 +37,7 @@ components or services, and dates and numbers formatted for the viewer's locale.
 | # | Module id | Responsibility | Depends on | Surfaces |
 |---|---|---|---|---|
 | 1 | `secrets` | Encrypts stored secrets (Plex token, Dispatcharr key, subscriber XC passwords, two-factor secrets, the OIDC client secret) before they reach the database (D27) | — | — |
-| 2 | `i18n` | The translation groundwork (D28, D29): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's locale, and a check that every message exists in both languages | — | the language switcher in each shell |
+| 2 | `i18n` | The translation groundwork (D28) with Paraglide JS (D29): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's locale, and a check that every message exists in both languages | — | the language switcher in each shell |
 | 3 | `setup` | Startup checks, database and migrations, the bootstrap token, and claiming the instance for its one owner, keeping the origin it was claimed from as the first allowed origin (legacy §6.1 pre-filled it). Also adds the audit trail: its table and the one service every later change writes through | `secrets`, `i18n` | first-run setup (no brief yet) |
 | 4 | `sign-in` | Owner sign-in with username and password, sessions, sign-out, rate limits, origin check and allowed origins (the first entry comes from `setup`), security headers and CSP, and the admin shell | `setup` | owner sign-in (no brief yet); the admin shell; the "Allowed website addresses" panel, which it builds first on `/admin/settings/lineup`; `lineup` adds its sections to that page later |
 | 5 | `two-factor` | Optional but strongly recommended (D27): authenticator codes, backup codes and the challenge after every way the owner signs in, with replay protection and a limit on failed attempts. Adds the offer to first-run setup, right after the owner account is created and before any connection step, and the reminder in the admin shell while it is off | `sign-in` | the two-factor offer in first-run setup; the owner's account settings (no brief yet); the reminder in the admin shell |
@@ -53,7 +53,7 @@ components or services, and dates and numbers formatted for the viewer's locale.
 | 15 | `subscriber-admin` | Users table with filters and drift, details, disable, enable, remove, rotate, changing groups and the lock, per-person content flags, and "Subscribe myself", keyed on the Plex account behind the server token (legacy §4 and §6.2), so it needs no owner Plex link. How the owner opens that subscriber view is settled in this module's spec | `accounts`, `lineup`, `plex-connection` | `/admin/users` |
 | 16 | `sync` | The reconcile job: friend sync, adopting or removing managed users through the marker (D23), quarantine refresh, the subscription sync, plugin scope checks, the `m3u_refresh` webhook (D24), the interval setting and running it by hand | `accounts`, `lineup`, `plex-connection` | `/admin` (sync card); `/admin/settings/connections` (sync interval) |
 | 17 | `audit-log` | The audit log page with filters, and the retention job (the writing comes with `setup`) | `sign-in` | audit log (no brief yet) |
-| 18 | `oidc-sign-in` | Connecting one OpenID Connect provider (Authentik, Authelia, Pocket ID, Tinyauth and others) by its issuer, client id and secret, and linking the owner's account to it, after which it signs them in as the owner (D27). Its spec decides whether the provider's own second factor replaces `two-factor` | `two-factor` | the owner's account settings (no brief yet); its button on owner sign-in |
+| 18 | `oidc-sign-in` | Connecting one OpenID Connect provider (Authentik, Authelia, Pocket ID, Tinyauth and others) by its issuer, client id and secret, and linking the owner's account to it, after which it signs them in as the owner (D27). and the optional skip of `two-factor` when the provider's `amr` claim reports its own second factor (D27) | `two-factor` | the owner's account settings (no brief yet); its button on owner sign-in |
 | 19 | `plugin-advisories` | Read-only plugin cards: ECM scope, plugins that target owned profiles, and auto-sync groups without a scope (D24) | `scoping`, `lineup` | plugins (no brief yet) |
 | 20 | `overview` | The owner dashboard: health, user counts, sync, recent activity, available friends | `health`, `accounts`, `sync`, `audit-log` | `/admin` |
 
@@ -73,7 +73,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 | Module | Main homes |
 |---|---|
 | `secrets` | `security/secrets/`; loading the key in `config/` |
-| `i18n` | the message files (where the D29 library keeps them), `lib/shared/i18n/` (language choice and formatting); choosing the language in `hooks.server.ts` |
+| `i18n` | `messages/en.json` and `messages/da.json`, `project.inlang/` (Paraglide's settings), `lib/shared/i18n/` (formatting); `paraglideMiddleware` in `hooks.server.ts` |
 | `setup` | `db/` (client, migrations, settings, owner and audit schema), `config/`, `logging/`, `services/setup/`, `services/audit/record.ts`, `security/bootstrap-token.ts`; `routes/setup/`, and the setup gate in `hooks.server.ts` |
 | `sign-in` | `services/sign-in/`, `security/` (sessions, rate limits, origin check, headers); `routes/(admin)/` layout, `lib/components/layout/` |
 | `two-factor` | `services/two-factor/`, the owner schema's two-factor fields in `db/`; the offer in `routes/setup/`, the challenge page beside the sign-in page, its section of the owner's account settings, and the reminder in `lib/components/layout/` |
@@ -95,7 +95,8 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 ### Open decisions each module closes
 
-- `i18n`: D29 (translation library and message format).
+- `i18n`: the validation that D29 lists (pinned versions, the adapter-bun build, a Weblate round
+  trip).
 - `setup`: D15 (Drizzle and Turso pair) and the logging library half of D14. The secrets half of
   D16's backup and restore goes with `secrets`.
 - The first module with a background job closes the job half of D14: `sign-in` if its session
