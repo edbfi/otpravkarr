@@ -7,11 +7,12 @@
 > [`docs/SPEC.md`](../SPEC.md): §2 (status of the old code), §9.1 (deployment shape), the front
 > listener in §9.2 and §9.4 (startup sequence).
 > [`docs/research/dispatcharr.md`](../research/dispatcharr.md) records where current Dispatcharr
-> behaviour differs from this text (its "Where the spec is wrong or stale" section). Decisions D19–D26
-> supersede the conflicting Dispatcharr text, including the provisioning modes (§5.2, §6.1, §8.3),
-> disable-by-delete (§5.2), the "highest non-admin" user level (§3, §6.5, §10), the health probe and
-> the §7.3 plugin rows. Sections are deleted as approved `docs/SPEC-<id>.md` files cover them, and the file goes
-> once nothing is left (AGENTS.md, cleanup procedures).
+> behaviour differs from this text (its "Where the spec is wrong or stale" section). Decisions
+> D19–D26 supersede the conflicting Dispatcharr text, including the provisioning modes (§5.2, §6.1,
+> §8.3), disable-by-delete (§5.2), the "highest non-admin" user level (§3, §6.5, §10), the health
+> probe and the §7.3 plugin rows. D31 supersedes the master secret's formats and its per-purpose
+> keys (§9.2, §10). Sections are deleted as approved `docs/SPEC-<id>.md` files cover them, and the
+> file goes once nothing is left (AGENTS.md, cleanup procedures).
 
 Plex-gated user provisioning and per-user IPTV access for Dispatcharr.
 
