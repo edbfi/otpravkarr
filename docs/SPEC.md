@@ -121,6 +121,19 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
   §6.2). The owner links their Plex account themselves, if they want to (D27, owner decision).
   The self-subscription still uses that account as its identity (`subscriber-admin`); it just
   doesn't sign anyone in.
+- **The container image's first start** (deferred: a note, not a design). It is specified and
+  built only when Otpravkarr is first tested through its image (`edbfi/otpravkarr-docker`); building
+  images through GitHub, including the nightly build of `main`, is a later goal. The intent, with
+  the app's code unchanged: when `OTPRAVKARR_SECRET_KEY` and `OTPRAVKARR_SECRET_KEY_FILE` are both
+  unset or empty, the image's setup script points `OTPRAVKARR_SECRET_KEY_FILE` at
+  `/config/secret.key` whenever that file exists. It creates the file first (a random 32-byte key
+  in standard base64, written atomically, mode 0600, owned by the app's user) only when
+  `/config/data` is empty and nothing shows an older install (such as the previous app's secret or
+  database variables; the image's own defaults don't count, and the exact checks are decided with
+  the image); otherwise it creates nothing, and the app stops with its own key error. An
+  operator's own key or secret file always wins, and the README tells the operator to keep a copy
+  of the key file. Nothing the v0.1.x images left is ever used as a key; how such an install
+  upgrades is decided with the image.
 
 ### Surfaces with no brief yet
 

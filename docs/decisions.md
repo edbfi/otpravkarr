@@ -399,7 +399,10 @@ a value written under another key fail with its own clear error, and a new key m
 stored secrets again. `secrets` checks the key in SvelteKit's `init` hook from its first version, so
 every way of running the app, dev and CI included, needs one. The key is restored with the database
 file (D16). The legacy master secret (legacy §9.2, §10: hex, base64 or raw text of at least 32
-bytes, with per-purpose keys derived from it) goes with it. The details are in
+bytes, with per-purpose keys derived from it) goes with it. A missing, malformed or weak key's error
+puts the key the app ran with before a new one, because a lost variable or a typo in a key in use
+fails the same checks, and the key loads before any database could say whether anything is stored
+(owner decision, 2026-10-31). The details are in
 [SPEC-secrets.md](SPEC-secrets.md). The design is the same in all five edbfi apps; only the variable
 prefix, the app name and the stored secrets differ.
 
