@@ -1,8 +1,8 @@
 # Spec: otpravkarr
 
 **Status:** the ground floor (skeleton) is specified here, approved by the orchestrator
-(2026-10-18) and built. The capability map below is approved; `secrets` is specified in
-[SPEC-secrets.md](SPEC-secrets.md).
+(2026-10-18) and built. The capability map below is approved; module 1, `secrets`, is built
+([SPEC-secrets.md](SPEC-secrets.md)).
 
 ## Objective
 
@@ -37,7 +37,7 @@ components or services, and dates and numbers formatted for the viewer's locale.
 
 | # | Module id | Responsibility | Depends on | Surfaces |
 |---|---|---|---|---|
-| 1 | `secrets` | Encrypts stored secrets (Plex token, Dispatcharr key, subscriber XC passwords, two-factor secrets, the OIDC client secret) before they reach the database (D27, D31), and the secret wrapper that shows only a redaction marker and opens at one named call | — | — |
+| 1 | `secrets` | **Built.** Encrypts stored secrets (Plex token, Dispatcharr key, subscriber XC passwords, two-factor secrets, the OIDC client secret) before they reach the database (D27, D31), and the secret wrapper that shows only a redaction marker and opens at one named call | — | — |
 | 2 | `i18n` | The translation groundwork (D28) with Paraglide JS (D29): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's locale, and a check that every message exists in both languages | — | the language switcher in each shell |
 | 3 | `setup` | Startup checks, database and migrations, settings, structured logging with redaction, security headers and CSP (ground-floor choice 3), the setup gate, the bootstrap token, printed to the console and never through the stored logs, and claiming the instance for its one owner, keeping the origin it was claimed from as the first allowed origin (legacy §6.1 pre-filled it). otpravkarr adds the audit trail: its table and the one service every later change writes through | `secrets`, `i18n` | first-run setup (no brief yet) |
 | 4 | `sign-in` | Owner sign-in with username and password, signing the new owner in at the claim (D27), sessions, sign-out (POST only), rate limits, the origin check with the allowed origins (the first entry comes from `setup`), cookies that work over plain HTTP at home and behind an HTTPS proxy, password change, error pages, recovery (D27), and the admin shell | `setup` | owner sign-in (no brief yet); the admin shell; the "Allowed website addresses" panel, which it builds first on `/admin/settings/lineup`; `lineup` adds its sections to that page later; the password section of the owner's account settings |
@@ -73,7 +73,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 | Module | Main homes |
 |---|---|
-| `secrets` | `security/secrets/` (the cipher and the secret wrapper); loading the key in `config/` |
+| `secrets` | `security/secrets/` (key checks, keyring, cipher, `Secret`), `config/secret-key.ts`, `src/env.ts` and the `init` hook in `hooks.server.ts` |
 | `i18n` | `messages/en.json` and `messages/da.json`, `project.inlang/` (Paraglide's settings), `lib/shared/i18n/` (formatting); `paraglideMiddleware` in `hooks.server.ts` |
 | `setup` | `db/` (client, migrations, settings, owner and audit schema), `config/`, `logging/`, `services/setup/`, `services/audit/record.ts`, `security/bootstrap-token.ts`, `security/headers.ts`; `routes/setup/`, and the setup gate and the headers in `hooks.server.ts` |
 | `sign-in` | `services/sign-in/` (sessions and their storage, recovery), `db/` session schema, `security/` (session-token and password hashing, rate limiting, origin check); the sign-in at the claim in `routes/setup/`, `routes/(admin)/` layout, `lib/components/layout/` |
@@ -172,6 +172,7 @@ Setup facts for this stack:
   (`src/app.css`), and `transform: true` turns static `css()` calls into class strings at build
   time.
 - Hook types come from `@sveltejs/kit/hooks`.
+- SvelteKit 3 exposes only the environment variables declared in `src/env.ts`.
 - Tools run under Bun with `--bun`; a lifecycle script (`prepare`) calls each bin as
   `bun --bun <bin>`, because `bun ci` doesn't apply `--bun` to lifecycle scripts.
 - Bun blocks `@parcel/watcher`'s install script (it builds with Node); Panda works without it.
@@ -181,12 +182,12 @@ Setup facts for this stack:
 | Command | Does |
 |---|---|
 | `bun ci` | frozen install; `prepare` runs `svelte-kit sync` and Panda codegen |
-| `bun run --bun dev` | Vite dev server |
-| `bun run --bun build` | production build through adapter-bun into `build/` |
-| `bun run --bun preview` | runs the built server (`bun ./build`; `PORT`, default 3000, and `HOST`) |
+| `bun run --bun dev` | Vite dev server; needs a key in `.env` or the environment, and without one every request fails with the key error |
+| `bun run --bun build` | production build through adapter-bun into `build/`; needs no key and never embeds one |
+| `bun run --bun preview` | runs the built server (`bun ./build`; `PORT`, default 3000, and `HOST`); without a valid key it exits before listening |
 | `bun run --bun check` | `svelte-kit sync`, Panda codegen, then `svelte-check` failing on any error or warning |
 | `bun run --bun test` | Vitest unit tests, once (no watch) |
-| `bun run --bun smoke` | Playwright e2e smoke; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
+| `bun run --bun smoke` | Playwright e2e: the browser smoke test and the startup tests, with a key it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
 | `bun run --bun lint` | `biome ci`, read-only; `biome.json` lists the file extensions Biome checks |
 | `prek run --all-files --hook-stage manual` | everything CI's `checks` job runs |
 
@@ -223,13 +224,19 @@ export const GET: RequestHandler = () => healthResponse();
 
 ## Testing strategy
 
-- **Unit (Vitest, `node` environment):** one test, for the `/healthz` handler: status 200, body
-  `ok`, `cache-control: no-store`. Component tests use happy-dom when components exist; never jsdom.
-- **e2e (Playwright, Chromium, under Bun):** one smoke test against the built adapter-bun server.
-  It checks that `/` returns 200, shows the placeholder heading, hydrates (it waits for the
-  `data-hydrated` attribute the root layout sets when mounted), applies the Panda background token
-  and display text style and logs no console errors, and that `/healthz` returns `ok`.
-- prek runs the unit tests (`tests` hook); CI's `smoke` job builds and runs the smoke test.
+- **Unit (Vitest, `node` environment):** the `/healthz` handler (status 200, body `ok`,
+  `cache-control: no-store`) and the `secrets` module (`config/secret-key.test.ts`, and
+  `key-text.test.ts`, `keyring.test.ts`, `cipher.test.ts` and `secret.test.ts` in
+  `security/secrets/`, under `src/lib/server/`). Component tests use happy-dom when components
+  exist; never jsdom.
+- **e2e (Playwright, Chromium, under Bun):** against the built adapter-bun server, with a master key
+  Playwright generates for each run, so CI needs no stored secret.
+  - `smoke.test.ts` checks that `/` returns 200, shows the placeholder heading, hydrates (it waits
+    for the `data-hydrated` attribute the root layout sets when mounted), applies the Panda
+    background token and display text style and logs no console errors, and that `/healthz`
+    returns `ok`.
+  - `secret-key.test.ts` checks that the built server refuses to start without a valid key.
+- prek runs the unit tests (`tests` hook); CI's `smoke` job builds with no key and runs `smoke`.
 
 ## CI and repo tooling
 
@@ -250,8 +257,9 @@ otpravkarr is a Bun web repo with edbfi-ci's Bun web templates:
   configuration in the Vite plugin; prek green before each commit.
 - **Ask first:** any dependency not in the tech stack table; any change to `biome.json` (it is
   shared by the five rewrite apps); any CI shape that differs from the edbfi-ci template.
-- **Never:** a database, authentication, Plex, Dispatcharr or any product feature; a second styling
-  tool or primitive library; Node, npm or npx anywhere, including CI.
+- **Never:** a database, authentication, Plex, Dispatcharr or any product feature before its
+  module's approved spec builds it; a second styling tool or primitive library; Node, npm or npx
+  anywhere, including CI.
 
 ## Success criteria
 
