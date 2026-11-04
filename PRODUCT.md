@@ -91,6 +91,4 @@ Dark Matter. Warm orange against dark plum, generous editorial serif headings, r
 
 ## Accessibility and inclusion
 
-Keyboard access throughout, visible focus, labelled inputs, text plus icon for status, 44px touch targets, readable text at 200% zoom, and reduced-motion alternatives. Target WCAG AA text contrast. Never use color alone to communicate a decision. Bundle fonts locally in the implementation.
-
-Practices the legacy app followed, kept: a skip link first in every shell; labelled navigation and filter regions; a label on every icon-only control; dialogs that trap focus; live regions that announce copy results and saved changes; invalid inputs flagged and linked to their help text; first-run steps announced as done or current; and menu and drawer buttons that state whether they are open and what they control.
+Keyboard access throughout, visible focus, labelled inputs, text plus icon for status, 44px touch targets, readable text at 200% zoom, and reduced-motion alternatives. Target WCAG AA text contrast. Never use color alone to communicate a decision. Bundle fonts locally in the implementation. A skip link comes first in every shell; navigation and filter regions are labelled; every icon-only control has a label; dialogs trap focus; live regions announce copy results and saved changes; invalid inputs are flagged and linked to their help text; first-run steps are announced as done or current; and menu and drawer buttons state whether they are open and what they control.
