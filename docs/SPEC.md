@@ -51,7 +51,7 @@ components or services, and dates and numbers formatted for the viewer's locale.
 | 12 | `plex-sign-in` | Sign in with Plex. For friends: the accepted-friend check, the revoked view, the picker for new friends and provisioning on first sign-in. For the owner: linking their Plex account in the admin settings, after which Plex signs them in as the owner, through two-factor when it is on (D27) | `two-factor`, `plex-connection`, `lineup`, `accounts` | `/`; the owner's account settings (no brief yet) |
 | 13 | `credentials` | The subscriber's XC URLs only (D19), reveal and copy, QR code on request, M3U snapshot, refreshing credentials, and the guide for free and open-source players | `plex-sign-in` | `/portal`, `/portal/setup` |
 | 14 | `channel-choices` | Subscribers pick bundles or groups within policy, or see a locked view | `plex-sign-in`, `lineup` | `/portal/channels` |
-| 15 | `subscriber-admin` | Users table with filters and drift, details, disable, enable, remove, rotate, changing groups and the lock, per-person content flags, and "Subscribe myself", keyed on the Plex account behind the server token, so it needs no owner Plex link. How the owner opens that subscriber view is settled in this module's spec | `accounts`, `lineup`, `plex-connection` | `/admin/users` |
+| 15 | `subscriber-admin` | Users table with filters and drift, details, disable, enable, re-provision, remove, rotate, changing groups and the lock, per-person content flags, and "Subscribe myself", keyed on the Plex account behind the server token, so it needs no owner Plex link. How the owner opens that subscriber view is settled in this module's spec | `accounts`, `lineup`, `plex-connection` | `/admin/users` |
 | 16 | `sync` | The reconcile job: friend sync, adopting or removing managed users through the marker (D23), quarantine refresh, the subscription sync, plugin scope checks, the `m3u_refresh` webhook (D24), the interval setting and running it by hand | `accounts`, `lineup`, `plex-connection` | `/admin` (sync card); `/admin/settings/connections` (sync interval) |
 | 17 | `audit-log` | The audit log page with filters, and the retention job (the writing comes with `setup`) | `sign-in` | audit log (no brief yet) |
 | 18 | `oidc-sign-in` | Connecting one OpenID Connect provider (Authentik, Authelia, Pocket ID, Tinyauth and others) by its issuer, client id and secret, and linking the owner's account to it, after which it signs them in as the owner, and offering to skip `two-factor` when the provider's `amr` claim reports its own second factor (D27) | `two-factor` | the owner's account settings (no brief yet); its button on owner sign-in |
@@ -473,10 +473,12 @@ numbers in these blocks are otpravkarr's.
 - **Offered groups**, what a picker shows, are the live, approved groups outside quarantine. A new
   subscriber starts with everything offered chosen. The per-person lock freezes their choice and
   shows them a read-only view that says the owner manages it.
-- **Where it applies:** a new friend's first sign-in (`plex-sign-in`), `channel-choices`, the
-  owner's group changes (intent saved first, then resolved and enforced) and every sync, which
-  works from intent for every active subscriber, the owner's self-subscription included, never from
-  the stored effective groups.
+- **Where it applies:** a new friend's first sign-in (`plex-sign-in`); re-provisioning an Orphaned
+  friend from their saved intent, at their next sign-in (`plex-sign-in`), through the owner's
+  Re-provision (`subscriber-admin`) or through the portal's Retry (`credentials`);
+  `channel-choices`; the owner's group changes (intent saved first, then resolved and enforced); and
+  every sync, which works from intent for every active subscriber, the owner's self-subscription
+  included, never from the stored effective groups.
 - **Quarantine groups** are never offered, never effective and left out of every picker, matched by
   trimmed, case-insensitive name. Every sync reads IPTV Checker's three destination-group settings
   (defaults merged, D24) and replaces the learned names with them, always alongside the plugin's
@@ -542,8 +544,9 @@ numbers in these blocks are otpravkarr's.
   or after a failed scoping). Only an active record becomes Orphaned: an inactive record whose
   Dispatcharr user goes stays Inactive, so missing upstream infrastructure never undoes the owner's
   revocation. An Orphaned friend's next sign-in provisions them again, so deleting a friend's user
-  directly in Dispatcharr doesn't revoke them: revoking goes through otpravkarr (disable or remove)
-  or through Plex (ending the friendship).
+  directly in Dispatcharr doesn't revoke them. The lasting revocation is disabling the friend in
+  otpravkarr or ending the Plex friendship. Removing isn't one: it deletes their Dispatcharr user
+  and record, and a friend who is still an accepted Plex friend can sign in again and come back.
 - **Provisioning** is idempotent by Plex account id and answers provisioned, already exists,
   reactivated or failed, without throwing for expected failures. It applies the groups it is given
   and doesn't consult policy, so a caller that wants them to survive the next sync saves matching
@@ -603,8 +606,11 @@ numbers in these blocks are otpravkarr's.
   confirm the server checks the friendship again and every chosen group against the offered groups
   it works out itself (failing closed), then provisions. Returning friends, the owner and every
   other case skip the picker, so nobody is stranded.
-- **The session** follows provisioning with the chosen groups and matching intent: a subscriber
-  session of a fixed 4 hours from sign-in, with no sliding renewal (owner decision, 2026-11-04).
+- **Provisioning:** a new friend is provisioned with the chosen groups and matching intent. A
+  returning friend, an Orphaned one included, is provisioned from their saved intent (`lineup`),
+  without overwriting their saved choices or the owner's lock.
+- **The session** follows provisioning: a subscriber session of a fixed 4 hours from sign-in, with
+  no sliding renewal (owner decision, 2026-11-04).
 - **Revoked:** a session whose record has gone is ended when it's seen; one whose record is inactive
   lives on only to show the revoked view and sign out, and never reaches credentials.
 - **The return page** shows that sign-in is completing, the picker, or an error that names the cause
@@ -628,10 +634,15 @@ numbers in these blocks are otpravkarr's.
   groups it is a header-only file. The portal says it won't update, and Dispatcharr's profiles stay
   the boundary at stream time. It is refused to the unprovisioned, the anonymous and the revoked.
 - **Other states:** a provisioning problem shows its specific reason (not set up yet, no HTTPS
-  public URL); its Retry (the `route-portal` brief) provisions an Orphaned subscriber again from
-  their saved choices, as their next sign-in would (`accounts`), audited as themselves, and
-  otherwise checks again. The revoked view is `plex-sign-in`'s. Before any URL is shown, an unsafe
-  Dispatcharr user is fixed or disabled (D23).
+  public URL) and a Retry (the `route-portal` brief). The revoked view is `plex-sign-in`'s.
+- **Retry** gives nothing a fresh sign-in wouldn't. A subscriber who isn't the owner is first
+  checked, fresh, as an accepted Plex friend, the way sign-in does (`plex-sign-in`): one who isn't
+  any more is disabled (D23) and gets nothing. Otherwise an Orphaned subscriber is provisioned
+  again from their saved choices (`accounts`), audited as themselves, and anyone else is checked
+  again.
+- **Before any URL is shown,** the Dispatcharr user is checked. "Not found" clears the stale link,
+  as rotating does (`accounts`), so the record is Orphaned and Retry works before the next sync; an
+  unsafe user is fixed or disabled (D23).
 - **The player guide** links each player in PRODUCT.md (Open TV, shipped as Fred.TV; IINA; VLC) to
   its project's own download page; nothing is looked up live. Every player gets the same playlist
   URL.
