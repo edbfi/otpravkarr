@@ -296,7 +296,7 @@ Goals, from the legacy app:
 - Credentials masked and rotatable.
 - Converge despite plugin churn.
 
-The legacy app's known weaknesses in play: orphaned remote accounts, credentials in URLs, drift, and empty-profile exposure.
+The legacy app's weak points in play: orphaned remote accounts, credentials in URLs, drift, and empty-profile exposure.
 
 | Option | Per-user identity and revocation | Scoping | Credential handling | Orphans and drift | Fit |
 |---|---|---|---|---|---|
@@ -313,7 +313,7 @@ Option A, hardened:
 - **Streamer level, and a throwaway login password.** This closes UI/REST exposure and separates the login password from the XC credential.
 - **`start_empty` profiles.** No all-channels window when a profile is created.
 - **Explicit VOD, catch-up and adult flags, and `stream_limit`.**
-- **An ownership marker on each remote user.** Orphans can be found and adopted or deleted (a known weakness of the legacy app: a remote account orphaned with no record of its ID).
+- **An ownership marker on each remote user.** Orphans can be found and adopted or deleted (a flaw of the legacy app: a remote account orphaned with no record of its ID).
 - **Disable by clearing `xc_password`, alongside the empty profile.**
   - It is reversible and keeps the Dispatcharr user ID, so bookmarked URLs work again after re-enable with a stored or rotated password.
   - It avoids the create/delete churn that produces orphans.
@@ -371,3 +371,6 @@ once a module's spec absorbs or corrects it.
   and the owner can rename them in the plugin's settings (section 6 confirms the setting names).
 - **Membership reads.** A profile's membership that isn't a proper list is an upstream error, not an
   empty profile: reading it as empty would make narrowing a no-op.
+- **Logged credentials.** Dispatcharr logged the credential-bearing direct live path, so the legacy
+  app's rollout denied it at the reverse proxy, which exposed only the credentialed XC playlist, API
+  and guide paths and the credential-free logo cache. A lead for D20's path list.

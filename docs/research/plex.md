@@ -29,4 +29,4 @@ deleted once `plex-connection`'s or `plex-sign-in`'s spec absorbs or corrects it
 - **A server reports its own identity:** a friendly name, a machine identifier and a version. The
   machine identifier that matters is the one the server reports, not the one plex.tv lists.
 - **plex.tv and the server fail separately.** When plex.tv is down, a server reached directly with a
-  valid token still answers, so the legacy health check counted that as healthy.
+  valid token still answers, so the legacy app's health check counted that as healthy.

@@ -8,7 +8,7 @@
 
 otpravkarr lets the accepted Plex friends of a server owner sign in with Plex and get their own
 scoped IPTV account on the owner's Dispatcharr, through a subscriber portal and an owner console
-([PRODUCT.md](../PRODUCT.md), [legacy spec](product/legacy-spec.md)).
+([PRODUCT.md](../PRODUCT.md)).
 
 **This spec covers only the ground floor:** an empty, production-shaped SvelteKit app that builds,
 type-checks, tests, lints and serves on Bun, styled from the design tokens, with the edbfi Bun web
@@ -21,8 +21,8 @@ to make the first module spec cheap to build: every later PR adds behaviour, not
 (D27; shared rows aligned 2026-10-30). Module ids never change. Each module gets its own
 `docs/SPEC-<id>.md`, which the owner approves just before it is built.
 Sources: [PRODUCT.md](../PRODUCT.md), [decisions.md](decisions.md), the
-[legacy spec](product/legacy-spec.md), the [Dispatcharr research](research/dispatcharr.md), the
-[surface briefs](../.impeccable/surfaces/) and the [Module notes](#module-notes) below.
+[Dispatcharr research](research/dispatcharr.md), the [surface briefs](../.impeccable/surfaces/) and
+the [Module notes](#module-notes) below.
 
 **Every module keeps to [Code structure](../AGENTS.md#code-structure).** Its spec names the files it
 adds in that layout, and review checks them. In short:
@@ -51,7 +51,7 @@ components or services, and dates and numbers formatted for the viewer's locale.
 | 12 | `plex-sign-in` | Sign in with Plex. For friends: the accepted-friend check, the revoked view, the picker for new friends and provisioning on first sign-in. For the owner: linking their Plex account in the admin settings, after which Plex signs them in as the owner, through two-factor when it is on (D27) | `two-factor`, `plex-connection`, `lineup`, `accounts` | `/`; the owner's account settings (no brief yet) |
 | 13 | `credentials` | The subscriber's XC URLs only (D19), reveal and copy, QR code on request, M3U snapshot, refreshing credentials, and the guide for free and open-source players | `plex-sign-in` | `/portal`, `/portal/setup` |
 | 14 | `channel-choices` | Subscribers pick bundles or groups within policy, or see a locked view | `plex-sign-in`, `lineup` | `/portal/channels` |
-| 15 | `subscriber-admin` | Users table with filters and drift, details, disable, enable, remove, rotate, changing groups and the lock, per-person content flags, and "Subscribe myself", keyed on the Plex account behind the server token (legacy §4 and §6.2), so it needs no owner Plex link. How the owner opens that subscriber view is settled in this module's spec | `accounts`, `lineup`, `plex-connection` | `/admin/users` |
+| 15 | `subscriber-admin` | Users table with filters and drift, details, disable, enable, remove, rotate, changing groups and the lock, per-person content flags, and "Subscribe myself", keyed on the Plex account behind the server token, so it needs no owner Plex link. How the owner opens that subscriber view is settled in this module's spec | `accounts`, `lineup`, `plex-connection` | `/admin/users` |
 | 16 | `sync` | The reconcile job: friend sync, adopting or removing managed users through the marker (D23), quarantine refresh, the subscription sync, plugin scope checks, the `m3u_refresh` webhook (D24), the interval setting and running it by hand | `accounts`, `lineup`, `plex-connection` | `/admin` (sync card); `/admin/settings/connections` (sync interval) |
 | 17 | `audit-log` | The audit log page with filters, and the retention job (the writing comes with `setup`) | `sign-in` | audit log (no brief yet) |
 | 18 | `oidc-sign-in` | Connecting one OpenID Connect provider (Authentik, Authelia, Pocket ID, Tinyauth and others) by its issuer, client id and secret, and linking the owner's account to it, after which it signs them in as the owner, and offering to skip `two-factor` when the provider's `amr` claim reports its own second factor (D27) | `two-factor` | the owner's account settings (no brief yet); its button on owner sign-in |
@@ -113,16 +113,17 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 - Self-managed and staff modes, and the Change Profile action, which only made sense for them
   (D21).
-- The setup "Defaults" step (nothing used it, legacy spec §12, and the default mode went with
-  D21).
+- The setup "Defaults" step (nothing used it, and the default mode went with D21).
 - The admin friends and detailed health APIs, and the unlinked owner "where would you like to go?"
-  page (no consumer, legacy spec §12).
+  page (no consumer).
+- Email or other notifications, to the owner or to subscribers, and importing friends in bulk: a
+  friend gets an account the first time they sign in.
 - Any role beyond the one owner (owner decision).
 - Signing in through a reverse proxy's headers (D27): `oidc-sign-in` covers the same identity
   providers.
 - Connecting Weblate (D28): later work, outside this map. The message files are ready for it.
-- Recognising the owner automatically as the Plex account behind the server token (legacy spec
-  §6.2). The owner links their Plex account themselves, if they want to (D27, owner decision).
+- Recognising the owner automatically as the Plex account behind the server token, as the legacy
+  app did. The owner links their Plex account themselves, if they want to (D27, owner decision).
   The self-subscription still uses that account as its identity (`subscriber-admin`); it just
   doesn't sign anyone in.
 - **The container image's first start** (deferred: a note, not a design). It is specified and
@@ -142,33 +143,120 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 ### Surfaces with no brief yet
 
 First-run setup, owner sign-in, the owner's account settings, `/admin/plugins` and `/admin/audit`
-are needed (the last two are in the legacy app and in PRODUCT.md's admin shell) but have no
-brief. Each gets one before its module is specced.
+are needed (the last two are in PRODUCT.md's admin shell) but have no brief. Each gets one before
+its module is specced, starting from its module's [Module notes](#module-notes).
 
 ### Module notes
 
-What a capability-map row commits to in more detail than a clause fits. It is behaviour to keep
-unless the module's approved spec or a decision changes it, and each block moves into its module's
-`SPEC-<id>.md` when that module is specced. `setup` and `sign-in` are shared with the other edbfi
-apps (D27), with obzorarr as their reference: a bullet or clause marked "(otpravkarr)" is this app's
-own, and the rest is the shared wording; a "(otpravkarr)" mark inside a bullet covers the rest of
-that bullet, and "(otpravkarr: …)" only its own parentheses.
+What a capability-map row commits to in more detail than a clause fits, carried over from the legacy
+app and adapted to the decisions. It is behaviour to keep unless the module's approved spec or a
+decision changes it. Layout, placement, visuals and exact wording are not behaviour: where a note
+describes them, DESIGN.md and the surface's brief win, and for a surface with no brief yet the note
+is only a starting point for that brief. Each block moves into its module's `SPEC-<id>.md` when that
+module is specced. Rate limits are listed once, under `sign-in`. `i18n`, `setup` and `sign-in` are
+shared with the other edbfi apps (D27), with obzorarr as their reference: a bullet or clause marked
+"(otpravkarr)" is this app's own, and the rest is the shared wording; a "(otpravkarr)" mark inside a
+bullet covers the rest of that bullet, and "(otpravkarr: …)" only its own parentheses. Decision
+numbers in these blocks are otpravkarr's.
+
+#### i18n
+
+- A number in a message that states how the app behaves (a limit, a duration, a count) is passed
+  in as a parameter from the constant the logic uses, never written into the text, so the copy
+  can't drift from the behaviour.
 
 #### setup
 
+- **The setup gate.** Until first run is complete, every page except static assets, the claim,
+  sign-in and first run's own helpers sends the browser to the current first-run step. The server
+  keeps one current-step pointer: the browser can't skip ahead, each step's action checks that it is
+  the current step, and a step that offers Previous only moves the pointer back. Only the last
+  step's action completes first run. (otpravkarr) `/healthz` is exempt too, and going back keeps
+  what the owner typed. After the claim come `two-factor`'s offer, then Plex (`plex-connection`)
+  and Dispatcharr (`dispatcharr-connection`). Completing first run seeds `health` and lands on
+  `/admin`.
+- **The bootstrap token** (D27) is 12 random lowercase letters and digits, shown as
+  `xxxx-xxxx-xxxx`, held only in memory (never logged or stored) and compared in constant time. It
+  is printed with the setup URL and is valid for 15 minutes, after which a new one is printed. Claim
+  attempts are rate-limited (`sign-in`). (otpravkarr) A token in the URL is ignored: it must be
+  typed.
 - **The claim** is a POST, cross-origin-checked like any other (`sign-in`), and it stores no
   address. It needs a valid bootstrap token and the browser's address (`sign-in`). Using up the
   token and creating the owner are one atomic step, and the owner session it starts follows
   `sign-in`'s cookies.
-- **Security headers** (otpravkarr: ground-floor choice 3) include a referrer policy of
-  `same-origin` or `strict-origin-when-cross-origin`, never `no-referrer` (which makes browsers send
-  `Origin: null` on the app's own form posts). Strict transport security (otpravkarr: whether it is
-  sent, and for how long, is for `setup`'s spec) goes only over HTTPS (known when `ORIGIN` is
-  `https`, or when the browser sent `Sec-Fetch-Site` to a host that isn't loopback, since browsers
-  send it only to HTTPS and loopback addresses).
+- **The owner account** (otpravkarr): the claim asks for a username of 3 to 32 letters, digits,
+  underscores or dashes, and the password twice; the password rules are `sign-in`'s open decision.
+  There is never a second owner (D27).
+- **The audit trail** (otpravkarr): one service writes every entry, and entries are never edited,
+  only removed by retention (`audit-log`). An entry has a time, an action, and where known the
+  actor (the owner, or a subscriber's Plex username for their own actions; none for the system) and
+  the client address, plus optional structured detail. Everything that changes state is audited,
+  first run included: each step as a configuration change with secret values left out, then "setup
+  completed". A configuration entry is written only when something actually changed. An entry
+  about a subscriber carries their Plex username and their Dispatcharr username, the latter as
+  Dispatcharr reported it, never a stale local copy, so a search on either finds it.
+- **Settings** (otpravkarr) hold one value per key: a write replaces it, and clearing writes an
+  empty value. Secrets among them are encrypted (`secrets`).
+- **Settings URLs:** upstream base URLs may not hold credentials, a query or a fragment.
+  (otpravkarr) Only `http` and `https` are accepted, and a URL is reduced to its origin. The Plex
+  server URL and Dispatcharr's internal URL carry secrets, so they must be HTTPS, except that plain
+  HTTP is allowed for loopback, private and local hosts (such as `http://dispatcharr:9191` on a
+  Docker network) once the owner opts in for that URL. Dispatcharr's public URL follows
+  `credentials`.
+- **Logging.** Redaction runs before an entry is written anywhere: credentials in URLs, token-like
+  query parameters, token, authorisation and cookie fields in payloads and headers, and, at any
+  depth, any metadata key that looks like a token, secret, password, cookie, session or key.
+  (otpravkarr) One entry per request (method, the path without its query string, status, duration,
+  client address), plus job, health and unhandled-error entries (with a request id, the error's
+  class, message and stack). Query strings and request bodies are never logged, and upstream
+  response bodies never reach the user. The only secret printed on purpose is the bootstrap token,
+  on the console (D27).
+- **Security headers** go on every response, early returns and the setup gate's redirect included:
+  framing denied, no MIME sniffing, a referrer policy of `same-origin` or
+  `strict-origin-when-cross-origin`, never `no-referrer` (which makes browsers send `Origin: null`
+  on the app's own form posts), a permissions policy denying camera, microphone and geolocation,
+  and a nonce-based content security policy: scripts from the app only; images from the app and
+  inline data (otpravkarr: and Plex's hosts, for avatars); fonts from the app (DESIGN.md bundles
+  them); connections to the app only (otpravkarr: and Plex); no framing; the app only as base and
+  form target. (otpravkarr: no inline styles either; these are ground-floor choice 3.) Strict
+  transport security (otpravkarr: whether it is sent, and for how long, is for `setup`'s spec) goes
+  only over HTTPS (known when `ORIGIN` is `https`, or when the browser sent `Sec-Fetch-Site` to a
+  host that isn't loopback, since browsers send it only to HTTPS and loopback addresses).
+- **Startup and shutdown.** Startup runs once, before any request is served: migrations (D5), then
+  each module's startup work (otpravkarr: restoring the learned quarantine names, `lineup`, and one
+  health probe, `health`), then starting the jobs (otpravkarr: sync, health, session cleanup and
+  audit retention); a job that fails to start is logged, not fatal. Shutdown stops the jobs,
+  flushes the logs and drains open requests for a bounded time, then exits even if an upstream call
+  is still outstanding. A second signal exits at once, and a hang-up counts as a stop. The
+  environment sets the drain time (default 30 seconds, kept below the container's stop timeout).
+  (otpravkarr) It also sets the database location, the idle timeout (default 10 seconds; 0 turns it
+  off) and the request body limit (default about half a megabyte). An explicitly set database path
+  that doesn't exist stops startup instead of creating an empty database, so a missing volume can't
+  pass for a fresh install. Migrations only go forward: a backup is the database file and the master
+  key together (D16, D31), and the app is never downgraded across a migration.
+- **Trust:** anyone who can read the server console can claim a fresh install.
 
 #### sign-in
 
+- **Request order** (startup has already finished in SvelteKit's `init` hook): the cross-origin
+  check, rate limits, sign-in, the setup gate, then the owner check. Security headers go on every
+  response, an early return from any stage included.
+- **Owner-only pages** send someone who isn't signed in to owner sign-in, with a return path that
+  keeps only the path, never the query string; where the app has member sessions, a signed-in member
+  goes to their dashboard. An owner-only form action answers "forbidden"; a member's form action
+  without a session answers "unauthenticated" rather than failing. (otpravkarr) Owner and subscriber
+  sessions are separate kinds: each is refused where only the other is allowed, and an owner JSON
+  endpoint answers "unauthenticated" without a session and "forbidden" with a subscriber's. A
+  subscriber page without a subscriber session sends the browser to `/`, and a bad session cookie is
+  cleared. A signed-in owner who opens `/` or owner sign-in goes to `/admin`.
+- **Return paths** are same-origin paths only: one leading slash, no backslashes or control
+  characters, at most 2,048 characters. Only the path is kept.
+- **Rate limits** apply per client address. The client address comes from the connection, or from a
+  header and a proxy depth (default 1) set in the environment. Responses carry `Retry-After` and
+  remaining and reset headers, and come as a form error, a JSON error or a branded page, whichever
+  the caller expects. (otpravkarr) Kept in the process (one process, D4, D17): the claim 5 per 15
+  minutes, owner sign-in 5 per 5 minutes, and starting Plex sign-in 20 per 15 minutes. Owner
+  sign-in shows when the next try is allowed.
 - **SvelteKit's own form check is off:** `sveltekit({ csrf: { trustedOrigins: ['*'] } })` in
   `vite.config.ts` (SvelteKit 3 takes its options in the `sveltekit()` call, with no `kit:`
   wrapper). Remote functions stay off. A config test asserts both, so SvelteKit's only remaining
@@ -248,6 +336,355 @@ that bullet, and "(otpravkarr: …)" only its own parentheses.
 - **A wrong address never locks the owner out.** No stored address can stop password sign-in: a
   wrong `ORIGIN` is fixed or removed, then the app restarts. The OIDC callback address is stored,
   so OIDC may need registering again after a move, but password sign-in always remains (D27).
+- **Owner sign-in** (otpravkarr): an unknown username and a wrong password get the same message and
+  take the same time (a password hash is checked either way). A successful sign-in first deletes
+  the session the browser's cookie named, then starts a new one, and is audited; failed attempts
+  aren't audited (the rate limit covers them).
+- **Sessions** (otpravkarr): a random opaque token in the cookie, stored hashed (D27), with its kind
+  (owner or subscriber), whom it belongs to and an absolute expiry. A person may have several
+  sessions at once. Every sign-in, owner or subscriber, replaces the session the browser's cookie
+  named. A cleanup job removes expired sessions every 30 minutes.
+- **Errors:** an unexpected error is logged and the user sees "Something went wrong. Try again.";
+  expected errors pass through; network failures map to fixed phrases; stack traces never reach the
+  browser. Error pages are titled "Page not found", "Access denied", "Too many requests" or
+  "Something went wrong", each with a one-line description and Go back and Home actions; a
+  not-found page doesn't show the status number.
+- **Sign-out** is POST only, behind a confirmation; a GET only redirects, so an image tag or a
+  prefetch can't sign anyone out. (otpravkarr) It deletes the session, is audited for the owner, and
+  takes the owner to owner sign-in and a subscriber to `/`.
+- **The admin shell** (otpravkarr): PRODUCT.md's sidebar, the signed-in owner and sign-out behind a
+  confirmation; on phones the sidebar is a drawer that closes after navigating.
+
+#### plex-connection
+
+- **Pull only:** nothing is written to Plex, and the friends list is fetched fresh for every
+  subscriber sign-in and every sync, never from a cache (the dashboard's cache is `overview`'s).
+- **Connecting,** in first run and in the settings: the owner pastes the server URL and token, or
+  gets the token through Plex's PIN sign-in in a popup, which signs nobody in (D27). After the
+  popup, the account's servers are discovered and each server's connections ranked: remote HTTPS,
+  then local HTTPS, then local HTTP, with loopback and container-internal addresses lower and Plex's
+  relay last. The owner picks one; when discovery fails, typing a URL is offered.
+- **Checking** reaches plex.tv with the token, then the server, and requires a friendly name, a
+  machine id, and that the token's account can reach that server. Transient failures are retried
+  with backoff while the seconds elapsed are shown; a bad token, a bad request or "not found" isn't
+  retried. On success the server's name, machine id and version are shown, and the machine id
+  stored is the one the server reports.
+- **The settings form:** the URL, whether a token is stored with a blank field to replace it, and
+  the machine id, read-only. Saving checks again and says whether it saved a change or found nothing
+  to change.
+- **Failures:** malformed friend data fails closed; transient connection failures are retried with
+  backoff; a portal page that hits a Plex failure shows a controlled error instead of crashing.
+
+#### dispatcharr-connection
+
+- **Connecting,** in first run and in the settings: the internal URL, used for every API call; an
+  optional public URL, used only in the URLs subscribers get (`credentials`); and the key (D25).
+  One quick test tells "couldn't connect" from "the key is invalid". The settings form shows
+  whether a key is stored, with a blank field to replace it, and its help tells the internal
+  address from the one players use.
+- **Two kinds of call:** interactive ones (page loads, connection tests) have a short timeout sized
+  to finish inside the server's idle timeout (`setup`) and no retries; background ones (jobs,
+  provisioning, showing credentials, health) have a 15-second timeout, one retry for safe reads and
+  none for writes. A page whose interactive call runs out shows a degraded view, never a blank
+  error.
+- **Paging:** a `next` link is rebased onto the configured host, so the key is never sent anywhere
+  else, and a failure on any page fails the whole read (no partial results).
+- **Validation:** responses are schema-checked and fail closed; a profile's membership that isn't a
+  list is an error, never an empty profile. Plugin payloads are read leniently, since their shape
+  isn't defined.
+- **Errors** are classed as an auth failure, not found, invalid, a server error, a network error or
+  an unexpected shape. Writes are never retried, and response bodies never reach the user and are
+  redacted in the logs.
+- **Writes** are limited to creating, updating (custom properties always merged) and deleting users,
+  creating profiles and updating a profile's membership in bulk. otpravkarr never deletes a profile
+  and never changes channels, groups or plugins.
+
+#### health
+
+- **State** is kept in memory: it starts pessimistic, is probed once at startup, then every 5
+  minutes, and is set to healthy when first run completes.
+- **Plex:** healthy, unauthorised, unreachable, or "server changed" (the server reports a machine id
+  other than the stored one). plex.tv being down while the server answers still counts as healthy.
+- **Dispatcharr:** reachable, and the key valid. A reachable result, a definite "key invalid"
+  included, shows at once; "unreachable" shows only after two failed probes in a row, so one blip
+  keeps the last good state. Every failed probe is audited.
+- **Database:** a write, then reading it back.
+- **Overall:** `unhealthy` when the database check fails, `ok` when all three pass, otherwise
+  `degraded` (so a fresh instance is `degraded`). `/healthz` returns only that word; the owner's
+  tiles show each check and when it ran.
+
+#### lineup
+
+- **Settings:** a default policy (fixed, core plus bundles, or approved selection; core plus bundles
+  on a fresh install), the fixed, core and approved group lists, and the bundle catalogue with a
+  version number the owner moves forward when bundle contents change. The approved list is never
+  seeded: unset or malformed means nothing is approved, never every live group. Saving checks the
+  lists against the live groups, and the pickers are disabled, saying why, when no live groups
+  outside quarantine load.
+- **Bundles** have a permanent id and slug, fixed at creation (enforced in storage; never derived
+  from the name), and an editable name, enabled flag and ordered group list.
+- **Intent and effect:** each subscriber's intent is an optional policy override, their chosen
+  bundles, their chosen approved groups and a lock on choosing. Only the subscriber
+  (`channel-choices`) or the owner (`subscriber-admin`) changes it, never resolution or sync, and
+  malformed intent reads as empty. What they get now, their effective groups, is stored apart.
+- **Requested groups:** fixed gives the fixed list; core plus bundles gives the core list plus the
+  groups of every enabled bundle they chose; approved selection gives exactly the approved groups
+  they chose.
+- **Effective groups** are the requested groups minus any that aren't live in Dispatcharr, aren't
+  approved, or are in quarantine, de-duplicated and sorted. Resolution only narrows: a group that
+  drops out keeps its intent and comes back when it returns.
+- **Offered groups**, what a picker shows, are the live, approved groups outside quarantine. A new
+  subscriber starts with everything offered chosen. The per-person lock freezes their choice and
+  shows them a read-only view that says the owner manages it.
+- **Where it applies:** a new friend's first sign-in (`plex-sign-in`), `channel-choices`, the
+  owner's group changes (intent saved first, then resolved and enforced) and every sync, which
+  works from intent for every active subscriber, the owner's self-subscription included, never from
+  the stored effective groups.
+- **Quarantine groups** are never offered, never effective and left out of every picker, matched by
+  trimmed, case-insensitive name. Every sync reads IPTV Checker's three destination-group settings
+  (defaults merged, D24) and replaces the learned names with them, always alongside the plugin's
+  three default names. Missing information never shrinks the list: when the plugins can't be read,
+  the plugin is absent or disabled, or it gives no usable names, the previous names stay. The names
+  are saved and loaded at startup, so renamed quarantine groups stay hidden before the first sync.
+  Intent pointing at a quarantined group simply has no effect until the group leaves quarantine.
+
+#### scoping
+
+- **The model** (research section 5 confirms it): one owned profile per subscribable group, and one
+  shared empty profile with no channels. A subscriber's profile list is exactly one profile per
+  effective group, of which Dispatcharr shows the union, or the empty profile for none; it is never
+  empty. Every profile is created empty (D23), and a Dispatcharr user at admin level is never
+  scoped: it is an incident (D23).
+- **Ownership:** a profile's name is an owned prefix, the group id and the group's name, with commas
+  removed (ECM's scope setting is a comma-separated list), whitespace collapsed and cut to
+  Dispatcharr's limit. Ownership is the prefix plus the group id, so renames don't matter, and
+  choices are keyed on group and channel ids, never names. otpravkarr never changes a profile it
+  didn't create, and deletes none.
+- **Group profile records** are global, one per group; a profile serves only one group, and the
+  empty profile has its own record.
+- **The single enforcement path,** used by provisioning, the owner's edits, the portal and sync:
+  1. Check the subscriber has a Dispatcharr user, and that the group ids are positive whole numbers;
+     de-duplicate and sort them. Anything else is refused before any network call.
+  2. Look up the Dispatcharr user within an interactive deadline (about 8 seconds, inside the
+     server's idle timeout) and refuse an admin-level user.
+  3. Work from live state, never trusting a stored profile id unchecked. Read every channel and
+     bucket it by its effective group (its override group, else its base group; ungrouped channels
+     can't be chosen). Read every group and require each requested id to exist. For each group, use
+     the stored profile if it still exists and is ours; if it's gone, or the id now belongs to a
+     profile that isn't ours, leave that one alone, then adopt or create ours and fix the record.
+     Adopting looks for a profile with our prefix and the group id (a reset database or a renamed
+     group), gives up rather than risk a duplicate when that lookup fails, and otherwise creates
+     one, adopting by exact name on a name clash. Then narrow the membership: send only the
+     difference in one bulk update, or nothing when nothing differs, and save the group's full
+     channel set as its known-channel snapshot. The empty profile is found or made by exact name,
+     and any channel that drifted into it is disabled again.
+  4. Write the user's profiles and level in one update whose timeout equals the deadline, so a late
+     write is aborted rather than landing after the caller gave up.
+  5. Only then save the effective groups locally (this path is their only writer) and a "groups
+     changed" audit entry with before and after. A failed audit write is logged and never fails a
+     correct scoping, which in provisioning would tear down a correctly scoped user.
+- **Event groups** are groups whose names end in " — PPV/Events" or " — Unscheduled Events" (this
+  deployment's naming, research section 6), detected on the group's own name, never on the cut
+  profile name. Event Channel Managarr owns their channels' visibility, so their profiles keep what
+  it hid: a channel in the snapshot that is now disabled stays disabled, a channel new to the group
+  is enabled, a channel that left is disabled, and an empty or missing snapshot enables the whole
+  group. A corrupt snapshot leaves that group unchanged, failing before any call to Dispatcharr.
+  Other groups get exact membership.
+
+#### accounts
+
+- **A subscriber record** is unique per Plex account. Dispatcharr's user id is indexed but not
+  unique, because drift can duplicate it (rotation refuses a shared one). It holds the Plex identity
+  (account id, the secondary id, username, email, avatar URL; refreshed by sync), the Dispatcharr
+  link (user id, username, the encrypted XC password and the effective groups), the rules and state
+  (active, the owner flag for the self-subscription, the lock, the policy override, chosen bundles
+  and approved groups, content flags), and when it was created, updated, last synced and last used.
+- **States:** Active (active, with a Dispatcharr user), Orphaned (active, but the Dispatcharr user
+  is gone or was never made) and Inactive (disabled by the owner, by sync when the friendship ended,
+  or after a failed scoping).
+- **Provisioning** is idempotent by Plex account id and answers provisioned, already exists,
+  reactivated or failed, without throwing for expected failures. It applies the groups it is given
+  and doesn't consult policy, so a caller that wants them to survive the next sync saves matching
+  intent too.
+  - **An active record:** already exists; Dispatcharr isn't contacted.
+  - **An inactive record with a Dispatcharr user:** confirm the user still exists (if it's gone,
+    clear the link and create one as below), put the stored XC password back (custom properties
+    merged) so bookmarked URLs work again, and only then mark it active and audit "provisioned
+    (reactivated)". Then enforce its groups (`scoping`); if that fails, disable it again, audit it
+    and report the failure.
+  - **Otherwise, create:** the username is the Plex username cut down to lowercase ASCII letters and
+    digits (a fixed fallback if nothing is left), taking the first free one of it and numbered
+    variants, checked against local records (case-insensitively) and Dispatcharr's users. A failed
+    Dispatcharr lookup is logged and checked locally only; after very many clashes a time-based
+    suffix is used. The XC password is 24 random letters and digits from a secure source, encrypted
+    before anything reaches Dispatcharr, so a failed encryption can't leave an orphan. Then create
+    the Dispatcharr user (D21, D22, D23), save the record (updating an inactive one, or inserting),
+    audit "provisioned" with the actor and client address, and enforce the groups: a new user's
+    empty profile list means every channel, so this step is mandatory, and its failure disables the
+    user and audits that. A local write that fails after Dispatcharr created the user is reported,
+    and sync finds the user by its marker (D23).
+- **Disable, enable and remove** follow D23. Enabling puts the stored XC password back and applies
+  the saved policy, and provisions afresh when the Dispatcharr user is gone. Removing deletes the
+  Dispatcharr user, then the record and the person's sessions in one transaction, audited; the
+  person can sign in again later and is provisioned afresh.
+- **Rotating credentials** needs an active subscriber with a Dispatcharr user whose id no other
+  record shares. The new password is encrypted first; then the Dispatcharr user is looked up and
+  its XC password set (custom properties merged) within the interactive deadline, and the local
+  write succeeds only if the record still has the same id and Dispatcharr id. It is audited with the
+  Dispatcharr username as Dispatcharr reported it. "Not found" clears the stale link; a local write
+  that fails after Dispatcharr changed reports a possible inconsistency. The owner never sees the
+  new password; the subscriber sees it in the portal, and can rotate their own ("refresh
+  credentials") under the same rules, audited as themselves.
+
+#### plex-sign-in
+
+- **Starting** asks Plex for a PIN, keeps the pending sign-in in memory for 10 minutes under a
+  random id that a short-lived cookie holds, and redirects only to Plex's own sign-in page, with the
+  forward URL built from the browser's address (`sign-in`). Transient failures are retried a few
+  times with backoff; when that runs out, the message says Plex can't be reached. A restart loses
+  pending sign-ins (one process, D4).
+- **Returning** uses the cookie once and deletes it, completes the PIN (polling Plex for the
+  token), reads the identity (account id, the secondary id, username, email, avatar) and removes the
+  pending entry, so it can't be replayed. The friend's Plex token is used only here and never
+  stored.
+- **Who gets in:** an owner who linked their Plex account signs in as the owner (D27). Anyone else
+  must be in the owner's friends list, fetched fresh, as an accepted friend; otherwise they're told
+  their Plex account has no access to this server. Someone whose record is inactive is told their
+  access was revoked.
+- **The new friend's picker** comes before any credentials only when their policy is approved
+  selection and at least one group is offered. The verified identity crosses that step in a sealed
+  cookie (encrypted, tamper-evident, 10 minutes) that holds no Plex token. Reloading keeps the page
+  and an error keeps the choice; choosing nothing warns that the player will show no channels. On
+  confirm the server checks the friendship again and every chosen group against the offered groups
+  it works out itself (failing closed), then provisions. Returning friends, the owner and every
+  other case skip the picker, so nobody is stranded.
+- **The session** follows provisioning with the chosen groups and matching intent: a subscriber
+  session of a fixed 4 hours from sign-in, with no sliding renewal (owner decision, 2026-11-04).
+- **Revoked:** a session whose record has gone is ended when it's seen; one whose record is inactive
+  lives on only to show the revoked view and sign out, and never reaches credentials.
+- **The return page** shows that sign-in is completing, the picker, or an error that names the cause
+  (no access, revoked, a missing or expired sign-in, Plex unreachable, the account couldn't be set
+  up).
+
+#### credentials
+
+- **The URLs** come from the Dispatcharr username, the decrypted XC password and the public base
+  URL: the public URL if set, otherwise the internal URL, in both cases only if it is HTTPS or
+  loopback. A public URL that fails that gives no URLs at all (never the internal one instead), and
+  the portal says an HTTPS public URL is needed. They are the playlist (`get.php`), player-API
+  (`player_api.php`) and guide (`xmltv.php`) URLs, with the `/live/…` lines in the snapshot (D19);
+  the credentials go in as they are, since generated passwords need no encoding.
+- **The QR code** encodes the playlist URL and is drawn in the browser only on request; if it fails,
+  the portal suggests copying the URL. Copying confirms success or says it failed.
+- **The snapshot** is named after the username, never cached, and holds only the channels of the
+  subscriber's effective groups, bucketed as `scoping` does (malformed means none), without
+  channels that have no number or are hidden (D24), sorted by number, names cleaned. With no
+  groups it is a header-only file. The portal says it won't update, and Dispatcharr's profiles stay
+  the boundary at stream time. It is refused to the unprovisioned, the anonymous and the revoked.
+- **Other states:** a provisioning problem shows its specific reason (not set up yet, no HTTPS
+  public URL); the revoked view is `plex-sign-in`'s.
+- **The player guide** links each player in PRODUCT.md (Open TV, shipped as Fred.TV; IINA; VLC) to
+  its project's own download page. Nothing is looked up live, so otpravkarr calls only Plex and
+  Dispatcharr. Every player gets the same playlist URL.
+
+#### channel-choices
+
+- **The page** follows the subscriber's policy: bundles with "your core lineup is always included",
+  or groups whose changes apply right away. Its states: locked (their groups, read-only), nothing
+  offered, the approved-selection picker warning when nothing is chosen, or bundle checkboxes with
+  group counts. Saving goes through `scoping` and confirms; an error names its cause (managed by the
+  owner, not fully set up, an invalid choice, Dispatcharr not configured).
+- **The group picker,** shared with `plex-sign-in` and `subscriber-admin`: a search, how many are
+  chosen and available, choose or clear all (only the matches while searching), rows with channel
+  counts (hidden channels don't count, D24), empty and no-match states, at most about 300 rows drawn
+  with a hint to narrow the search, and one Tab stop with arrow keys, Home and End, and Space or
+  Enter.
+
+#### subscriber-admin
+
+- **The users table** has the count and "Subscribe myself"; a status filter (all, active, inactive,
+  orphaned) and a case-insensitive search on the Plex or Dispatcharr name, both kept in the URL so a
+  view can be shared; no paging (tens of users); and an empty state. When Dispatcharr is slow it
+  falls back, after the interactive deadline, to the stored rows without drift or group data.
+- **Drift** is a subscriber's Dispatcharr profiles differing from their stored effective groups;
+  saving again or a sync fixes it.
+- **Details** show every stored field and time, read-only.
+- **Actions** (`accounts`): disable, enable, remove permanently, rotate credentials, content flags
+  (D22) and changing groups: the policy override, chosen bundles and approved groups, with the lock
+  saved on its own, a summary of the effective policy, the effective groups and any intent not in
+  effect, a warning when nothing would be granted, and live drift. Each says its consequence before
+  it runs.
+- **Subscribe myself** provisions the owner's own Streamer subscription, keyed on the Plex account
+  behind the server token; it says so when one exists, and friend sync never removes it.
+
+#### sync
+
+- **One run, one lock:** the timer, "Run sync now" and the `m3u_refresh` webhook (D24) run the same
+  four steps under one lock. A timed start that finds a run going is skipped and logged; a manual
+  one is told a sync is already running. Steps 2–4 are isolated, so one failing never stops the
+  next; if step 1 throws, the run fails.
+  1. **Friends.** Find the owner's account and their friends (each retried). If either fails, record
+     it, still write the completion entry, and stop. Otherwise, leaving out the owner's own records
+     and the owner, keep only accepted friends and for each record:
+     - **no longer an accepted friend** (a pending friendship counts as ended): disable it (D23),
+       even when it's already inactive, since its Dispatcharr user may have drifted back; counts
+       move only on real changes;
+     - **still a friend:** refresh the username (username, then title, then friendly name), email
+       and avatar; check the Dispatcharr user (gone: orphaned, link cleared and record inactive;
+       another error: recorded; found: copy a changed username); stamp it synced unless the check
+       failed.
+     Accepted friends without a record are only counted; sync never provisions anyone. Exactly one
+     "sync completed" entry per run, with the report (unmapped, disabled, orphaned, refreshed,
+     errors), written by this step only.
+  2. **Quarantine** (`lineup`), before subscriptions, so renamed quarantine groups are hidden in the
+     same run.
+  3. **Subscriptions:** enforce (`scoping`) for every active subscriber with a Dispatcharr user,
+     from their intent; one person's failure is recorded and skipped.
+  4. **Plugin checks** (`plugin-advisories`), last, so they see profiles made in this run.
+- **Audit:** a manual run audits "sync started" with the owner as actor and answers with step 1's
+  report; the other steps' results go to the log. A timed run audits "sync started" with no actor.
+  "Sync failed" is audited only when the whole run throws. Without the Dispatcharr URL, the key or
+  the Plex token, the run is skipped with a log naming what's missing (by hand: it can't run until
+  they're configured).
+- **The timer:** every 15 minutes by default, 1 to 1,440 minutes; saving the interval reschedules at
+  once, the one way it changes. Runs keep a fixed rate from the previous scheduled time, skip missed
+  runs rather than bursting after a stall, never overlap and log errors without stopping the
+  timer. Nothing runs at startup: the first sync is one interval after boot. Shutdown cancels the
+  timer and doesn't wait for a running sync.
+
+#### audit-log
+
+- **Filters,** kept in the URL: the action (the fixed list), actor or user text (matched literally,
+  so underscores behave), page size (10, 25, 50 or 100) and after and before dates (whole days).
+  Changing a filter goes back to page one.
+- **The table:** newest first, ties broken by id; each row expands to its detail (or says it has
+  none) and shows the time, the actor ("system" when there is none), the action and the client
+  address. Paging shows the range and page of total, and clamps a page out of range.
+- **Retention:** a daily job removes entries older than the retention period (default 90 days, set
+  by the owner in whole days, read on every run).
+
+#### plugin-advisories
+
+- **Cards,** one per plugin Dispatcharr reports, matched by key (D24); an unknown plugin gets a
+  generic card. Each shows the plugin's name, whether it is on, its version, a one-line description
+  and its advisories (info or warning), with states for Dispatcharr not configured or unreachable
+  and for no plugins installed.
+- **The ECM scope check** reads Event Channel Managarr's comma-separated profile list, works out
+  which of otpravkarr's event profiles are missing from it and why (the plugin absent or off, no
+  owned event profiles, or everything covered), and tells the owner what to add in Dispatcharr.
+- **Read-only:** otpravkarr never writes a plugin's settings and never runs, enables or disables a
+  plugin, and a test fails if such a call appears in the enforcement or check code.
+
+#### overview
+
+- **The dashboard:** the health tiles (`health`); users (total, active, inactive and orphaned,
+  orphaned standing out above zero), leaving out the owner's second record; the sync card (running
+  or idle, the last run and its length, the four steps, and "Run sync now", which reports
+  completion, error counts, a run already going or missing configuration, and after 30 seconds that
+  it is still running in the background); the ten latest audit entries with a link to the log; and
+  available friends: accepted friends without a record, from a 15-minute friends cache in memory,
+  with a note that they get an account when they sign in. Nothing updates live: the data refreshes
+  after a manual sync.
 
 ## Tech stack
 
@@ -389,8 +826,9 @@ otpravkarr is a Bun web repo with edbfi-ci's Bun web templates:
 2. **Ark UI before its first use.** The skeleton installs `@ark-ui/svelte`, so the Panda and Ark
    pairing and `check-peers` are settled early; the first `ui/` wrapper comes with the first surface
    that needs one.
-3. **Security headers and CSP.** The legacy app set a strict CSP and security headers (legacy spec
-   §10). They belong to the first module that serves real pages (`setup`, whose claim page comes
-   before `sign-in`), not the skeleton.
-4. **Health.** `/healthz` always answers `ok`. The health module replaces it with legacy spec
-   §6.12's public `ok`, `degraded` or `unhealthy`, from real Plex, Dispatcharr and database checks.
+3. **Security headers and CSP.** The legacy app set a strict CSP and security headers ([Module
+   notes](#module-notes), `setup`). They belong to the first module that serves real pages
+   (`setup`, whose claim page comes before `sign-in`), not the skeleton.
+4. **Health.** `/healthz` always answers `ok`. The health module replaces it with the public `ok`,
+   `degraded` or `unhealthy` of its [Module notes](#module-notes), from real Plex, Dispatcharr and
+   database checks.
