@@ -21,7 +21,7 @@ Subscriber shell: sticky top header otpravkarr, My access, My channels, Setup gu
 - **Admin:** Owner admin overview. Proposed route: `/admin`.
 - **Admin:** Subscriber administration. Proposed route: `/admin/users`.
 - **Admin:** Connections and sync settings. Proposed route: `/admin/settings/connections`.
-- **Admin:** Lineup policy and security settings. Proposed route: `/admin/settings/lineup`.
+- **Admin:** Lineup policy settings. Proposed route: `/admin/settings/lineup`.
 
 ## Positioning
 

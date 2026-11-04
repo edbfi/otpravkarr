@@ -5,7 +5,7 @@ primary_target: "route:/admin/settings/lineup"
 related_targets: []
 ---
 
-# otpravkarr Lineup policy and security settings
+# otpravkarr Lineup policy settings
 
 ## Status
 
@@ -13,7 +13,7 @@ Proposed design seed for review. Mode: **operate**. Audience: **Admin**. Propose
 
 ## Purpose and composition
 
-Admin settings with core-plus-bundles radio group, clear core/approved groups selection, editable bundle rows, narrow security summary.
+Admin settings with core-plus-bundles radio group, clear core/approved groups selection, editable bundle rows.
 
 ## Visual reference
 
@@ -23,11 +23,11 @@ Use the shared [design system](../../DESIGN.md). Match hierarchy, density and pa
 
 ## Required content
 
-'Lineup policy'. Core plus bundles selected. Fixed lineup and Approved selection alternatives. Core groups News / Regional; available bundles Sports, Cinema, International. Edit bundle panel has Name, Enabled, Groups and immutable ID. Secondary security panel 'Allowed website addresses', https://access.example, Save addresses. 'Save lineup policy'.
+'Lineup policy'. Core plus bundles selected. Fixed lineup and Approved selection alternatives. Core groups News / Regional; available bundles Sports, Cinema, International. Edit bundle panel has Name, Enabled, Groups and immutable ID. 'Save lineup policy'.
 
 ## Acceptance criteria
 
-No empty profile selector. Bundle IDs immutable. Warn if an address change would prevent current browser access. No settings to manage Dispatcharr channels.
+No empty profile selector. Bundle IDs immutable. No settings to manage Dispatcharr channels.
 
 - Preserve audience boundaries from [product context](../../PRODUCT.md).
 - Use canonical data in [demo fixtures](../../tests/fixtures/demo-fixtures.json); do not infer calculations from raster text.
@@ -41,6 +41,7 @@ No empty profile selector. Bundle IDs immutable. Warn if an address change would
 Use the images for composition and visual character. Use DESIGN.md, PRODUCT.md, this brief's acceptance criteria and the demo fixtures for exact values and behavior. Body copy, chart axes, tiny icons and font glyphs remain illustrative raster renderings. Rebuild them as native accessible UI and verify them against the specification. A PNG cannot verify focus order, screen-reader announcements, permission checks or real responsiveness.
 
 - Use the fixture's disjoint demo bundles: Core 86, Sports 42, Cinema 28, International 31. Selected Core + Sports + Cinema contains 156 channels. Mobile raster counts are illustrative.
+- Don't build the raster's 'Allowed website addresses' panel, its address field, its lockout warning or Save addresses: the app stores no address list, because `sign-in`'s cross-origin check asks the browser instead.
 - Keep global admin sidebar navigation stable; settings subsection links belong inside Settings, even where a raster simplifies the sidebar.
 
 ## Handoff prompt
