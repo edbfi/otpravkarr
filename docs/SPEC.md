@@ -213,8 +213,10 @@ numbers in these blocks are otpravkarr's.
   (otpravkarr) Only `http` and `https` are accepted, and a URL is reduced to its origin. The Plex
   server URL and Dispatcharr's internal URL carry secrets, so they must be HTTPS, except that plain
   HTTP is allowed for loopback, private and local hosts (such as `http://dispatcharr:9191` on a
-  Docker network) once the owner opts in for that URL. A host counts as loopback, private or local
-  by the address it resolves to when the app connects (D8), never by its name, so a local-looking
+  Docker network, `http://plex.internal:32400`, or an mDNS `.local` or VPN name) once the owner opts
+  in for that URL. A host counts as loopback, private or local by the address it resolves to when
+  the app connects (D8), never by its name: loopback, the private LAN ranges, link-local, IPv6
+  unique-local and the shared range VPNs such as Tailscale use (`100.64.0.0/10`). A local-looking
   name that resolves to a public address gets no plain HTTP. Dispatcharr's public URL goes into the
   URLs subscribers get, so it must be HTTPS, with no exception (`credentials`): saving a plain-HTTP
   one is refused with a message that says why.
