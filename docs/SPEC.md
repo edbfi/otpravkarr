@@ -205,8 +205,8 @@ that bullet, and "(otpravkarr: …)" only its own parentheses.
   match. Links shown on GET pages for copying, such as the OIDC callback to register, are built in
   the browser from the address the user is on, or from `ORIGIN` when it is set. App code never uses
   `event.url.origin` or `event.url.protocol` for security, cookies or rendered URLs, which a test
-  that searches the code enforces, and redirects stay relative. (otpravkarr) This covers the
-  subscribers' Plex sign-in as well as the owner's.
+  that searches the code enforces, and redirects stay relative. (otpravkarr) Its Plex parts cover
+  the subscribers' Plex sign-in as well as the owner's.
 - **The address hint:** when `ORIGIN` is set and doesn't match the address the browser is on, or
   when `ORIGIN` is unset and that address's host and port don't match the `Host` header, the claim
   and owner sign-in pages suggest setting `ORIGIN=<that address>` (or removing a wrong `ORIGIN`) or
