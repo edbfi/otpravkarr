@@ -21,8 +21,8 @@ to make the first module spec cheap to build: every later PR adds behaviour, not
 (D27; shared rows aligned 2026-10-30). Module ids never change. Each module gets its own
 `docs/SPEC-<id>.md`, which the owner approves just before it is built.
 Sources: [PRODUCT.md](../PRODUCT.md), [decisions.md](decisions.md), the
-[Dispatcharr research](research/dispatcharr.md), the [surface briefs](../.impeccable/surfaces/) and
-the [Module notes](#module-notes) below.
+[Dispatcharr research](research/dispatcharr.md), the [Plex research](research/plex.md), the
+[surface briefs](../.impeccable/surfaces/) and the [Module notes](#module-notes) below.
 
 **Every module keeps to [Code structure](../AGENTS.md#code-structure).** Its spec names the files it
 adds in that layout, and review checks them. In short:
@@ -118,6 +118,11 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
   page (no consumer).
 - Email or other notifications, to the owner or to subscribers, and importing friends in bulk: a
   friend gets an account the first time they sign in.
+- Environment locks on settings, as obzorarr has them: the Plex and Dispatcharr connections are set
+  in the app, and the shared-groundwork map lists the locks for obzorarr and zondarr only.
+- Any public API beyond `/healthz` (row 8) and Dispatcharr's `m3u_refresh` webhook (D24): everything
+  but the public pages (the landing page, sign-in and the claim) needs an owner or subscriber
+  session.
 - Any role beyond the one owner (owner decision).
 - Signing in through a reverse proxy's headers (D27): `oidc-sign-in` covers the same identity
   providers.
@@ -172,9 +177,9 @@ numbers in these blocks are otpravkarr's.
   keeps one current-step pointer: the browser can't skip ahead, each step's action checks that it is
   the current step, and a step that offers Previous only moves the pointer back. Only the last
   step's action completes first run. (otpravkarr) `/healthz` is exempt too, and going back keeps
-  what the owner typed. After the claim come `two-factor`'s offer, then Plex (`plex-connection`)
-  and Dispatcharr (`dispatcharr-connection`). Completing first run seeds `health` and lands on
-  `/admin`.
+  what the owner typed. After the claim come `two-factor`'s offer, then Plex (`plex-connection`) and
+  Dispatcharr (`dispatcharr-connection`). Completing first run seeds `health` and lands on `/admin`;
+  afterwards the setup routes answer "not found".
 - **The bootstrap token** (D27) is 12 random lowercase letters and digits, shown as
   `xxxx-xxxx-xxxx`, held only in memory (never logged or stored) and compared in constant time. It
   is printed with the setup URL and is valid for 15 minutes, after which a new one is printed. Claim
@@ -196,44 +201,50 @@ numbers in these blocks are otpravkarr's.
   about a subscriber carries their Plex username and their Dispatcharr username, the latter as
   Dispatcharr reported it, never a stale local copy, so a search on either finds it.
 - **Settings** (otpravkarr) hold one value per key: a write replaces it, and clearing writes an
-  empty value. Secrets among them are encrypted (`secrets`).
+  empty value. Secrets among them are encrypted (`secrets`). A secret's field is blank again after
+  saving; other fields keep their values.
 - **Settings URLs:** upstream base URLs may not hold credentials, a query or a fragment.
   (otpravkarr) Only `http` and `https` are accepted, and a URL is reduced to its origin. The Plex
   server URL and Dispatcharr's internal URL carry secrets, so they must be HTTPS, except that plain
   HTTP is allowed for loopback, private and local hosts (such as `http://dispatcharr:9191` on a
   Docker network) once the owner opts in for that URL. Dispatcharr's public URL follows
   `credentials`.
-- **Logging.** Redaction runs before an entry is written anywhere: credentials in URLs, token-like
+- **Logging.** Four levels; debug entries are dropped unless debug logging is on. Each entry has a
+  level, a message, a source, structured metadata and a millisecond timestamp, and goes to standard
+  output (D11). Redaction runs before an entry is written anywhere: credentials in URLs, token-like
   query parameters, token, authorisation and cookie fields in payloads and headers, and, at any
   depth, any metadata key that looks like a token, secret, password, cookie, session or key.
   (otpravkarr) One entry per request (method, the path without its query string, status, duration,
   client address), plus job, health and unhandled-error entries (with a request id, the error's
   class, message and stack). Query strings and request bodies are never logged, and upstream
-  response bodies never reach the user. The only secret printed on purpose is the bootstrap token,
-  on the console (D27).
-- **Security headers** go on every response, early returns and the setup gate's redirect included:
-  framing denied, no MIME sniffing, a referrer policy of `same-origin` or
+  response bodies never reach the user. The only secrets printed on purpose are the bootstrap and
+  recovery tokens, on the console (D27). There are no metrics, telemetry or outbound reporting.
+- **Security headers,** on every response, early returns (otpravkarr: and the setup gate's redirect)
+  included: framing denied, no MIME sniffing, a referrer policy of `same-origin` or
   `strict-origin-when-cross-origin`, never `no-referrer` (which makes browsers send `Origin: null`
-  on the app's own form posts), a permissions policy denying camera, microphone and geolocation,
-  and a nonce-based content security policy: scripts from the app only; images from the app and
-  inline data (otpravkarr: and Plex's hosts, for avatars); fonts from the app (DESIGN.md bundles
-  them); connections to the app only (otpravkarr: and Plex); no framing; the app only as base and
-  form target. (otpravkarr: no inline styles either; these are ground-floor choice 3.) Strict
-  transport security (otpravkarr: whether it is sent, and for how long, is for `setup`'s spec) goes
-  only over HTTPS (known when `ORIGIN` is `https`, or when the browser sent `Sec-Fetch-Site` to a
-  host that isn't loopback, since browsers send it only to HTTPS and loopback addresses).
+  on the app's own form posts), a permissions policy denying camera, microphone and geolocation, and
+  a nonce-based content security policy: scripts from the app only; images from the app and inline
+  data (otpravkarr: and Plex's hosts, for avatars); fonts from the app (DESIGN.md bundles them);
+  connections to the app only (otpravkarr: and Plex); no framing; the app only as base and form
+  target. (otpravkarr: these are ground-floor choice 3; whether inline style attributes are refused
+  is for `setup`'s spec, since Ark UI and Svelte write some.) Strict transport security (otpravkarr:
+  whether it is sent, and for how long, is for `setup`'s spec) goes only over HTTPS (known when
+  `ORIGIN` is `https`, or when the browser sent `Sec-Fetch-Site` to a host that isn't loopback,
+  since browsers send it only to HTTPS and loopback addresses).
 - **Startup and shutdown.** Startup runs once, before any request is served: migrations (D5), then
   each module's startup work (otpravkarr: restoring the learned quarantine names, `lineup`, and one
   health probe, `health`), then starting the jobs (otpravkarr: sync, health, session cleanup and
-  audit retention); a job that fails to start is logged, not fatal. Shutdown stops the jobs,
-  flushes the logs and drains open requests for a bounded time, then exits even if an upstream call
-  is still outstanding. A second signal exits at once, and a hang-up counts as a stop. The
-  environment sets the drain time (default 30 seconds, kept below the container's stop timeout).
-  (otpravkarr) It also sets the database location, the idle timeout (default 10 seconds; 0 turns it
-  off) and the request body limit (default about half a megabyte). An explicitly set database path
-  that doesn't exist stops startup instead of creating an empty database, so a missing volume can't
-  pass for a fresh install. Migrations only go forward: a backup is the database file and the master
-  key together (D16, D31), and the app is never downgraded across a migration.
+  audit retention); a job that fails to start is logged, not fatal. Shutdown stops the jobs, flushes
+  the logs and drains open requests for a bounded time, then exits even if an upstream call is still
+  outstanding. A second signal exits at once, and a hang-up counts as a stop. The environment sets
+  the drain time (default 30 seconds, kept below the container's stop timeout). (otpravkarr) It also
+  sets the database location (by default a data directory created on first start), the idle timeout
+  (default 10 seconds; 0 turns it off) and the request body limit (default about half a megabyte;
+  unit suffixes or unlimited). In production, an explicitly set database path that doesn't exist
+  stops startup instead of creating an empty database, so a missing volume can't pass for a fresh
+  install. Migrations only go forward: a backup is a coherent snapshot of the database file with the
+  master key (D16, D31), noted with the app version that wrote it, and the app is never downgraded
+  across a migration.
 - **Trust:** anyone who can read the server console can claim a fresh install.
 
 #### sign-in
@@ -246,17 +257,20 @@ numbers in these blocks are otpravkarr's.
   goes to their dashboard. An owner-only form action answers "forbidden"; a member's form action
   without a session answers "unauthenticated" rather than failing. (otpravkarr) Owner and subscriber
   sessions are separate kinds: each is refused where only the other is allowed, and an owner JSON
-  endpoint answers "unauthenticated" without a session and "forbidden" with a subscriber's. A
-  subscriber page without a subscriber session sends the browser to `/`, and a bad session cookie is
-  cleared. A signed-in owner who opens `/` or owner sign-in goes to `/admin`.
+  endpoint answers "unauthenticated" without a session and "forbidden" with a subscriber's. A bad
+  session cookie is cleared, and a subscriber page without a subscriber session sends the browser to
+  `/`. A signed-in owner who opens owner sign-in goes to `/admin`, and from `/` too until
+  `subscriber-admin`'s spec settles how the owner opens their subscriber view.
 - **Return paths** are same-origin paths only: one leading slash, no backslashes or control
   characters, at most 2,048 characters. Only the path is kept.
 - **Rate limits** apply per client address. The client address comes from the connection, or from a
   header and a proxy depth (default 1) set in the environment. Responses carry `Retry-After` and
   remaining and reset headers, and come as a form error, a JSON error or a branded page, whichever
   the caller expects. (otpravkarr) Kept in the process (one process, D4, D17): the claim 5 per 15
-  minutes, owner sign-in 5 per 5 minutes, and starting Plex sign-in 20 per 15 minutes. Owner
-  sign-in shows when the next try is allowed.
+  minutes, owner sign-in 5 per 5 minutes, and starting Plex sign-in 20 per 15 minutes. Owner sign-in
+  counts only failed attempts and shows when the next try is allowed; the claim and starting Plex
+  sign-in count every attempt. The client-address header is set only when every request passes
+  through a trusted proxy, and the address is taken that many hops from the right.
 - **SvelteKit's own form check is off:** `sveltekit({ csrf: { trustedOrigins: ['*'] } })` in
   `vite.config.ts` (SvelteKit 3 takes its options in the `sveltekit()` call, with no `kit:`
   wrapper). Remote functions stay off. A config test asserts both, so SvelteKit's only remaining
@@ -326,6 +340,10 @@ numbers in these blocks are otpravkarr's.
   (`bun ./build`) checks that a cross-site form POST is refused and that a same-origin POST carrying
   no `Sec-Fetch-*` headers passes, both on `localhost` and on a plain-HTTP host name that isn't
   loopback (such as Chromium's `--host-resolver-rules="MAP app.test 127.0.0.1"`).
+- **Forwarded headers:** a forwarded protocol must be `http` or `https`, and a forwarded host with
+  whitespace, control characters or URL-structural characters is rejected; forwarded headers never
+  set the browser's address or change the strict-transport decision. (otpravkarr) otpravkarr reads
+  no forwarded protocol or host; it reads only the rate limits' client-address header.
 - **Cookies:** session cookies are named after the app (otpravkarr: the owner's and the
   subscribers' session cookies alike, such as `otpravkarr_session`), because cookies ignore ports
   and apps on one address would otherwise sign each other out. They are host-only, `HttpOnly` and
@@ -336,10 +354,11 @@ numbers in these blocks are otpravkarr's.
 - **A wrong address never locks the owner out.** No stored address can stop password sign-in: a
   wrong `ORIGIN` is fixed or removed, then the app restarts. The OIDC callback address is stored,
   so OIDC may need registering again after a move, but password sign-in always remains (D27).
-- **Owner sign-in** (otpravkarr): an unknown username and a wrong password get the same message and
-  take the same time (a password hash is checked either way). A successful sign-in first deletes
-  the session the browser's cookie named, then starts a new one, and is audited; failed attempts
-  aren't audited (the rate limit covers them).
+- **Owner sign-in** (otpravkarr): the password is stored under a modern memory-hard, salted hash. An
+  unknown username and a wrong password get the same message and take the same time (a password hash
+  is checked either way). A successful sign-in first deletes the session the browser's cookie named,
+  then starts a new one, and is audited; failed attempts aren't audited (the rate limit covers
+  them).
 - **Sessions** (otpravkarr): a random opaque token in the cookie, stored hashed (D27), with its kind
   (owner or subscriber), whom it belongs to and an absolute expiry. A person may have several
   sessions at once. Every sign-in, owner or subscriber, replaces the session the browser's cookie
@@ -365,23 +384,25 @@ numbers in these blocks are otpravkarr's.
   then local HTTPS, then local HTTP, with loopback and container-internal addresses lower and Plex's
   relay last. The owner picks one; when discovery fails, typing a URL is offered.
 - **Checking** reaches plex.tv with the token, then the server, and requires a friendly name, a
-  machine id, and that the token's account can reach that server. Transient failures are retried
+  machine id, and that the token's account has access to that server. Transient failures are retried
   with backoff while the seconds elapsed are shown; a bad token, a bad request or "not found" isn't
-  retried. On success the server's name, machine id and version are shown, and the machine id
-  stored is the one the server reports.
+  retried. On success the server's name, machine id and version are shown, and the machine id stored
+  is the one the server reports.
 - **The settings form:** the URL, whether a token is stored with a blank field to replace it, and
   the machine id, read-only. Saving checks again and says whether it saved a change or found nothing
-  to change.
+  to change. A test reuses the stored token only while the URL still matches the stored one, so a
+  saved secret is never sent to a newly typed address.
 - **Failures:** malformed friend data fails closed; transient connection failures are retried with
   backoff; a portal page that hits a Plex failure shows a controlled error instead of crashing.
 
 #### dispatcharr-connection
 
 - **Connecting,** in first run and in the settings: the internal URL, used for every API call; an
-  optional public URL, used only in the URLs subscribers get (`credentials`); and the key (D25).
-  One quick test tells "couldn't connect" from "the key is invalid". The settings form shows
-  whether a key is stored, with a blank field to replace it, and its help tells the internal
-  address from the one players use.
+  optional public URL, used only in the URLs subscribers get (`credentials`); and the key (D25). One
+  quick test tells "couldn't connect" from "the key is invalid". The settings form shows whether a
+  key is stored, with a blank field to replace it, and its help tells the internal address from the
+  one players use. A test reuses the stored key only while the internal URL still matches the stored
+  one, so a saved secret is never sent to a newly typed address.
 - **Two kinds of call:** interactive ones (page loads, connection tests) have a short timeout sized
   to finish inside the server's idle timeout (`setup`) and no retries; background ones (jobs,
   provisioning, showing credentials, health) have a 15-second timeout, one retry for safe reads and
@@ -424,9 +445,10 @@ numbers in these blocks are otpravkarr's.
 - **Bundles** have a permanent id and slug, fixed at creation (enforced in storage; never derived
   from the name), and an editable name, enabled flag and ordered group list.
 - **Intent and effect:** each subscriber's intent is an optional policy override, their chosen
-  bundles, their chosen approved groups and a lock on choosing. Only the subscriber
-  (`channel-choices`) or the owner (`subscriber-admin`) changes it, never resolution or sync, and
-  malformed intent reads as empty. What they get now, their effective groups, is stored apart.
+  bundles, their chosen approved groups and a lock on choosing. Only the owner (`subscriber-admin`)
+  changes it, and the subscriber only their own bundles and groups (`channel-choices`); resolution
+  and sync never do, and malformed intent reads as empty. What they get now, their effective groups,
+  is stored apart.
 - **Requested groups:** fixed gives the fixed list; core plus bundles gives the core list plus the
   groups of every enabled bundle they chose; approved selection gives exactly the approved groups
   they chose.
@@ -445,8 +467,9 @@ numbers in these blocks are otpravkarr's.
   (defaults merged, D24) and replaces the learned names with them, always alongside the plugin's
   three default names. Missing information never shrinks the list: when the plugins can't be read,
   the plugin is absent or disabled, or it gives no usable names, the previous names stay. The names
-  are saved and loaded at startup, so renamed quarantine groups stay hidden before the first sync.
-  Intent pointing at a quarantined group simply has no effect until the group leaves quarantine.
+  are saved (best effort) and loaded at startup, so renamed quarantine groups stay hidden before the
+  first sync. Intent pointing at a quarantined group simply has no effect until the group leaves
+  quarantine.
 
 #### scoping
 
@@ -582,18 +605,19 @@ numbers in these blocks are otpravkarr's.
   groups it is a header-only file. The portal says it won't update, and Dispatcharr's profiles stay
   the boundary at stream time. It is refused to the unprovisioned, the anonymous and the revoked.
 - **Other states:** a provisioning problem shows its specific reason (not set up yet, no HTTPS
-  public URL); the revoked view is `plex-sign-in`'s.
+  public URL); the revoked view is `plex-sign-in`'s. Before any URL is shown, an unsafe Dispatcharr
+  user is fixed or disabled (D23).
 - **The player guide** links each player in PRODUCT.md (Open TV, shipped as Fred.TV; IINA; VLC) to
-  its project's own download page. Nothing is looked up live, so otpravkarr calls only Plex and
-  Dispatcharr. Every player gets the same playlist URL.
+  its project's own download page; nothing is looked up live. Every player gets the same playlist
+  URL.
 
 #### channel-choices
 
 - **The page** follows the subscriber's policy: bundles with "your core lineup is always included",
   or groups whose changes apply right away. Its states: locked (their groups, read-only), nothing
-  offered, the approved-selection picker warning when nothing is chosen, or bundle checkboxes with
-  group counts. Saving goes through `scoping` and confirms; an error names its cause (managed by the
-  owner, not fully set up, an invalid choice, Dispatcharr not configured).
+  offered, the approved-selection picker warning when nothing is chosen, or the bundle choices.
+  Saving goes through `scoping` and confirms; an error names its cause (managed by the owner, not
+  fully set up, an invalid choice, Dispatcharr not configured).
 - **The group picker,** shared with `plex-sign-in` and `subscriber-admin`: a search, how many are
   chosen and available, choose or clear all (only the matches while searching), rows with channel
   counts (hidden channels don't count, D24), empty and no-match states, at most about 300 rows drawn
@@ -621,31 +645,34 @@ numbers in these blocks are otpravkarr's.
 
 - **One run, one lock:** the timer, "Run sync now" and the `m3u_refresh` webhook (D24) run the same
   four steps under one lock. A timed start that finds a run going is skipped and logged; a manual
-  one is told a sync is already running. Steps 2–4 are isolated, so one failing never stops the
-  next; if step 1 throws, the run fails.
+  one is told a sync is already running. A webhook start that finds a run going queues one more run
+  after it, since the refresh may have re-enabled channels after that run read them. Steps 2–4 are
+  isolated, so one failing never stops the next; if step 1 throws, the run fails.
   1. **Friends.** Find the owner's account and their friends (each retried). If either fails, record
-     it, still write the completion entry, and stop. Otherwise, leaving out the owner's own records
-     and the owner, keep only accepted friends and for each record:
+     it, still write the completion entry, and stop. This step alone writes the run's one "sync
+     completed" entry, with the report (unmapped, disabled, orphaned, refreshed, errors). Otherwise,
+     leaving out the owner's own records and the owner, keep only accepted friends and for each
+     record:
      - **no longer an accepted friend** (a pending friendship counts as ended): disable it (D23),
        even when it's already inactive, since its Dispatcharr user may have drifted back; counts
        move only on real changes;
      - **still a friend:** refresh the username (username, then title, then friendly name), email
-       and avatar; check the Dispatcharr user (gone: orphaned, link cleared and record inactive;
-       another error: recorded; found: copy a changed username); stamp it synced unless the check
-       failed.
-     Accepted friends without a record are only counted; sync never provisions anyone. Exactly one
-     "sync completed" entry per run, with the report (unmapped, disabled, orphaned, refreshed,
-     errors), written by this step only.
+       and avatar; check the Dispatcharr user (gone: orphaned, its link cleared while the record
+       stays active; another error: recorded; found: copy a changed username); stamp it synced
+       unless the check failed;
+     - **an accepted friend without a record** is only counted: sync never provisions anyone;
+     - **a Dispatcharr user with the marker but no record** is adopted or removed (D23).
   2. **Quarantine** (`lineup`), before subscriptions, so renamed quarantine groups are hidden in the
      same run.
-  3. **Subscriptions:** enforce (`scoping`) for every active subscriber with a Dispatcharr user,
-     from their intent; one person's failure is recorded and skipped.
+  3. **Subscriptions:** enforce (`scoping`) and write the content flags (D22) for every active
+     subscriber with a Dispatcharr user, from their intent; one person's failure is recorded and
+     skipped.
   4. **Plugin checks** (`plugin-advisories`), last, so they see profiles made in this run.
 - **Audit:** a manual run audits "sync started" with the owner as actor and answers with step 1's
-  report; the other steps' results go to the log. A timed run audits "sync started" with no actor.
-  "Sync failed" is audited only when the whole run throws. Without the Dispatcharr URL, the key or
-  the Plex token, the run is skipped with a log naming what's missing (by hand: it can't run until
-  they're configured).
+  report; the other steps' results go to the log. A timed or webhook run audits "sync started" with
+  no actor. "Sync failed" is audited only when the whole run throws. Without the Dispatcharr URL,
+  the key or the Plex token, the run is skipped with a log naming what's missing (by hand: it can't
+  run until they're configured).
 - **The timer:** every 15 minutes by default, 1 to 1,440 minutes; saving the interval reschedules at
   once, the one way it changes. Runs keep a fixed rate from the previous scheduled time, skip missed
   runs rather than bursting after a stall, never overlap and log errors without stopping the
@@ -655,13 +682,13 @@ numbers in these blocks are otpravkarr's.
 #### audit-log
 
 - **Filters,** kept in the URL: the action (the fixed list), actor or user text (matched literally,
-  so underscores behave), page size (10, 25, 50 or 100) and after and before dates (whole days).
-  Changing a filter goes back to page one.
+  so underscores behave), page size (10, 25, 50 or 100) and after and before dates (whole days in
+  the viewer's time zone). Changing a filter goes back to page one.
 - **The table:** newest first, ties broken by id; each row expands to its detail (or says it has
   none) and shows the time, the actor ("system" when there is none), the action and the client
   address. Paging shows the range and page of total, and clamps a page out of range.
 - **Retention:** a daily job removes entries older than the retention period (default 90 days, set
-  by the owner in whole days, read on every run).
+  by the owner in positive whole days, read on every run).
 
 #### plugin-advisories
 
@@ -678,13 +705,12 @@ numbers in these blocks are otpravkarr's.
 #### overview
 
 - **The dashboard:** the health tiles (`health`); users (total, active, inactive and orphaned,
-  orphaned standing out above zero), leaving out the owner's second record; the sync card (running
-  or idle, the last run and its length, the four steps, and "Run sync now", which reports
-  completion, error counts, a run already going or missing configuration, and after 30 seconds that
-  it is still running in the background); the ten latest audit entries with a link to the log; and
-  available friends: accepted friends without a record, from a 15-minute friends cache in memory,
-  with a note that they get an account when they sign in. Nothing updates live: the data refreshes
-  after a manual sync.
+  orphaned standing out above zero); the sync card (running or idle, the last run and its length,
+  the four steps, and "Run sync now", which reports completion, error counts, a run already going or
+  missing configuration, and after 30 seconds that it is still running in the background); the ten
+  latest audit entries with a link to the log; and available friends: accepted friends without a
+  record, from a 15-minute friends cache in memory, with a note that they get an account when they
+  sign in. Nothing updates live: the data refreshes after a manual sync.
 
 ## Tech stack
 
