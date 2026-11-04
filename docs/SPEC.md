@@ -21,8 +21,8 @@ to make the first module spec cheap to build: every later PR adds behaviour, not
 (D27; shared rows aligned 2026-10-30). Module ids never change. Each module gets its own
 `docs/SPEC-<id>.md`, which the owner approves just before it is built.
 Sources: [PRODUCT.md](../PRODUCT.md), [decisions.md](decisions.md), the
-[legacy spec](product/legacy-spec.md), the [Dispatcharr research](research/dispatcharr.md) and the
-[surface briefs](../.impeccable/surfaces/).
+[legacy spec](product/legacy-spec.md), the [Dispatcharr research](research/dispatcharr.md), the
+[surface briefs](../.impeccable/surfaces/) and the [Module notes](#module-notes) below.
 
 **Every module keeps to [Code structure](../AGENTS.md#code-structure).** Its spec names the files it
 adds in that layout, and review checks them. In short:
@@ -162,9 +162,10 @@ that bullet, and "(otpravkarr: …)" only its own parentheses.
   `sign-in`'s cookies.
 - **Security headers** (ground-floor choice 3) include a referrer policy of `same-origin` or
   `strict-origin-when-cross-origin`, never `no-referrer` (which makes browsers send `Origin: null`
-  on the app's own form posts), and one-year strict transport security over HTTPS (known when
-  `ORIGIN` is `https`, or when the browser sent `Sec-Fetch-Site` to a host that isn't loopback,
-  since browsers send it only to HTTPS and loopback addresses).
+  on the app's own form posts). Whether the app also sends strict transport security, and for how
+  long, is for `setup`'s spec; if it does, only over HTTPS (known when `ORIGIN` is `https`, or when
+  the browser sent `Sec-Fetch-Site` to a host that isn't loopback, since browsers send it only to
+  HTTPS and loopback addresses).
 
 #### sign-in
 
@@ -211,7 +212,8 @@ that bullet, and "(otpravkarr: …)" only its own parentheses.
   and owner sign-in pages suggest setting `ORIGIN=<that address>` (or removing a wrong `ORIGIN`) or
   adding the proxy line `proxy_set_header Host $http_host`, so someone without a session can
   recover. (otpravkarr) otpravkarr has no address-check module, so `sign-in` carries the hint
-  itself, on its own sign-in page and on `setup`'s claim page.
+  itself, on the owner sign-in page and on `setup`'s claim page, not on the subscribers' landing
+  page.
 - **`ORIGIN`** is optional and never required. It is plain `ORIGIN`, not an app-prefixed name (an
   app prefix would mean setting adapter-bun's `envPrefix`, which would then reject the master key's
   variable). When set, it must be a bare `http` or `https` origin (a trailing `/` is fine; no path,
