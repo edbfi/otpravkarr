@@ -76,7 +76,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 | `secrets` | `security/secrets/` (key checks, keyring, cipher, `Secret`), `config/secret-key.ts`, `src/env.ts` and the `init` hook in `hooks.server.ts` |
 | `i18n` | `messages/en.json` and `messages/da.json`, `project.inlang/` (Paraglide's settings), `lib/shared/i18n/` (formatting); `paraglideMiddleware` in `hooks.server.ts` |
 | `setup` | `db/` (client, migrations, settings, owner and audit schema), `config/`, `logging/`, `services/setup/`, `services/audit/record.ts`, `security/bootstrap-token.ts`, `security/headers.ts`; `routes/setup/`, and the setup gate and the headers in `hooks.server.ts` |
-| `sign-in` | `services/sign-in/` (sessions and their storage, recovery), `db/` session schema, `security/` (session-token and password hashing, rate limiting, the cross-origin check), `vite.config.ts` (SvelteKit's own form check off); the sign-in at the claim in `routes/setup/`, `routes/(admin)/` layout, `lib/components/layout/` |
+| `sign-in` | `services/sign-in/` (sessions and their storage, recovery), `db/` session schema, `security/` (session-token and password hashing, rate limiting, the cross-origin check), `vite.config.ts` (SvelteKit's own form check off); the sign-in and the address hint at the claim in `routes/setup/`, `routes/(admin)/` layout, `lib/components/layout/` |
 | `two-factor` | `services/two-factor/`, the owner schema's two-factor fields in `db/`; the offer in `routes/setup/`, the challenge page beside the sign-in page, its section of the owner's account settings, and the reminder in `lib/components/layout/` |
 | `plex-connection` | `providers/plex/`, `http/`, `services/connections/plex.ts`; `routes/(admin)/admin/settings/connections/` |
 | `dispatcharr-connection` | `providers/dispatcharr/`, `services/connections/dispatcharr.ts`; same route |
@@ -160,12 +160,12 @@ that bullet, and "(otpravkarr: …)" only its own parentheses.
   address. It needs a valid bootstrap token and the browser's address (`sign-in`). Using up the
   token and creating the owner are one atomic step, and the owner session it starts follows
   `sign-in`'s cookies.
-- **Security headers** (ground-floor choice 3) include a referrer policy of `same-origin` or
-  `strict-origin-when-cross-origin`, never `no-referrer` (which makes browsers send `Origin: null`
-  on the app's own form posts). Whether the app also sends strict transport security, and for how
-  long, is for `setup`'s spec; if it does, only over HTTPS (known when `ORIGIN` is `https`, or when
-  the browser sent `Sec-Fetch-Site` to a host that isn't loopback, since browsers send it only to
-  HTTPS and loopback addresses).
+- **Security headers** (otpravkarr: ground-floor choice 3) include a referrer policy of
+  `same-origin` or `strict-origin-when-cross-origin`, never `no-referrer` (which makes browsers send
+  `Origin: null` on the app's own form posts). Strict transport security (otpravkarr: whether it is
+  sent, and for how long, is for `setup`'s spec) goes only over HTTPS (known when `ORIGIN` is
+  `https`, or when the browser sent `Sec-Fetch-Site` to a host that isn't loopback, since browsers
+  send it only to HTTPS and loopback addresses).
 
 #### sign-in
 
@@ -231,7 +231,8 @@ that bullet, and "(otpravkarr: …)" only its own parentheses.
   from `https`, which is harmless on a port that speaks only HTTP; over HTTPS it affects only
   browsers without `Sec-Fetch-Site`, and only against a network attacker, and HSTS or `ORIGIN`
   closes it. DNS rebinding reaches only actions that need no sign-in, because cookies don't follow
-  a rebind, and those are gated by a console token or rate-limited.
+  a rebind, and those are gated by a console token or rate-limited (otpravkarr: or, for
+  Dispatcharr's `m3u_refresh` webhook, by its shared secret, D24).
 - **Tests:** the cross-origin check is one pure module, unit-tested against a matrix of headers and
   copied to each app as D27 shares the opening modules. One Playwright test against the built server
   (`bun ./build`) checks that a cross-site form POST is refused and that a same-origin POST carrying
