@@ -59,11 +59,11 @@ Dark Matter. Warm orange against dark plum, generous editorial serif headings, r
 
 **On hand:**
 
-- `docs/product/legacy-spec.md`: the imported specification of the shipped v1 app (behaviour, domain model, integrations, security, glossary and its §12 known weaknesses). It records that v1 was in production use for the original deployment. Its technology and deployment sections are superseded, and it drains to deletion as module specs cover it.
-- `legacy-old/v1` branch: the previous code, for reference only; nothing is brought over from it.
-- `docs/research/dispatcharr.md`: research against Dispatcharr v0.32.0 (sources read 2026-10-18), including where current Dispatcharr behaviour differs from the legacy spec. The owner has reviewed it, and its candidate decisions are now D19–D26.
+- `legacy-old/v1` branch: the previous code (v1, in production use for the original deployment), for reference only; nothing is brought over from it. The behaviour the rewrite keeps from it is in `docs/SPEC.md` (the capability map and its Module notes) and `docs/decisions.md`.
+- `docs/research/dispatcharr.md`: research against Dispatcharr v0.32.0 (sources read 2026-10-18), including where current Dispatcharr behaviour differs from what the legacy app assumed. The owner has reviewed it, and its candidate decisions are now D19–D26.
+- `docs/research/plex.md`: how Plex behaved as the legacy app found it, not re-verified; the Plex library audit (D18) checks it.
 - `docs/decisions.md`: the decided and open `D<n>` entries for the stack and the Dispatcharr access model.
-- `docs/SPEC.md`: the built ground-floor spec; the capability map is still a placeholder.
+- `docs/SPEC.md`: the built ground-floor spec, the approved capability map and its Module notes.
 - `docs/design/screens/01-landing.webp` to `docs/design/screens/10-recovery-and-components.webp` and `docs/design/references/dark-matter.webp`: generated raster mockups and the selected direction reference. Their body text, numbers and icons are illustrative, not specification.
 - `.impeccable/surfaces/*.md`: eight route briefs (`/`, `/portal`, `/portal/channels`, `/portal/setup`, `/admin`, `/admin/users`, `/admin/settings/connections`, `/admin/settings/lineup`), all marked as a proposed design seed for review.
 - `DESIGN.md` and `panda.config.ts`: the proposed Dark Matter design seed and its tokens.
@@ -91,10 +91,4 @@ Dark Matter. Warm orange against dark plum, generous editorial serif headings, r
 
 ## Accessibility and inclusion
 
-Keyboard access throughout, visible focus, labelled inputs, text plus icon for status, 44px touch targets, readable text at 200% zoom, and reduced-motion alternatives. Target WCAG AA text contrast. Never use color alone to communicate a decision. Bundle fonts locally in the implementation.
-
-## Product source and rewrite proposals
-
-Read [the legacy product specification](docs/product/legacy-spec.md) for domain behavior and current gaps. Routes in this handoff describe proposed information architecture, not implemented endpoints.
-
-The new direction changes the interface; preserve the original specification's authorization and lifecycle behavior, except where `docs/decisions.md` changes it (D19–D26 change the Dispatcharr access model).
+Keyboard access throughout, visible focus, labelled inputs, text plus icon for status, 44px touch targets, readable text at 200% zoom, and reduced-motion alternatives. Target WCAG AA text contrast. Never use color alone to communicate a decision. Bundle fonts locally in the implementation. A skip link comes first in every shell; navigation and filter regions are labelled; every icon-only control has a label; dialogs trap focus; live regions announce copy results and saved changes; invalid inputs are flagged and linked to their help text; first-run steps are announced as done or current; and menu and drawer buttons state whether they are open and what they control.

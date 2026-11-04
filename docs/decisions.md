@@ -158,15 +158,16 @@ Every subscriber's Dispatcharr user is a Streamer (`user_level` 0). Its Dispatch
 is random, never stored or shown, and separate from `xc_password`, so no subscriber can sign in to
 Dispatcharr's web UI or REST API. Subscribers never need Dispatcharr: what they can see and change
 (credentials, channel groups, bundles) is in otpravkarr, inside the limits the owner sets there.
-otpravkarr has one provisioning mode; the legacy self-managed and staff modes are dropped. The
-owner's self-subscription is a Streamer like everyone else. otpravkarr doesn't proxy or re-sign
+otpravkarr has one provisioning mode; the legacy app's self-managed and staff modes are dropped.
+The owner's self-subscription is a Streamer like everyone else. otpravkarr doesn't proxy or re-sign
 playlists or streams.
 
-Why: Standard, the legacy "highest non-admin level", can sign in to Dispatcharr and see channels
-outside its profiles, provider stream URLs (v0.32.0), every plugin's settings and DVR recordings.
-Streamer is the XC-only level, and channels default to level 0, so XC loses nothing. The self-managed
-and staff modes need a Standard-or-higher user with a known password, which breaks that. Proxying
-would hide nothing (each stream line carries the XC credential), and serving video is a non-goal.
+Why: Standard, the legacy app's "highest non-admin level", can sign in to Dispatcharr and see
+channels outside its profiles, provider stream URLs (v0.32.0), every plugin's settings and DVR
+recordings. Streamer is the XC-only level, and channels default to level 0, so XC loses nothing. The
+self-managed and staff modes need a Standard-or-higher user with a known password, which breaks
+that. Proxying would hide nothing (each stream line carries the XC credential), and serving video is
+a non-goal.
 
 ### D22. Least-privilege content defaults: no movies or series unless the owner turns them on
 
@@ -198,8 +199,8 @@ one other device.
 
 Why: a new profile otherwise starts with every channel until it's narrowed. Disabling by clearing
 `xc_password` stops every XC path, can be undone and keeps the Dispatcharr ID, where the legacy
-disable-by-delete churned users and left orphans when a local write failed. An empty profile list
-shows a non-admin user every channel, and deleting a profile in Dispatcharr can cause one.
+app's disable-by-delete churned users and left orphans when a local write failed. An empty profile
+list shows a non-admin user every channel, and deleting a profile in Dispatcharr can cause one.
 
 ### D24. Keeping access from widening behind otpravkarr's back
 
@@ -218,7 +219,7 @@ shows a non-admin user every channel, and deleting a profile in Dispatcharr can 
 Why: every M3U refresh re-enables auto-synced channels in every profile, otpravkarr's and the empty
 one included, and channels created through the UI or API join every profile. Event Channel Managarr
 and Lineuparr would widen a profile otpravkarr owns, and Stream Mapparr would narrow it. The legacy
-plugin registry missed the renamed EPG plugin and misread settings left at their defaults.
+app's plugin registry missed the renamed EPG plugin and misread settings left at their defaults.
 
 ### D25. otpravkarr's own Dispatcharr credentials
 
@@ -242,8 +243,9 @@ admin user-list response carries every user's key.
 - **No fake-credential probes.** Setup and health checks never try XC with made-up credentials.
 
 Why: Dispatcharr's API is unversioned and still 0.x, and a minor release every 2–5 weeks routinely
-changes behaviour otpravkarr depends on. The legacy probe fetched every user and API key. Dispatcharr
-dev adds failed-auth rate limits for XC and API keys, which fake-credential probes would trip.
+changes behaviour otpravkarr depends on. The legacy app's probe fetched every user and API key.
+Dispatcharr dev adds failed-auth rate limits for XC and API keys, which fake-credential probes would
+trip.
 
 ### D27. Shared opening modules and owner sign-in, in the same shape in every app
 
@@ -312,9 +314,10 @@ the database) keeps stolen database files unreadable without the key. Two-factor
 were the owner's call for every app, and so was letting a provider's own second factor stand in for
 the app's, optionally; one standard OIDC flow covers the self-hosted identity providers without a
 client for each, and `amr` is the standard way to see the provider's factor. Recovery was the
-owner's call for every app too, after comradarr's legacy recovery mode showed that the opening had
-no way back in. Associated data, key IDs and hashed session tokens fix weaknesses listed in legacy
-spec §12.
+owner's call for every app too, after the recovery mode of comradarr's legacy app showed that the
+opening had no way back in. Associated data, key IDs and hashed session tokens fix weaknesses of the
+legacy app, which stored session tokens in the clear and ciphertexts with no key version, bound to
+no row.
 
 ### D28. Every interface is translatable, in English and Danish
 
@@ -330,8 +333,7 @@ translated.
 
 Why: the owner wants full translation support in every app, with Weblate as the translation tool,
 and English and Danish now. Adding translation afterwards touches every screen; building it in from
-the first one costs little. The legacy app was British English only, with en-GB dates (legacy
-spec §8.4).
+the first one costs little. The legacy app was British English only, with en-GB dates.
 
 ### D29. Paraglide JS with i18next JSON v4 messages
 
@@ -398,9 +400,9 @@ JSON, and `reveal()` is the only way to read it. There is no rotation: the key I
 a value written under another key fail with its own clear error, and a new key means entering the
 stored secrets again. `secrets` checks the key in SvelteKit's `init` hook from its first version, so
 every way of running the app, dev and CI included, needs one. The key is restored with the database
-file (D16). The legacy master secret (legacy §9.2, §10: hex, base64 or raw text of at least 32
-bytes, with per-purpose keys derived from it) goes with it. A missing, malformed or weak key's error
-puts the key the app ran with before a new one, because a lost variable or a typo in a key in use
+file (D16). The legacy app's master secret (hex, base64 or raw text of at least 32 bytes, with
+per-purpose keys derived from it) goes with it. A missing, malformed or weak key's error puts the
+key the app ran with before a new one, because a lost variable or a typo in a key in use
 fails the same checks, and the key loads before any database could say whether anything is stored
 (owner decision, 2026-10-31). The details are in
 [SPEC-secrets.md](SPEC-secrets.md). The design is the same in all five edbfi apps; only the variable
