@@ -292,13 +292,12 @@ so run `build` first, and it needs Chromium once per machine:
 - The owner has reviewed the Dispatcharr research
   ([`docs/research/dispatcharr.md`](docs/research/dispatcharr.md)); its outcomes are D19–D26 in
   `docs/decisions.md`, with D20 open. The Dispatcharr feature spec builds on those decisions and the
-  research's corrections to the legacy spec, after which the research is deleted.
-- The legacy spec describes behaviour to keep, not the technology: its header names the superseded
-  sections.
+  research's corrections, after which the research is deleted.
 - Never bring code over from `legacy-old/v1`; rebuild from the spec.
 
 **Read next.**
-- Product: [PRODUCT.md](PRODUCT.md), [legacy spec](docs/product/legacy-spec.md).
+- Product: [PRODUCT.md](PRODUCT.md), and the capability map and Module notes in
+  [docs/SPEC.md](docs/SPEC.md).
 - Design: [DESIGN.md](DESIGN.md), the [surface briefs](.impeccable/surfaces/) (one per route),
   [screens and references](docs/design/), [design tokens](panda.config.ts),
   [demo fixtures](tests/fixtures/demo-fixtures.json).

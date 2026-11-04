@@ -5,14 +5,14 @@ Temporary research input (plan step G5). Delete it once its outcomes are in `doc
 **Sources read on 2026-10-18.** Line links point to Dispatcharr tag `v0.32.0` ([`c52bf87`](https://github.com/Dispatcharr/Dispatcharr/tree/c52bf87acb7ff2d787d6dcfb9fe3d39999585912), released 2026-10-07; it is the latest release) unless marked **dev**. **dev** means the unreleased `dev` branch at [`f451f33`](https://github.com/Dispatcharr/Dispatcharr/tree/f451f334bec9d3f78a6e56d3c3ec8da436df343b) (2026-10-16). Also read:
 
 - the docs repo, [Dispatcharr-Docs `192061c`](https://github.com/Dispatcharr/Dispatcharr-Docs/tree/192061c43443365771425d114484608cc3d01f51);
-- the plugin repos at the SHAs listed in §6;
+- the plugin repos at the SHAs listed in section 6;
 - the legacy client (`origin/legacy-old/v1:src/lib/dispatcharr/**`).
 
-"Spec" means the local product spec `otpravkarr.md`. It isn't in this repo.
+"The legacy app" means the previous otpravkarr (the `legacy-old/v1` branch) as its own spec described it. Where this note corrects it, the correction stands. What that spec said about Dispatcharr that this note didn't re-check is under [Upstream facts from the legacy app](#upstream-facts-from-the-legacy-app-not-re-verified).
 
 ## Summary
 
-- **The empty-profile rule still holds, on v0.32.0 and on dev.** A non-admin user with zero channel profiles sees every channel at or below their `user_level`, on every output and at stream time. Admins (`user_level >= 10`) bypass profiles entirely. The spec's "never an empty profile list" invariant stays mandatory.
+- **The empty-profile rule still holds, on v0.32.0 and on dev.** A non-admin user with zero channel profiles sees every channel at or below their `user_level`, on every output and at stream time. Admins (`user_level >= 10`) bypass profiles entirely. The legacy app's "never an empty profile list" invariant stays mandatory.
 - **The biggest widening writer is Dispatcharr core, not the plugins.**
   - On every M3U refresh, Auto Channel Sync re-enables each auto-synced channel in *every* profile. That includes otpravkarr's group profiles and the empty profile, unless the operator scopes each auto-sync group to explicit profiles or to "No Profiles" (v0.30.0+).
   - Channels created through the REST API or UI join every profile by default.
@@ -20,7 +20,7 @@ Temporary research input (plan step G5). Delete it once its outcomes are in `doc
 - **"Highest non-admin level" (Standard, 1) is the wrong level for subscribers.**
   - A Standard user can log in to the Dispatcharr web UI and REST API. There they can browse channels beyond their profiles, read provider stream URLs (fixed on dev, not released), read every plugin's settings, and view DVR recordings by default.
   - Streamer (0) is the XC-only level. Channels default to level 0, so Streamer loses nothing on XC.
-- **VOD is not scoped by channel profiles.** Movies and series default to *on* for every user (`vod_movies_enabled` / `vod_series_enabled`), so every subscriber with XC credentials gets the whole VOD library today. The spec doesn't mention this.
+- **VOD is not scoped by channel profiles.** Movies and series default to *on* for every user (`vod_movies_enabled` / `vod_series_enabled`), so every subscriber with XC credentials gets the whole VOD library today. The legacy app didn't account for this.
 - **Per-user XC credentials are still the only per-user, revocable delivery surface.**
   - `/output/m3u/<profile>`, `/output/epg/<profile>` and `/hdhr/<profile>/…` take no credentials. They are gated only by network allowlists.
   - Their stream URLs (`/proxy/ts/stream/<uuid>`) are also unauthenticated.
@@ -29,7 +29,7 @@ Temporary research input (plan step G5). Delete it once its outcomes are in `doc
   - A minor release lands every 2–5 weeks and routinely changes behaviour that otpravkarr depends on.
   - The best compatibility hook is `GET /api/core/version/`, which needs no authentication.
 - **API keys are per user, unscoped, stored in plaintext, and inherit the user's level.** Every admin `GET /api/accounts/users/` response includes *every* user's `api_key`.
-- **Plugins:** most of the spec's §7.3 rows need corrections (§6). No plugin creates profiles, touches users, or writes to all profiles. ECM, Lineuparr and Stream Mapparr only write to profiles named in their own settings.
+- **Plugins:** most of the legacy app's plugin descriptions need corrections (section 6). No plugin creates profiles, touches users, or writes to all profiles. ECM, Lineuparr and Stream Mapparr only write to profiles named in their own settings.
 
 ## 1. User model, levels, profiles, custom properties
 
@@ -45,15 +45,15 @@ Temporary research input (plan step G5). Delete it once its outcomes are in `doc
 
 - **Channel list.** `/api/channels/channels/` filters by the user's profiles only when no `channel_profile_id` is passed. A Standard user can pass any profile ID, or `show_disabled`, and see other channels ([`apps/channels/api_views.py#L1191-L1253`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/channels/api_views.py#L1191-L1253)). The docs agree: "Dispatcharr UI access is granted for all channels … Restrictions apply only for access via XC" ([docs `system.md`](https://github.com/Dispatcharr/Dispatcharr-Docs/blob/192061c43443365771425d114484608cc3d01f51/docs/en/system.md)).
 - **Stream list.** `/api/channels/streams/` is listable by Standard users and returns provider `url`s, which contain provider credentials ([`apps/channels/api_views.py#L186-L203`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/channels/api_views.py#L186-L203)). It is fixed on dev by [`f451f33` "restrict provider URLs to admin users only"](https://github.com/Dispatcharr/Dispatcharr/commit/f451f334bec9d3f78a6e56d3c3ec8da436df343b), which is unreleased.
-- **Plugins.** `GET /api/plugins/plugins/` is `IsStandardUser` and returns raw plugin settings, including password-type fields (§6).
+- **Plugins.** `GET /api/plugins/plugins/` is `IsStandardUser` and returns raw plugin settings, including password-type fields (section 6).
 - **DVR.** For Standard users, `dvr_access` defaults to `view` ([`apps/channels/dvr_access.py#L24-L44`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/channels/dvr_access.py#L24-L44)).
 
-The legacy client set `user_level: 1` and used the XC password as the Django login password too (legacy `src/lib/bridge/subscriptions.ts`, `provisioner.ts`). So every legacy subscriber could log in to Dispatcharr's UI.
+The legacy client set `user_level: 1` and used the XC password as the Django login password too (the legacy client's `src/lib/bridge/subscriptions.ts`, `provisioner.ts`). So every subscriber of the legacy app could log in to Dispatcharr's UI.
 
 **Channel profiles.**
 
 - **Model.** `ChannelProfile` has only `name`, which is unique with `max_length=100`. Membership lives in `ChannelProfileMembership(channel_profile, channel, enabled)`. A missing row means "not in the profile" ([`apps/channels/models.py#L1229-L1240`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/channels/models.py#L1229-L1240)). "All" is a UI sentinel (`0`), not a row.
-- **Assignment.** `User.channel_profiles` is a many-to-many field. Outputs use the union of the user's profiles' enabled memberships (§5). Deleting a profile cascades away users' assignments, so a user whose only profile is deleted ends up with an **empty list, which means everything**.
+- **Assignment.** `User.channel_profiles` is a many-to-many field. Outputs use the union of the user's profiles' enabled memberships (section 5). Deleting a profile cascades away users' assignments, so a user whose only profile is deleted ends up with an **empty list, which means everything**.
 - **Channel-side filters, applied to everyone below admin:**
   - `Channel.user_level`: the channel is visible when `channel.user_level <= user.user_level`. The default is 0 ([`models.py#L484`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/channels/models.py#L484)).
   - `is_adult`, together with the per-user `hide_adult_content`.
@@ -148,7 +148,7 @@ Sources:
 - **Network gating.** Every authenticated REST call also passes `network_access_allowed(request, "UI", user)`. So the global "UI" CIDR list and the key owner's `allowed_networks.UI` both apply ([`permissions.py#L6-L12`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/accounts/permissions.py#L6-L12)). This lets an operator pin otpravkarr's service key to otpravkarr's own address.
 - **Reverse-proxy header login (v0.32.0)** swaps a trusted proxy header for a JWT. It is for UI sign-in only and is irrelevant to subscribers.
 
-**What spec §7.2 needs, and the permission each operation requires** (all at v0.32.0):
+**What the legacy app's Dispatcharr client used, and the permission each operation requires** (all at v0.32.0):
 
 | Operation | Endpoint | Permission |
 |---|---|---|
@@ -161,11 +161,11 @@ Sources:
 | Bulk membership | `PATCH /api/channels/profiles/{id}/channels/bulk-update/ {channels:[{channel_id, enabled}]}`. It upserts, rejects unknown channel IDs with 400, and runs in one transaction ([`api_views.py#L3356-L3431`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/channels/api_views.py#L3356-L3431)). | Admin |
 | Plugins + settings | `GET /api/plugins/plugins/` → `{plugins:[…]}` | Standard |
 | Health / version probe | `GET /api/core/version/` → `{version, timestamp}` ([`core/api_views.py#L442-L457`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/core/api_views.py#L442-L457)) | **none** (`AllowAny`) |
-| M3U group auto-sync settings (new need, §1) | `GET /api/m3u/accounts/` | Admin |
+| M3U group auto-sync settings (new need, section 1) | `GET /api/m3u/accounts/` | Admin |
 
 The writes need Admin, so otpravkarr's key must belong to an admin-level user. There is no narrower option.
 
-The legacy health probe, `GET /api/accounts/users/?page=1&page_size=1`, ignores both parameters and returns every user. It is expensive, and it puts every API key on the wire on each probe.
+The legacy client's health probe, `GET /api/accounts/users/?page=1&page_size=1`, ignores both parameters and returns every user. It is expensive, and it puts every API key on the wire on each probe.
 
 ## 4. API stability
 
@@ -208,7 +208,7 @@ The legacy health probe, `GET /api/accounts/users/?page=1&page_size=1`, ignores 
   - Read `GET /api/core/version/` at startup and in the health probe, and compare it with the latest stable release (D30). `start_empty` and "No Profiles" exist from v0.30.0.
   - Warn rather than fail when Dispatcharr runs any version other than the latest stable release (D30).
   - Validate responses with strict schemas, failing closed on the fields enforcement depends on and staying lenient elsewhere.
-  - Run a contract suite in CI against the latest stable Dispatcharr image (D30) that exercises every operation in the §3 table. Diff `/api/schema/` against a committed snapshot to flag drift.
+  - Run a contract suite in CI against the latest stable Dispatcharr image (D30) that exercises every operation in the section 3 table. Diff `/api/schema/` against a committed snapshot to flag drift.
 
 ## 5. The empty-profile rule
 
@@ -247,14 +247,14 @@ All seven are listed in the official registry [Dispatcharr/Plugins](https://gith
 
 **Keys.** UI and hub installs normalise keys to lowercase with `_` ([`apps/plugins/api_views.py#L78-L83`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/plugins/api_views.py#L78-L83)). A plugin folder copied in by hand keeps its dashes ([`loader.py#L146`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/plugins/loader.py#L146)), so match both forms.
 
-| Plugin (key) | Repo @ tag (SHA) | What it actually writes | Profile writes | Verdict on spec §7.3 row |
+| Plugin (key) | Repo @ tag (SHA) | What it actually writes | Profile writes | Verdict on the legacy app's description |
 |---|---|---|---|---|
 | Event Channel Managarr (`event_channel_managarr`) | [PiratesIRC/…Event-Channel-Managarr-Plugin](https://github.com/PiratesIRC/Dispatcharr-Event-Channel-Managarr-Plugin/tree/11990f3a117bcfa3a3bda47b496da09ae782ca2d) v1.26.2832019 (`11990f3`) | Membership `enabled` on/off, plus EPG: it clears `epg_data` on hidden channels by default, can delete ProgramData, and can create a dummy EPG source. | Only profiles named in `channel_profile_name` (CSV, case-insensitive). Empty is an error, not "all". It **re-enables** channels no hide rule matches, and **flattens** visibility across all listed profiles (visible in any → written to all). | Mostly right. Add: the schedule (`scheduled_times`) and the m3u trigger (`auto_rescan_on_m3u_refresh`) are both **opt-in** (default off); it writes EPG; scope covers every group in those profiles unless `channel_groups` narrows it. Scheduled runs read `/data/event_channel_managarr_settings.json`, not `PluginConfig`, so REST-visible settings can differ from what scheduled runs use. The " — PPV/Events" / " — Unscheduled Events" suffixes appear nowhere in ECM or core; they are this deployment's naming (**unverified** origin). |
 | IPTV Checker (`iptv_checker`) | [PiratesIRC/…IPTV-Checker-Plugin](https://github.com/PiratesIRC/Dispatcharr-IPTV-Checker-Plugin/tree/1e895f3d6d9daac49d5f3c0c4797ddce0a38392b) v1.26.2901902 (`1e895f3`) | Renames channels ("[DEAD]", "[Blank]", "[Slow]"); creates destination groups and moves channels into them; restore moves them back; **permanently deletes dead channels** (gated by `auto_delete_confirmation == "DELETE"`; "dead" includes black-screen); clears stream stats. | None (reads only) | Group names and defaults confirmed (`move_to_group_name`, `move_black_screen_group`, `move_low_framerate_group`). **Wrong:** the completion webhook was removed (2026-08-05); it now calls Stream Mapparr in-process. Add: it renames, deletes and restores channels. |
 | Stream Mapparr (`stream_mapparr`) | [PiratesIRC/Stream-Mapparr](https://github.com/PiratesIRC/Stream-Mapparr/tree/023d686d77150e616251ab081a6b44cc020e419b) 1.26.2911353 (`023d686`) | Replaces ChannelStream rows (with `overwrite_streams`, which defaults to on). | Only the **first** profile in `profile_name`, and only through the **manual** `manage_channel_visibility` action. It disables in-scope channels, then enables one per group, and only among channels already enabled, so it can **narrow but never widen**. | Stream matching is right. **Wrong:** "refuses the 'All' profile" isn't in the code; it only checks that the name exists. The webhook was removed (2026-08-01). `manage_channel_visibility` is an action, not a setting, and `visible_channel_limit` caps streams, not visibility. |
 | Channel Mapparr (`channel_mapparr`; repo spelled "Maparr") | [PiratesIRC/…Channel-Maparr-Plugin](https://github.com/PiratesIRC/Dispatcharr-Channel-Maparr-Plugin/tree/596caa5495b43d5fe230cddd9c5047ac5b962b35) 1.26.2911354 (`596caa5`) | Renames channels; creates groups and moves channels between them; **creates channels** from existing streams ("Import M3U") and stream-less seed channels, with **no membership rows**; sets logos. | None | Essentially right. "Imports M3U" means it creates channels from streams already in Dispatcharr. Add: it creates channels and sets logos. |
 | EPG Janitor (`epg_janitor`) | [PiratesIRC/…EPG-Janitor-Plugin](https://github.com/PiratesIRC/Dispatcharr-EPG-Janitor-Plugin/tree/bdf55bf23601aa8ee48a08499691842004ca2e4c) 1.26.2901817 (`bdf55bf`) | Sets and clears `Channel.epg_data`; `remove_epg_from_hidden` **deletes ProgramData of shared EPG entries** (affecting other channels on the same entry); the manual `add_bad_epg_suffix` renames. | None. It reads `channel_profile_name` to decide what counts as "hidden". | Confirmed. Add: deleting ProgramData has side effects on other channels that share the EPG entry. Its watchdog reads the key `epg-janitor`, which may not match a hub install's `epg_janitor` (**unverified** at runtime). |
-| EPGeditARR → **EPG & Sports Editor** (`epg_and_sports_editor`, legacy `epgeditarr`) | [jstevenscl/epg-and-sports-editor](https://github.com/jstevenscl/epg-and-sports-editor/tree/1a644c59f1b90409566d8bb30c03067b770a78d5) v0.5.08 (`1a644c5`) | Virtual/fill/sports EPG sources, EPGData and ProgramData; sets `Channel.epg_data`; renames only auto-created channels in Sports-Editor groups; logos; **`hidden_from_output`** for past-date event channels (opt-in per group), a global hide that otpravkarr's profiles can't override; a `restart_dispatcharr` action. | None | **Key renamed**: the old adapter's `epgeditarr` key no longer matches, and settings migrate to the new key. "Keep its rename/sort actions away from Lineuparr" is stale: v0.5.x has no rename/sort *actions*. Add: `hidden_from_output` and logos. |
+| EPGeditARR → **EPG & Sports Editor** (`epg_and_sports_editor`, formerly `epgeditarr`) | [jstevenscl/epg-and-sports-editor](https://github.com/jstevenscl/epg-and-sports-editor/tree/1a644c59f1b90409566d8bb30c03067b770a78d5) v0.5.08 (`1a644c5`) | Virtual/fill/sports EPG sources, EPGData and ProgramData; sets `Channel.epg_data`; renames only auto-created channels in Sports-Editor groups; logos; **`hidden_from_output`** for past-date event channels (opt-in per group), a global hide that otpravkarr's profiles can't override; a `restart_dispatcharr` action. | None | **Key renamed**: the old adapter's `epgeditarr` key no longer matches, and settings migrate to the new key. "Keep its rename/sort actions away from Lineuparr" is stale: v0.5.x has no rename/sort *actions*. Add: `hidden_from_output` and logos. |
 | Lineuparr (`lineuparr`) | [PiratesIRC/…Lineuparr-Plugin](https://github.com/PiratesIRC/Dispatcharr-Lineuparr-Plugin/tree/b4d129d497619ebc8fe47bc8b36029c7ad3c2974) v1.26.2901915 (`b4d129d`) | Groups (`get_or_create` by name, so it adopts existing groups); channels (`get_or_create`, renumbers); replaces streams; EPG and logos; **deletes every zero-stream channel in groups matching its lineup names, including ones it didn't create**, on Apply Stream Match as well as Full Sync. | Only profiles named in `channel_profiles` (default `_none`, meaning none). It creates enabled rows and flips disabled ones on. | Confirmed, with two refinements: profile enabling covers only the configured profiles, and deletion isn't limited to Full Sync. |
 
 **Plugin REST surface** ([`apps/plugins/api_urls.py#L23-L41`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/plugins/api_urls.py#L23-L41), [`api_views.py#L95-L116`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/plugins/api_views.py#L95-L116), [`loader.py#L420-L541`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/plugins/loader.py#L420-L541)):
@@ -288,7 +288,7 @@ The collision to check: if any plugin's profile setting (ECM `channel_profile_na
 
 ## 7. Options for delivery
 
-Goals, from the spec:
+Goals, from the legacy app:
 
 - Per-friend access that ends when the friendship ends.
 - Least privilege, where zero groups means zero channels.
@@ -296,7 +296,7 @@ Goals, from the spec:
 - Credentials masked and rotatable.
 - Converge despite plugin churn.
 
-The spec's §12 weaknesses in play: orphaned remote accounts, credentials in URLs, drift, and empty-profile exposure.
+The legacy app's known weaknesses in play: orphaned remote accounts, credentials in URLs, drift, and empty-profile exposure.
 
 | Option | Per-user identity and revocation | Scoping | Credential handling | Orphans and drift | Fit |
 |---|---|---|---|---|---|
@@ -304,7 +304,7 @@ The spec's §12 weaknesses in play: orphaned remote accounts, credentials in URL
 | A2. Like A, but one profile per *user* | Yes | The user's exact set | Same as A | N profiles to keep narrowed, and every one widened by auto-sync; ECM scope must list every user's profile; more profile churn. | Worse than A for ECM and for scale (tens of users, up to ~1000 groups). |
 | B. Per-profile `/output/m3u/<profile>` + `/output/epg/<profile>` (+HDHR) | **No.** Anyone with the URL gets the profile, and one person can't be revoked. | Profile | No credentials at all; streams use unauthenticated `/proxy/ts/stream/<uuid>`. | No user objects, but the profile name is effectively a shared secret. | **Reject.** Upstream docs advise against publishing it. |
 | C1. otpravkarr serves the playlist (fetches `get.php` server-side, or redirects from its own revocable token URL) | Yes, through otpravkarr tokens | Same as A | Stream lines still contain `/live/<user>/<xc_password>/…`, so the secret leaks anyway; a redirect also exposes it. | Adds an availability dependency on otpravkarr for every playlist refresh. | Low value. It would only help if otpravkarr also proxied video, which is a non-goal. |
-| C2. otpravkarr proxies streams and re-signs URLs | Yes | Yes | Hides the XC credential completely | Big operational cost: bandwidth, latency, a second stream proxy. | **Reject** (non-goal, spec §1). |
+| C2. otpravkarr proxies streams and re-signs URLs | Yes | Yes | Hides the XC credential completely | Big operational cost: bandwidth, latency, a second stream proxy. | **Reject** (serving video is a non-goal). |
 | D. Shared XC account per lineup or bundle | **No.** Revoking one friend means rotating everyone. | Lineup | One credential shared by many | Fewer remote users | Reject. It breaks "access ends when the friendship ends". |
 | E. Newer upstream mechanisms | Reverse-proxy header auth (v0.32.0): UI JWTs only. Catch-up session API (v0.28.0): app playback sessions, not playlists. App-data API (dev): storage only. | — | — | App-data gives a clean ownership marker. | None of these replaces A. Use app-data for the marker once it ships. |
 
@@ -313,7 +313,7 @@ Option A, hardened:
 - **Streamer level, and a throwaway login password.** This closes UI/REST exposure and separates the login password from the XC credential.
 - **`start_empty` profiles.** No all-channels window when a profile is created.
 - **Explicit VOD, catch-up and adult flags, and `stream_limit`.**
-- **An ownership marker on each remote user.** Orphans can be found and adopted or deleted (spec §12: "remote account orphaned with no record of its ID").
+- **An ownership marker on each remote user.** Orphans can be found and adopted or deleted (a known weakness of the legacy app: a remote account orphaned with no record of its ID).
 - **Disable by clearing `xc_password`, alongside the empty profile.**
   - It is reversible and keeps the Dispatcharr user ID, so bookmarked URLs work again after re-enable with a stored or rotated password.
   - It avoids the create/delete churn that produces orphans.
@@ -322,20 +322,20 @@ Option A, hardened:
   - Connect webhooks carry configurable headers and no signature ([`apps/connect/handlers/webhook.py#L10-L19`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/connect/handlers/webhook.py#L10-L19)).
   - The event fires after auto-sync completes ([`apps/m3u/tasks.py#L3938`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/m3u/tasks.py#L3938), [`#L4001-L4010`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/m3u/tasks.py#L4001-L4010)).
 
-## Where the spec is wrong or stale
+## Where the legacy app was wrong or stale
 
-- **§3, §6.5 and §10, "highest non-admin user level".** That level is Standard, and it grants UI and REST read access well beyond the profiles. Least privilege only holds at Streamer.
-- **§6.5 and §1, "a freshly created profile starts with every channel enabled".** Still the default, but `start_empty` has existed since v0.30.0.
-- **§5.2, "Dispatcharr has no inactive user flag".** True over REST (`is_active` isn't serialised), but clearing `xc_password` disables every XC path without deleting the account.
-- **§6.4, "a remote lookup by exact username".** There is no server-side filter; the full user list is fetched, including every user's `api_key`.
-- **§1 and §6.5, exposure framing.** The main widening force is core Auto Channel Sync (every M3U refresh) and API channel creation, not only plugins. VOD (and catch-up) exposure is missing from the spec entirely.
-- **§7.3 rows.** Corrections are in §6:
+- **Subscribers at the "highest non-admin user level".** That level is Standard, and it grants UI and REST read access well beyond the profiles. Least privilege only holds at Streamer.
+- **"A freshly created profile starts with every channel enabled".** Still the default, but `start_empty` has existed since v0.30.0.
+- **"Dispatcharr has no inactive user flag", so disabling meant deleting.** True over REST (`is_active` isn't serialised), but clearing `xc_password` disables every XC path without deleting the account.
+- **"A remote lookup by exact username".** There is no server-side filter; the full user list is fetched, including every user's `api_key`.
+- **Plugins as the widening force.** The main widening force is core Auto Channel Sync (every M3U refresh) and API channel creation, not only plugins. VOD (and catch-up) exposure was missing from the legacy app entirely.
+- **The plugin descriptions.** Corrections are in section 6:
   - IPTV Checker has no webhook, and it renames and deletes channels.
   - Stream Mapparr's "refuses All" isn't in the code, and its webhook is gone.
   - EPGeditARR's key is now `epg_and_sports_editor`, and it has no rename/sort actions.
   - ECM's schedule and m3u triggers are opt-in, it re-enables as well as hides, and it writes EPG.
   - Lineuparr deletes zero-stream channels outside Full Sync too.
-- **§6.8, event-group suffixes.** These are this deployment's naming convention, not something ECM defines.
+- **The event-group suffixes** (" — PPV/Events", " — Unscheduled Events"). These are this deployment's naming convention, not something ECM defines.
 
 ## Candidate decisions
 
@@ -350,3 +350,24 @@ The owner has reviewed all 20; each is now a decision in [`docs/decisions.md`](.
 | 13 (service user), 14 (`X-API-Key`, stripping `api_key`) | D25 |
 | 4 (version floor, replaced by D30), 15 (health probe), 16 (compatibility gate, contract tests), 20 (failed-auth rate limits: no fake-credential probes) | D26 |
 | 11 (delivery and exposure), 20 (`XC_API` network rule: the owner's ingress notes) | D19, with D20 open |
+
+## Upstream facts from the legacy app (not re-verified)
+
+What the legacy app's spec said about Dispatcharr and this note didn't check against v0.32.0. Treat
+each as a lead for the Dispatcharr modules' specs and contract tests (D26), not as fact; delete each
+once a module's spec absorbs or corrects it.
+
+- **Channel pages.** Small page sizes on the channel list timed out on a large catalogue, so the
+  legacy client asked for large pages.
+- **Pagination.** List responses came either as an envelope with a `next` link or as a flat array,
+  and a `next` link could name a host other than the one the client called.
+- **The XC credential.** Without the `xc_password` custom property the Xtream-Codes endpoints refuse
+  the user, so the legacy app set its generated password as both the account password and
+  `xc_password` (D21 now keeps them apart). Generated alphanumeric passwords needed no URL encoding.
+- **Profile names** are limited in length (section 1: 100 characters), and ECM's scope setting is a
+  comma-separated list, so a profile name with a comma in it can't be listed there. The legacy app
+  named its profiles without commas for that reason.
+- **IPTV Checker's quarantine groups** are named "Graveyard", "Black Screens" and "Slow" by default,
+  and the owner can rename them in the plugin's settings (section 6 confirms the setting names).
+- **Membership reads.** A profile's membership that isn't a proper list is an upstream error, not an
+  empty profile: reading it as empty would make narrowing a no-op.
