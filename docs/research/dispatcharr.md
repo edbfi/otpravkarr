@@ -148,7 +148,7 @@ Sources:
 - **Network gating.** Every authenticated REST call also passes `network_access_allowed(request, "UI", user)`. So the global "UI" CIDR list and the key owner's `allowed_networks.UI` both apply ([`permissions.py#L6-L12`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/accounts/permissions.py#L6-L12)). This lets an operator pin otpravkarr's service key to otpravkarr's own address.
 - **Reverse-proxy header login (v0.32.0)** swaps a trusted proxy header for a JWT. It is for UI sign-in only and is irrelevant to subscribers.
 
-**What the legacy app's Dispatcharr client used, and the permission each operation requires** (all at v0.32.0):
+**The Dispatcharr operations otpravkarr needs, and the permission each requires** (all at v0.32.0):
 
 | Operation | Endpoint | Permission |
 |---|---|---|
@@ -250,7 +250,7 @@ All seven are listed in the official registry [Dispatcharr/Plugins](https://gith
 | Plugin (key) | Repo @ tag (SHA) | What it actually writes | Profile writes | Verdict on the legacy app's description |
 |---|---|---|---|---|
 | Event Channel Managarr (`event_channel_managarr`) | [PiratesIRC/…Event-Channel-Managarr-Plugin](https://github.com/PiratesIRC/Dispatcharr-Event-Channel-Managarr-Plugin/tree/11990f3a117bcfa3a3bda47b496da09ae782ca2d) v1.26.2832019 (`11990f3`) | Membership `enabled` on/off, plus EPG: it clears `epg_data` on hidden channels by default, can delete ProgramData, and can create a dummy EPG source. | Only profiles named in `channel_profile_name` (CSV, case-insensitive). Empty is an error, not "all". It **re-enables** channels no hide rule matches, and **flattens** visibility across all listed profiles (visible in any → written to all). | Mostly right. Add: the schedule (`scheduled_times`) and the m3u trigger (`auto_rescan_on_m3u_refresh`) are both **opt-in** (default off); it writes EPG; scope covers every group in those profiles unless `channel_groups` narrows it. Scheduled runs read `/data/event_channel_managarr_settings.json`, not `PluginConfig`, so REST-visible settings can differ from what scheduled runs use. The " — PPV/Events" / " — Unscheduled Events" suffixes appear nowhere in ECM or core; they are this deployment's naming (**unverified** origin). |
-| IPTV Checker (`iptv_checker`) | [PiratesIRC/…IPTV-Checker-Plugin](https://github.com/PiratesIRC/Dispatcharr-IPTV-Checker-Plugin/tree/1e895f3d6d9daac49d5f3c0c4797ddce0a38392b) v1.26.2901902 (`1e895f3`) | Renames channels ("[DEAD]", "[Blank]", "[Slow]"); creates destination groups and moves channels into them; restore moves them back; **permanently deletes dead channels** (gated by `auto_delete_confirmation == "DELETE"`; "dead" includes black-screen); clears stream stats. | None (reads only) | Group names and defaults confirmed (`move_to_group_name`, `move_black_screen_group`, `move_low_framerate_group`). **Wrong:** the completion webhook was removed (2026-08-05); it now calls Stream Mapparr in-process. Add: it renames, deletes and restores channels. |
+| IPTV Checker (`iptv_checker`) | [PiratesIRC/…IPTV-Checker-Plugin](https://github.com/PiratesIRC/Dispatcharr-IPTV-Checker-Plugin/tree/1e895f3d6d9daac49d5f3c0c4797ddce0a38392b) v1.26.2901902 (`1e895f3`) | Renames channels ("[DEAD]", "[Blank]", "[Slow]"); creates destination groups and moves channels into them; restore moves them back; **permanently deletes dead channels** (gated by `auto_delete_confirmation == "DELETE"`; "dead" includes black-screen); clears stream stats. | None (reads only) | Group names and defaults confirmed (`move_to_group_name`, `move_black_screen_group`, `move_low_framerate_group`: `Graveyard`, `Black Screens`, `Slow`). **Wrong:** the completion webhook was removed (2026-08-05); it now calls Stream Mapparr in-process. Add: it renames, deletes and restores channels. |
 | Stream Mapparr (`stream_mapparr`) | [PiratesIRC/Stream-Mapparr](https://github.com/PiratesIRC/Stream-Mapparr/tree/023d686d77150e616251ab081a6b44cc020e419b) 1.26.2911353 (`023d686`) | Replaces ChannelStream rows (with `overwrite_streams`, which defaults to on). | Only the **first** profile in `profile_name`, and only through the **manual** `manage_channel_visibility` action. It disables in-scope channels, then enables one per group, and only among channels already enabled, so it can **narrow but never widen**. | Stream matching is right. **Wrong:** "refuses the 'All' profile" isn't in the code; it only checks that the name exists. The webhook was removed (2026-08-01). `manage_channel_visibility` is an action, not a setting, and `visible_channel_limit` caps streams, not visibility. |
 | Channel Mapparr (`channel_mapparr`; repo spelled "Maparr") | [PiratesIRC/…Channel-Maparr-Plugin](https://github.com/PiratesIRC/Dispatcharr-Channel-Maparr-Plugin/tree/596caa5495b43d5fe230cddd9c5047ac5b962b35) 1.26.2911354 (`596caa5`) | Renames channels; creates groups and moves channels between them; **creates channels** from existing streams ("Import M3U") and stream-less seed channels, with **no membership rows**; sets logos. | None | Essentially right. "Imports M3U" means it creates channels from streams already in Dispatcharr. Add: it creates channels and sets logos. |
 | EPG Janitor (`epg_janitor`) | [PiratesIRC/…EPG-Janitor-Plugin](https://github.com/PiratesIRC/Dispatcharr-EPG-Janitor-Plugin/tree/bdf55bf23601aa8ee48a08499691842004ca2e4c) 1.26.2901817 (`bdf55bf`) | Sets and clears `Channel.epg_data`; `remove_epg_from_hidden` **deletes ProgramData of shared EPG entries** (affecting other channels on the same entry); the manual `add_bad_epg_suffix` renames. | None. It reads `channel_profile_name` to decide what counts as "hidden". | Confirmed. Add: deleting ProgramData has side effects on other channels that share the EPG entry. Its watchdog reads the key `epg-janitor`, which may not match a hub install's `epg_janitor` (**unverified** at runtime). |
@@ -359,18 +359,8 @@ once a module's spec absorbs or corrects it.
 
 - **Channel pages.** Small page sizes on the channel list timed out on a large catalogue, so the
   legacy client asked for large pages.
-- **Pagination.** List responses came either as an envelope with a `next` link or as a flat array,
-  and a `next` link could name a host other than the one the client called.
-- **The XC credential.** Without the `xc_password` custom property the Xtream-Codes endpoints refuse
-  the user, so the legacy app set its generated password as both the account password and
-  `xc_password` (D21 now keeps them apart). Generated alphanumeric passwords needed no URL encoding.
-- **Profile names** are limited in length (section 1: 100 characters), and ECM's scope setting is a
-  comma-separated list, so a profile name with a comma in it can't be listed there. The legacy app
-  named its profiles without commas for that reason.
-- **IPTV Checker's quarantine groups** are named "Graveyard", "Black Screens" and "Slow" by default,
-  and the owner can rename them in the plugin's settings (section 6 confirms the setting names).
-- **Membership reads.** A profile's membership that isn't a proper list is an upstream error, not an
-  empty profile: reading it as empty would make narrowing a no-op.
+- **`next` links.** A paginated response's `next` link could name a host other than the one the
+  client called.
 - **Logged credentials.** Dispatcharr logged the credential-bearing direct live path, so the legacy
   app's rollout denied it at the reverse proxy, which exposed only the credentialed XC playlist, API
   and guide paths and the credential-free logo cache. A lead for D20's path list.

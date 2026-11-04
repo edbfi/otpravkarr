@@ -63,7 +63,7 @@ Dark Matter. Warm orange against dark plum, generous editorial serif headings, r
 - `docs/research/dispatcharr.md`: research against Dispatcharr v0.32.0 (sources read 2026-10-18), including where current Dispatcharr behaviour differs from what the legacy app assumed. The owner has reviewed it, and its candidate decisions are now D19–D26.
 - `docs/research/plex.md`: how Plex behaved as the legacy app found it, not re-verified; the Plex library audit (D18) checks it.
 - `docs/decisions.md`: the decided and open `D<n>` entries for the stack and the Dispatcharr access model.
-- `docs/SPEC.md`: the built ground-floor spec; the capability map is still a placeholder.
+- `docs/SPEC.md`: the built ground-floor spec, the approved capability map and its Module notes.
 - `docs/design/screens/01-landing.webp` to `docs/design/screens/10-recovery-and-components.webp` and `docs/design/references/dark-matter.webp`: generated raster mockups and the selected direction reference. Their body text, numbers and icons are illustrative, not specification.
 - `.impeccable/surfaces/*.md`: eight route briefs (`/`, `/portal`, `/portal/channels`, `/portal/setup`, `/admin`, `/admin/users`, `/admin/settings/connections`, `/admin/settings/lineup`), all marked as a proposed design seed for review.
 - `DESIGN.md` and `panda.config.ts`: the proposed Dark Matter design seed and its tokens.
