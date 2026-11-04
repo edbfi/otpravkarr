@@ -242,9 +242,9 @@ numbers in these blocks are otpravkarr's.
   (default 10 seconds; 0 turns it off) and the request body limit (default about half a megabyte;
   unit suffixes or unlimited). In production, an explicitly set database path that doesn't exist
   stops startup instead of creating an empty database, so a missing volume can't pass for a fresh
-  install. Migrations only go forward: a backup is a coherent snapshot of the database file with the
-  master key (D16, D31), noted with the app version that wrote it, and the app is never downgraded
-  across a migration.
+  install. Pending migrations apply in order, each once, as one all-or-nothing batch, and only go
+  forward: a backup is a coherent snapshot of the database file with the master key (D16, D31),
+  noted with the app version that wrote it, and the app is never downgraded across a migration.
 - **Trust:** anyone who can read the server console can claim a fresh install.
 
 #### sign-in
@@ -529,23 +529,24 @@ numbers in these blocks are otpravkarr's.
   reactivated or failed, without throwing for expected failures. It applies the groups it is given
   and doesn't consult policy, so a caller that wants them to survive the next sync saves matching
   intent too.
-  - **An active record:** already exists; Dispatcharr isn't contacted.
+  - **An active record with a Dispatcharr user:** already exists; Dispatcharr isn't contacted.
   - **An inactive record with a Dispatcharr user:** confirm the user still exists (if it's gone,
     clear the link and create one as below), put the stored XC password back (custom properties
     merged) so bookmarked URLs work again, and only then mark it active and audit "provisioned
     (reactivated)". Then enforce its groups (`scoping`); if that fails, disable it again, audit it
     and report the failure.
-  - **Otherwise, create:** the username is the Plex username cut down to lowercase ASCII letters and
-    digits (a fixed fallback if nothing is left), taking the first free one of it and numbered
-    variants, checked against local records (case-insensitively) and Dispatcharr's users. A failed
-    Dispatcharr lookup is logged and checked locally only; after very many clashes a time-based
-    suffix is used. The XC password is 24 random letters and digits from a secure source, encrypted
-    before anything reaches Dispatcharr, so a failed encryption can't leave an orphan. Then create
-    the Dispatcharr user (D21, D22, D23), save the record (updating an inactive one, or inserting),
-    audit "provisioned" with the actor and client address, and enforce the groups: a new user's
-    empty profile list means every channel, so this step is mandatory, and its failure disables the
-    user and audits that. A local write that fails after Dispatcharr created the user is reported,
-    and sync finds the user by its marker (D23).
+  - **Otherwise, create** (an Orphaned record included, which keeps its row): the username is the
+    Plex username cut down to lowercase ASCII letters and digits (a fixed fallback if nothing is
+    left), taking the first free one of it and numbered variants, checked against local records
+    (case-insensitively) and Dispatcharr's users. A failed Dispatcharr lookup is logged and checked
+    locally only; after very many clashes a time-based suffix is used. The XC password is 24 random
+    letters and digits from a secure source, encrypted before anything reaches Dispatcharr, so a
+    failed encryption can't leave an orphan. Then create the Dispatcharr user (D21, D22, D23), save
+    the record (updating an existing one, or inserting), audit "provisioned" with the actor and
+    client address, and enforce the groups: a new user's empty profile list means every channel, so
+    this step is mandatory, and its failure disables the user and audits that. A local write that
+    fails after Dispatcharr created the user is reported, and sync finds the user by its marker
+    (D23).
 - **Disable, enable and remove** follow D23. Enabling puts the stored XC password back and applies
   the saved policy, and provisions afresh when the Dispatcharr user is gone. Removing deletes the
   Dispatcharr user, then the record and the person's sessions in one transaction, audited; the
