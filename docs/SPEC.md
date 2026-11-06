@@ -233,15 +233,14 @@ numbers in these blocks are otpravkarr's.
 - **Security headers,** on every response, early returns (otpravkarr: and the setup gate's redirect)
   included: framing denied, no MIME sniffing, a referrer policy of `same-origin` or
   `strict-origin-when-cross-origin`, never `no-referrer` (which makes browsers send `Origin: null`
-  on the app's own form posts), a permissions policy denying camera, microphone and geolocation, and
-  a nonce-based content security policy: scripts from the app only; images from the app and inline
-  data (otpravkarr: and Plex's hosts, for avatars); fonts from the app (DESIGN.md bundles them);
-  connections to the app only (otpravkarr: and Plex); no framing; the app only as base and form
-  target. (otpravkarr: these are ground-floor choice 3; whether inline style attributes are refused
-  is for `setup`'s spec, since Ark UI and Svelte write some.) Strict transport security (otpravkarr:
-  whether it is sent, and for how long, is for `setup`'s spec) goes only over HTTPS (known when
-  `ORIGIN` is `https`, or when the browser sent `Sec-Fetch-Site` to a host that isn't loopback,
-  since browsers send it only to HTTPS and loopback addresses).
+  on the app's own form posts), a permissions policy denying camera, microphone and geolocation,
+  one-year strict transport security over HTTPS (known when `ORIGIN` is `https`, or when the browser
+  sent `Sec-Fetch-Site` to a host that isn't loopback, since browsers send it only to HTTPS and
+  loopback addresses), and a nonce-based content security policy: scripts from the app only; images
+  from the app and inline data (otpravkarr: and Plex's hosts, for avatars); fonts from the app
+  (DESIGN.md bundles them); connections to the app only (otpravkarr: and Plex); no framing; the app
+  only as base and form target. (otpravkarr: these are ground-floor choice 3; whether inline style
+  attributes are refused is for `setup`'s spec, since Ark UI and Svelte write some.)
 - **Startup and shutdown.** Startup runs once, before any request is served: migrations (D5), then
   each module's startup work (otpravkarr: restoring the learned quarantine names, `lineup`, and one
   health probe, `health`), then starting the jobs (otpravkarr: sync at its saved interval, health,
@@ -872,18 +871,6 @@ otpravkarr is a Bun web repo with edbfi-ci's Bun web templates:
 - **Never:** a database, authentication, Plex, Dispatcharr or any product feature before its
   module's approved spec builds it; a second styling tool or primitive library; Node, npm or npx
   anywhere, including CI.
-
-## Success criteria
-
-1. A fresh clone passes `bun ci`, `bun run --bun check` (zero errors and warnings), `bun run --bun
-   test`, `bun run --bun build`, `bun run --bun smoke` and `prek run --all-files --hook-stage
-   manual`, with no Node on `PATH`.
-2. The built server (`bun ./build`) serves `/` with the placeholder page and `/healthz` with `ok`
-   when started with a valid key.
-3. `panda.config.ts` holds every design token; the seed token files are gone, and nothing in `src/`
-   uses a raw colour, size or font value.
-4. Only folders with real files exist; `#lib` resolves in app code, tests and `svelte-check`.
-5. CI on the PR runs `checks`, `smoke` and `ci-ok` green; `audit` runs outside PRs.
 
 ## Ground-floor choices
 
