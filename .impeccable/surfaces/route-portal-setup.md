@@ -27,7 +27,7 @@ Use the shared [design system](../../DESIGN.md). Match hierarchy, density and pa
 
 ## Acceptance criteria
 
-Use VLC for computer; TiviMate belongs to TV tab only. No in-app player. Keep user task language plain and precise.
+Use VLC for computer. Recommend only the free and open-source players PRODUCT.md names, so not the raster's TiviMate. No in-app player. Keep user task language plain and precise.
 
 - Preserve audience boundaries from [product context](../../PRODUCT.md).
 - Use canonical data in [demo fixtures](../../tests/fixtures/demo-fixtures.json); do not infer calculations from raster text.

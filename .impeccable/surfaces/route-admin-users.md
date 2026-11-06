@@ -23,7 +23,7 @@ Use the shared [design system](../../DESIGN.md). Match hierarchy, density and pa
 
 ## Required content
 
-'Users'. Search Plex or Dispatcharr name. Columns Plex user, Player account, Mode, Policy, Status, Last access. Alex Automatic / Core plus bundles / Active; Jordan Automatic / Fixed / Inactive; Morgan Self-managed / Approved picks / Drift detected. Selected Alex detail shows 'Disable access' action with consequence 'Stream URLs will stop working immediately.' Cancel / Disable access dialog.
+'Users'. Search Plex or Dispatcharr name. Columns Plex user, Player account, Policy, Status, Last access. Alex Core plus bundles / Active; Jordan Fixed / Inactive; Morgan Approved picks / Drift detected. Selected Alex detail shows 'Disable access' action with consequence 'Stream URLs will stop working immediately.' Cancel / Disable access dialog.
 
 ## Acceptance criteria
 
@@ -41,6 +41,7 @@ No credentials copied into table as default. Drift attention distinct from activ
 Use the images for composition and visual character. Use DESIGN.md, PRODUCT.md, this brief's acceptance criteria and the demo fixtures for exact values and behavior. Body copy, chart axes, tiny icons and font glyphs remain illustrative raster renderings. Rebuild them as native accessible UI and verify them against the specification. A PNG cannot verify focus order, screen-reader announcements, permission checks or real responsiveness.
 
 - The user-list raster contains an incidental Add user button. Omit it; an accepted friend receives an account when they sign in. Existing owner self-subscription remains a separate product workflow.
+- Omit the raster's Mode column and field (Automatic, Self-managed): otpravkarr has one provisioning mode (D21).
 - Keep global admin sidebar navigation stable; settings subsection links belong inside Settings, even where a raster simplifies the sidebar.
 
 ## Handoff prompt

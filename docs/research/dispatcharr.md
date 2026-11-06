@@ -1,6 +1,6 @@
 # Dispatcharr research for the rewrite
 
-Temporary research input (plan step G5). Delete it once its outcomes are in `docs/SPEC*.md` and `docs/decisions.md`.
+Temporary research input. Delete it once its outcomes are in `docs/SPEC*.md` and `docs/decisions.md`.
 
 **Sources read on 2026-10-18.** Line links point to Dispatcharr tag `v0.32.0` ([`c52bf87`](https://github.com/Dispatcharr/Dispatcharr/tree/c52bf87acb7ff2d787d6dcfb9fe3d39999585912), released 2026-10-07; it is the latest release) unless marked **dev**. **dev** means the unreleased `dev` branch at [`f451f33`](https://github.com/Dispatcharr/Dispatcharr/tree/f451f334bec9d3f78a6e56d3c3ec8da436df343b) (2026-10-16). Also read:
 
@@ -204,11 +204,6 @@ The legacy client's health probe, `GET /api/accounts/users/?page=1&page_size=1`,
     - API-key failure rate limit.
     - Provider URLs hidden from Standard users.
     - The app-data API.
-- **What the rewrite should pin and check:**
-  - Read `GET /api/core/version/` at startup and in the health probe, and compare it with the latest stable release (D30). `start_empty` and "No Profiles" exist from v0.30.0.
-  - Warn rather than fail when Dispatcharr runs any version other than the latest stable release (D30).
-  - Validate responses with strict schemas, failing closed on the fields enforcement depends on and staying lenient elsewhere.
-  - Run a contract suite in CI against the latest stable Dispatcharr image (D30) that exercises every operation in the section 3 table. Diff `/api/schema/` against a committed snapshot to flag drift.
 
 ## 5. The empty-profile rule
 
@@ -300,7 +295,7 @@ The legacy app's weak points in play: orphaned remote accounts, credentials in U
 
 | Option | Per-user identity and revocation | Scoping | Credential handling | Orphans and drift | Fit |
 |---|---|---|---|---|---|
-| **A. Per-user Dispatcharr account, XC credentials, one profile per group (status quo, "Model A")** | Yes. Rotate or remove `xc_password`, or delete the user. | Union of group profiles; enforced at stream time; VOD needs the explicit flags. | Long-lived password in URLs; `stream_limit` limits sharing. | otpravkarr must reconcile remote users and profiles; core auto-sync widens profiles until the next reconcile. | **Best fit.** Strengthen with candidates 1–9 (D21–D24). |
+| **A. Per-user Dispatcharr account, XC credentials, one profile per group (status quo, "Model A")** | Yes. Rotate or remove `xc_password`, or delete the user. | Union of group profiles; enforced at stream time; VOD needs the explicit flags. | Long-lived password in URLs; `stream_limit` limits sharing. | otpravkarr must reconcile remote users and profiles; core auto-sync widens profiles until the next reconcile. | **Best fit.** Strengthened by D21–D24. |
 | A2. Like A, but one profile per *user* | Yes | The user's exact set | Same as A | N profiles to keep narrowed, and every one widened by auto-sync; ECM scope must list every user's profile; more profile churn. | Worse than A for ECM and for scale (tens of users, up to ~1000 groups). |
 | B. Per-profile `/output/m3u/<profile>` + `/output/epg/<profile>` (+HDHR) | **No.** Anyone with the URL gets the profile, and one person can't be revoked. | Profile | No credentials at all; streams use unauthenticated `/proxy/ts/stream/<uuid>`. | No user objects, but the profile name is effectively a shared secret. | **Reject.** Upstream docs advise against publishing it. |
 | C1. otpravkarr serves the playlist (fetches `get.php` server-side, or redirects from its own revocable token URL) | Yes, through otpravkarr tokens | Same as A | Stream lines still contain `/live/<user>/<xc_password>/…`, so the secret leaks anyway; a redirect also exposes it. | Adds an availability dependency on otpravkarr for every playlist refresh. | Low value. It would only help if otpravkarr also proxied video, which is a non-goal. |
@@ -308,48 +303,10 @@ The legacy app's weak points in play: orphaned remote accounts, credentials in U
 | D. Shared XC account per lineup or bundle | **No.** Revoking one friend means rotating everyone. | Lineup | One credential shared by many | Fewer remote users | Reject. It breaks "access ends when the friendship ends". |
 | E. Newer upstream mechanisms | Reverse-proxy header auth (v0.32.0): UI JWTs only. Catch-up session API (v0.28.0): app playback sessions, not playlists. App-data API (dev): storage only. | — | — | App-data gives a clean ownership marker. | None of these replaces A. Use app-data for the marker once it ships. |
 
-Option A, hardened:
+Option A, hardened, is D21–D24. For the reconcile on Dispatcharr Connect's `m3u_refresh` webhook (D24):
 
-- **Streamer level, and a throwaway login password.** This closes UI/REST exposure and separates the login password from the XC credential.
-- **`start_empty` profiles.** No all-channels window when a profile is created.
-- **Explicit VOD, catch-up and adult flags, and `stream_limit`.**
-- **An ownership marker on each remote user.** Orphans can be found and adopted or deleted (a flaw of the legacy app: a remote account orphaned with no record of its ID).
-- **Disable by clearing `xc_password`, alongside the empty profile.**
-  - It is reversible and keeps the Dispatcharr user ID, so bookmarked URLs work again after re-enable with a stored or rotated password.
-  - It avoids the create/delete churn that produces orphans.
-  - Hard deletion stays the path for permanent removal.
-- **A reconcile triggered by the Dispatcharr Connect `m3u_refresh` webhook, plus a check for empty-list users on every sync.** Together they shrink the core auto-sync exposure window and catch the cascade case.
-  - Connect webhooks carry configurable headers and no signature ([`apps/connect/handlers/webhook.py#L10-L19`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/connect/handlers/webhook.py#L10-L19)).
-  - The event fires after auto-sync completes ([`apps/m3u/tasks.py#L3938`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/m3u/tasks.py#L3938), [`#L4001-L4010`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/m3u/tasks.py#L4001-L4010)).
-
-## Where the legacy app was wrong or stale
-
-- **Subscribers at the "highest non-admin user level".** That level is Standard, and it grants UI and REST read access well beyond the profiles. Least privilege only holds at Streamer.
-- **"A freshly created profile starts with every channel enabled".** Still the default, but `start_empty` has existed since v0.30.0.
-- **"Dispatcharr has no inactive user flag", so disabling meant deleting.** True over REST (`is_active` isn't serialised), but clearing `xc_password` disables every XC path without deleting the account.
-- **"A remote lookup by exact username".** There is no server-side filter; the full user list is fetched, including every user's `api_key`.
-- **Plugins as the widening force.** The main widening force is core Auto Channel Sync (every M3U refresh) and API channel creation, not only plugins. VOD (and catch-up) exposure was missing from the legacy app entirely.
-- **The plugin descriptions.** Corrections are in section 6:
-  - IPTV Checker has no webhook, and it renames and deletes channels.
-  - Stream Mapparr's "refuses All" isn't in the code, and its webhook is gone.
-  - EPGeditARR's key is now `epg_and_sports_editor`, and it has no rename/sort actions.
-  - ECM's schedule and m3u triggers are opt-in, it re-enables as well as hides, and it writes EPG.
-  - Lineuparr deletes zero-stream channels outside Full Sync too.
-- **The event-group suffixes** (" — PPV/Events", " — Unscheduled Events"). These are this deployment's naming convention, not something ECM defines.
-
-## Candidate decisions
-
-The owner has reviewed all 20; each is now a decision in [`docs/decisions.md`](../decisions.md):
-
-| Candidates | Decision |
-|---|---|
-| 1 (Streamer level), 2 (random login password), 3 (self-managed and staff modes, dropped), 12 (no proxying), 20 (provider URLs hidden from Standard users: moot, as no subscriber is Standard) | D21 |
-| 7 (content flags and `stream_limit`) | D22 |
-| 4 (`start_empty`), 5 (disable by clearing `xc_password`), 6 (ownership marker), 10 (incidents) | D23 |
-| 8 (auto-sync widening), 9 (`m3u_refresh` webhook), 17 (plugin registry), 18 (plugin advisories), 19 (`hidden_from_output`) | D24 |
-| 13 (service user), 14 (`X-API-Key`, stripping `api_key`) | D25 |
-| 4 (version floor, replaced by D30), 15 (health probe), 16 (compatibility gate, contract tests), 20 (failed-auth rate limits: no fake-credential probes) | D26 |
-| 11 (delivery and exposure), 20 (`XC_API` network rule: the owner's ingress notes) | D19, with D20 open |
+- Connect webhooks carry configurable headers and no signature ([`apps/connect/handlers/webhook.py#L10-L19`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/connect/handlers/webhook.py#L10-L19)).
+- The event fires after auto-sync completes ([`apps/m3u/tasks.py#L3938`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/m3u/tasks.py#L3938), [`#L4001-L4010`](https://github.com/Dispatcharr/Dispatcharr/blob/c52bf87acb7ff2d787d6dcfb9fe3d39999585912/apps/m3u/tasks.py#L4001-L4010)).
 
 ## Upstream facts from the legacy app (not re-verified)
 

@@ -826,7 +826,6 @@ export const GET: RequestHandler = () => healthResponse();
 
 - [`panda.config.ts`](../panda.config.ts) holds every design token: colours, type styles,
   spacing, radii, layout sizes, breakpoints and motion durations, under the names DESIGN.md uses.
-  It replaced the seed token files that came with the design package.
 - Colours are semantic tokens behind a colour-mode condition (`_dark`), dark by default
   (`class="dark"` on `<html>` in `src/app.html`); light values can be added later without touching
   components.
