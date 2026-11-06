@@ -204,6 +204,8 @@ The legacy client's health probe, `GET /api/accounts/users/?page=1&page_size=1`,
     - API-key failure rate limit.
     - Provider URLs hidden from Standard users.
     - The app-data API.
+- **What the rewrite should pin and check:**
+  - Validate responses with strict schemas, failing closed on the fields enforcement depends on and staying lenient elsewhere.
 
 ## 5. The empty-profile rule
 
