@@ -103,7 +103,6 @@ export default defineConfig({
 				press: { value: "100ms" },
 				feedback: { value: "160ms" },
 				panel: { value: "200ms" },
-				story: { value: "200ms" },
 			},
 		},
 
