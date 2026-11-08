@@ -1,4 +1,5 @@
 {
 	"landing_title": "Stream access.",
-	"landing_sign_in_status": "Sign-in with Plex is being rebuilt. Access is available to accepted friends of the server owner."
+	"landing_sign_in_status": "Sign-in with Plex is being rebuilt. Access is available to accepted friends of the server owner.",
+	"language_switcher_label": "Language"
 }
