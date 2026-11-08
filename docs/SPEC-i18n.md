@@ -17,8 +17,8 @@ the same except:
 - **Examples** use otpravkarr's wording; the rules, and the message check's cases and the problems
   each reports, are #301's.
 - **Evidence:** the Weblate round trip and the concurrency check may cite obzorarr's #297 and #298
-  only when the versions and files they depend on match obzorarr's `7368cff`
-  ([Validation](#validation)).
+  only when every version and file listed under [Validation](#validation) matches obzorarr's
+  `7368cff`.
 
 **Status:** proposed for the owner's approval. Module 2 of the capability map
 ([docs/SPEC.md](SPEC.md)).

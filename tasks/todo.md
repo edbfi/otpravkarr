@@ -12,7 +12,7 @@ shortened to `lib/`.
 **Description:** obzorarr's #297, plus #301's message check. Add the two packages and the inlang
 project, and compile the messages in `prepare`, `check`, dev, build and Vitest. The message files
 hold the placeholder page's text in English and Danish, which the page starts using in task 2. Run
-or cite the Weblate round trip. Add `lib/shared/i18n/messages.test.ts`.
+the Weblate round trip. Add `lib/shared/i18n/messages.test.ts`.
 
 **Acceptance criteria:**
 - [ ] `@inlang/paraglide-js` and `@inlang/plugin-i18next` are exact-pinned dev dependencies at their
@@ -31,9 +31,9 @@ or cite the Weblate round trip. Add `lib/shared/i18n/messages.test.ts`.
   `landing_sign_in_status` in British English and in Danish, and leave out the name otpravkarr.
   `+page.svelte` is unchanged.
 - [ ] The Weblate round trip passes all four of the spec's conditions, with the script and its
-  output in the PR body. It runs here: citing obzorarr's #297 needs every file the spec lists to
-  match `7368cff`, and neither hook does yet. Neither the script nor its temporary message is
-  committed.
+  output in the PR body. It runs here: citing obzorarr's #297 needs every version and file the
+  spec lists to match `7368cff`, and neither hook does yet. Neither the script nor its temporary
+  message is committed.
 - [ ] **Test first:** `messages.test.ts` holds #301's check and cases, with otpravkarr's wording in
   the in-memory files. With `checkMessages` stubbed to return `[]`, every case that breaks a rule
   fails, and the real files and the valid pair pass (output in the PR body). With the check, all
