@@ -27,10 +27,8 @@ Paraglide JS into typed message functions, and shows numbers and dates formatted
 language (D28, D29). Each request uses the viewer's choice, then the browser's preferred languages,
 then English, and the browser keeps the language the server chose for the page.
 
-The one-off validations D29 asked for (the pinned versions with no Node on `PATH`, the adapter-bun
-build, the Weblate round trip) and the concurrency check passed here, not cited from obzorarr. Their
-scripts and output are in the bodies of #214 and #215, and the PR that closed `i18n` lists each with
-its evidence.
+D29's validations and the concurrency check ran in otpravkarr, not cited from obzorarr; their
+scripts are in the bodies of #214 and #215, for a rerun when the versions move.
 
 ## Versions
 
