@@ -835,7 +835,7 @@ export const GET: RequestHandler = () => healthResponse();
 ## Testing strategy
 
 - **Unit (Vitest, `node` environment):** the `/healthz` handler (status 200, body `ok`,
-  `cache-control: no-store`) and the `secrets` module (`config/secret-key.test.ts`, and
+  `cache-control: no-store`), the `secrets` module (`config/secret-key.test.ts`, and
   `key-text.test.ts`, `keyring.test.ts`, `cipher.test.ts` and `secret.test.ts` in
   `security/secrets/`, under `src/lib/server/`), and the message check
   (`src/lib/shared/i18n/messages.test.ts`), which runs on `messages/*.json` and on small in-memory
