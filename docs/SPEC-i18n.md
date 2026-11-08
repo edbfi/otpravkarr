@@ -20,7 +20,7 @@ the same except:
   only when every version and file listed under [Validation](#validation) matches obzorarr's
   `7368cff`.
 
-**Status:** proposed for the owner's approval. Module 2 of the capability map
+**Status:** approved by the owner (2026-11-08). Module 2 of the capability map
 ([docs/SPEC.md](SPEC.md)).
 
 ## Objective

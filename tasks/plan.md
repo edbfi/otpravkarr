@@ -81,4 +81,4 @@ and to the owner, so obzorarr and the others get the same fix.
 
 ## Open questions
 
-None for the build. The owner approves this plan and the spec before task 1 starts.
+None. The owner approved the spec, this plan and the task list on 2026-11-08.
