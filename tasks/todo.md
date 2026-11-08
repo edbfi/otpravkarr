@@ -31,8 +31,9 @@ or cite the Weblate round trip. Add `lib/shared/i18n/messages.test.ts`.
   `landing_sign_in_status` in British English and in Danish, and leave out the name otpravkarr.
   `+page.svelte` is unchanged.
 - [ ] The Weblate round trip passes all four of the spec's conditions, with the script and its
-  output in the PR body, or the body cites obzorarr's #297 and shows that every version and file
-  the spec lists matches `7368cff`. Neither the script nor its temporary message is committed.
+  output in the PR body. It runs here: citing obzorarr's #297 needs every file the spec lists to
+  match `7368cff`, and neither hook does yet. Neither the script nor its temporary message is
+  committed.
 - [ ] **Test first:** `messages.test.ts` holds #301's check and cases, with otpravkarr's wording in
   the in-memory files. With `checkMessages` stubbed to return `[]`, every case that breaks a rule
   fails, and the real files and the valid pair pass (output in the PR body). With the check, all
@@ -51,7 +52,7 @@ for `bun ci` and `check`, and the testing section).
 
 **Size:** M.
 
-## Task 2: each request gets the viewer's language, the browser keeps it, and the switcher changes it
+## Task 2: each request gets the viewer's language, the browser keeps it, the switcher changes it
 
 **Description:** obzorarr's #298 and #299. Run every request through `paraglideMiddleware` in
 `handle`, write the language into `<html lang>`, and keep the page's language in the browser. The
@@ -82,8 +83,8 @@ describes it, on the placeholder `/` and in the landing brief, with the global f
   never a message or a literal. The current language's button has `aria-current="true"` and does
   nothing when pressed; another calls `setLocale`. It is styled only with tokens, and sits on the
   wordmark's row on `/`, wrapping below it on narrow screens.
-- [ ] `panda.config.ts`'s `globalCss` has the one `:focus-visible` rule the spec gives, and SPEC.md's
-  Design tokens section says so.
+- [ ] `panda.config.ts`'s `globalCss` has the one `:focus-visible` rule the spec gives, and
+  SPEC.md's Design tokens section says so.
 - [ ] The concurrency check passes: 200 concurrent requests in both languages against the built
   server, through a temporary route that awaits a random delay in its `load`, each render in their
   own language. The script and its output are in the PR body, or the body cites obzorarr's #298
@@ -129,11 +130,7 @@ This task also closes the work stream.
   names, or `"UTC"`), not obzorarr's instance zone.
 - [ ] The PR body lists every validation in the spec with its evidence or the PR that holds it.
 - [ ] The end-of-work-stream cleanup is done:
-  - the rest of the spec's "Docs this module changes when built" list: "locale" becomes
-    "language" at `docs/decisions.md:333` (D28), `docs/SPEC.md:36` and `:41`, and `PRODUCT.md:43`;
-    row 2 is marked **Built.**; the `i18n` line of "Open decisions each module closes"
-    (`SPEC.md:99`) goes; D29's "Still to validate" paragraph (`decisions.md:359`) goes; the status
-    lines in SPEC.md, AGENTS.md and PRODUCT.md (`:44`) are updated (line numbers as of `2d94109`);
+  - the rest of the spec's "Docs this module changes when built" list;
   - `tasks/` is deleted;
   - SPEC-i18n.md is cut the way obzorarr's #301 cut its spec, to what code and tests can't say;
   - the PR body maps every removed requirement to a test, a spec or an owner-approved removal, with

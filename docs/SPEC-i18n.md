@@ -10,12 +10,15 @@ the same except:
   viewer's ([Formatting](#formatting)), not an instance zone.
 - **What isn't translated** and how English is spelled: the name otpravkarr, always lowercase;
   text the owner writes, such as lineup names; British spelling (D28).
-- **The placeholder's text,** where the switcher goes on the landing brief, and where the shells
-  place it ([The language switcher](#the-language-switcher)).
+- **The placeholder's text** ([Messages](#messages)), where the switcher goes on the landing brief,
+  and where the shells place it ([The language switcher](#the-language-switcher)).
 - **Keyboard focus:** the switcher is otpravkarr's first focusable control, so its build adds the
   app's one global `:focus-visible` rule ([Focus](#focus)).
 - **Examples** use otpravkarr's wording; the rules, and the message check's cases and the problems
   each reports, are #301's.
+- **Evidence:** the Weblate round trip and the concurrency check may cite obzorarr's #297 and #298
+  only when the versions and files they depend on match obzorarr's `7368cff`
+  ([Validation](#validation)).
 
 **Status:** proposed for the owner's approval. Module 2 of the capability map
 ([docs/SPEC.md](SPEC.md)).
@@ -208,8 +211,8 @@ until that tab reloads.
 
 `src/lib/components/layout/LanguageSwitcher.svelte` is a labelled group of native buttons, one per
 language, styled only with tokens. The group's label is a message. Buttons, not a `<select>` (the
-owner's choice for every app, 2026-11-06): in Chrome and Edge on Windows and Linux, an arrow key on a
-closed `<select>` fires `change`, so a keyboard user looking at the options would be switched and
+owner's choice for every app, 2026-11-06): in Chrome and Edge on Windows and Linux, an arrow key on
+a closed `<select>` fires `change`, so a keyboard user looking at the options would be switched and
 lose focus (WCAG 2.2, 3.2.2 On Input).
 - **The buttons:** each names its language in that language ("English", "Dansk"), with `lang` on
   the button. The current language's button has `aria-current="true"`, and pressing it does
@@ -292,7 +295,8 @@ reported, and one file with several problems reports them all. The check runs in
 
 ## Validation
 
-The build runs D29's three validations, and a concurrency check, with the pinned versions:
+The build runs D29's three validations, and a concurrency check, with the pinned versions, or
+cites obzorarr's evidence for two of them as the end of this section allows:
 - **The pinned versions with SvelteKit 3, TypeScript 6 and Bun:** `check`, `test`, `build`,
   `smoke` and prek pass with no Node on `PATH`.
 - **Building and serving through adapter-bun:** `tests/e2e/i18n.test.ts`, against the built server
@@ -323,12 +327,14 @@ The build runs D29's three validations, and a concurrency check, with the pinned
   own language.
 
 The temporary message, route and script aren't committed; the scripts and their output go in the
-build PR's body. The first two validations always run here, on otpravkarr's own CI and built
-server. The Weblate round trip and the concurrency check may cite obzorarr's #297 and #298 instead,
-but only when the build PR's body shows that these match obzorarr's `7368cff`: the versions of
-`@inlang/paraglide-js`, `@inlang/plugin-i18next`, `@sveltejs/kit`, `@sveltejs/adapter-bun`,
-`typescript`, Bun, Vite and Biome, and `biome.json`, `project.inlang/*` and
-`hooks.{server,client}.ts`. If anything has moved, they run again here.
+body of the build PR that settles each validation. The first two validations always run here, on
+otpravkarr's own CI and built server. The Weblate round trip and the concurrency check may cite
+obzorarr's #297 and #298 instead, but only when that PR's body shows that all of these match
+obzorarr's `7368cff`: the versions of `@inlang/paraglide-js`, `@inlang/plugin-i18next`,
+`@sveltejs/kit`, `@sveltejs/adapter-bun`, `typescript`, Bun, Vite and Biome, and `biome.json`,
+`project.inlang/*` and `hooks.{server,client}.ts`. If anything has moved or doesn't exist yet, the
+validation runs again here. So the first build PR, which has neither hook as `7368cff` has them,
+runs the Weblate round trip itself.
 
 ## Weblate
 
