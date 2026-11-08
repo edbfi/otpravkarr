@@ -15,26 +15,26 @@ hold the placeholder page's text in English and Danish, which the page starts us
 the Weblate round trip. Add `lib/shared/i18n/messages.test.ts`.
 
 **Acceptance criteria:**
-- [ ] `@inlang/paraglide-js` and `@inlang/plugin-i18next` are exact-pinned dev dependencies at their
+- [x] `@inlang/paraglide-js` and `@inlang/plugin-i18next` are exact-pinned dev dependencies at their
   newest stable release (D32). `project.inlang/settings.json` and
   `project.inlang/paraglide.config.ts` are as the spec gives them, and the Vite plugin is added
   with nothing else.
-- [ ] `prepare` and `check` compile the messages after `svelte-kit sync` and before Panda's
+- [x] `prepare` and `check` compile the messages after `svelte-kit sync` and before Panda's
   codegen, calling the CLI as `bun --bun <bin>`, so a fresh clone's `bun ci` compiles them, and
   `check` then type-checks `project.inlang/*.ts`. Everything passes with no Node on `PATH` (CI's
   shims). Running `check` while `dev` is up doesn't rewrite the output under the dev server.
-- [ ] A call to a message that doesn't exist fails `check`, shown with a probe that isn't
+- [x] A call to a message that doesn't exist fails `check`, shown with a probe that isn't
   committed, its output in the PR body.
-- [ ] `src/lib/paraglide/` and `project.inlang/cache/` are gitignored, Panda's `exclude` skips the
+- [x] `src/lib/paraglide/` and `project.inlang/cache/` are gitignored, Panda's `exclude` skips the
   output, and `lint` and prek pass with it present.
-- [ ] The message files are flat and Biome-formatted, hold `landing_title` and
+- [x] The message files are flat and Biome-formatted, hold `landing_title` and
   `landing_sign_in_status` in British English and in Danish, and leave out the name otpravkarr.
   `+page.svelte` is unchanged.
-- [ ] The Weblate round trip passes all four of the spec's conditions, with the script and its
+- [x] The Weblate round trip passes all four of the spec's conditions, with the script and its
   output in the PR body. It runs here: citing obzorarr's #297 needs every version and file the
   spec lists to match `7368cff`, and neither hook does yet. Neither the script nor its temporary
   message is committed.
-- [ ] **Test first:** `messages.test.ts` holds #301's check and cases, with otpravkarr's wording in
+- [x] **Test first:** `messages.test.ts` holds #301's check and cases, with otpravkarr's wording in
   the in-memory files. With `checkMessages` stubbed to return `[]`, every case that breaks a rule
   fails, and the real files and the valid pair pass (output in the PR body). With the check, all
   pass: every rule in the spec's list, each clause on its own, has an in-memory file that breaks
