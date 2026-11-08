@@ -1,4 +1,6 @@
 <script lang="ts">
+import LanguageSwitcher from "#lib/components/layout/LanguageSwitcher.svelte";
+import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
 </script>
 
@@ -15,11 +17,22 @@ import { css } from "#styled-system/css";
 		paddingInline: { base: "mobileGutter", tablet: "tabletGutter", desktop: "desktopGutter" },
 	})}
 >
-	<p class={css({ textStyle: "label", color: "primary" })}>otpravkarr</p>
+	<div
+		class={css({
+			display: "flex",
+			flexWrap: "wrap",
+			alignItems: "center",
+			justifyContent: "space-between",
+			gap: "md",
+		})}
+	>
+		<p class={css({ textStyle: "label", color: "primary" })}>otpravkarr</p>
+		<LanguageSwitcher />
+	</div>
 	<h1 class={css({ textStyle: "display", marginBlockStart: "section", textWrap: "balance" })}>
-		Stream access.
+		{m.landing_title()}
 	</h1>
 	<p class={css({ marginBlockStart: "lg", color: "muted" })}>
-		Sign-in with Plex is being rebuilt. Access is available to accepted friends of the server owner.
+		{m.landing_sign_in_status()}
 	</p>
 </main>

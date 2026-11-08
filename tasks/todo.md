@@ -60,7 +60,7 @@ placeholder page renders its text from the messages. `LanguageSwitcher.svelte` a
 describes it, on the placeholder `/` and in the landing brief, with the global focus rule.
 
 **Acceptance criteria:**
-- [ ] **Test first:** `tests/e2e/i18n.test.ts`, against the built server, fails against a build of
+- [x] **Test first:** `tests/e2e/i18n.test.ts`, against the built server, fails against a build of
   `main` with only the new tests, and each case fails without the code it covers (output in the PR
   body). It checks that:
   - a `da-DK` browser gets `/` in Danish with `<html lang="da">` and `Vary: Cookie,
@@ -72,25 +72,25 @@ describes it, on the placeholder `/` and in the landing brief, with the global f
     `fr-FR`, `da-DK` gets English, the switcher marks English as current after hydration, pressing
     it does nothing, and no cookie is written;
   - none logs a console error. The smoke test passes unchanged in English.
-- [ ] The placeholder renders its messages as text, never with `{@html}`, and keeps otpravkarr as
+- [x] The placeholder renders its messages as text, never with `{@html}`, and keeps otpravkarr as
   it is in its wordmark and `<title>`.
-- [ ] `app.html` has `<html lang="%lang%">` with the Biome suppression just above it, which doesn't
+- [x] `app.html` has `<html lang="%lang%">` with the Biome suppression just above it, which doesn't
   contain the token, and keeps `class="dark"`. `hooks.server.ts` and `hooks.client.ts` are as the
   spec's Code style gives them, and the `init` hook is unchanged.
-- [ ] The switcher is a labelled group of native buttons, the label a message, each button naming
+- [x] The switcher is a labelled group of native buttons, the label a message, each button naming
   its language in that language with `lang` set, from `Intl.DisplayNames` with the first letter
   upper-cased in that language ("English", "Dansk"), through a helper private to the component,
   never a message or a literal. The current language's button has `aria-current="true"` and does
   nothing when pressed; another calls `setLocale`. It is styled only with tokens, and sits on the
   wordmark's row on `/`, wrapping below it on narrow screens.
-- [ ] `panda.config.ts`'s `globalCss` has the one `:focus-visible` rule the spec gives, and
+- [x] `panda.config.ts`'s `globalCss` has the one `:focus-visible` rule the spec gives, and
   SPEC.md's Design tokens section says so.
-- [ ] The concurrency check passes: 200 concurrent requests in both languages against the built
+- [x] The concurrency check passes: 200 concurrent requests in both languages against the built
   server, through a temporary route that awaits a random delay in its `load`, each render in their
   own language. The script and its output are in the PR body, or the body cites obzorarr's #298
   and shows that every version and file the spec lists matches `7368cff`. Neither the script nor
   the route is committed.
-- [ ] The landing brief's required content names the switcher beside the wordmark, written through
+- [x] The landing brief's required content names the switcher beside the wordmark, written through
   `.agents/skills/impeccable/scripts/impeccable surface-brief write`, and D16 no longer lists
   browser interaction with a real component.
 

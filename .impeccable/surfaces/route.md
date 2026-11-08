@@ -23,7 +23,7 @@ Use the shared [design system](../../DESIGN.md). Match hierarchy, density and pa
 
 ## Required content
 
-Wordmark otpravkarr. Heading 'Stream access.' Body 'Sign in with Plex to get your channel access and set up your player.' Primary 'Continue with Plex'. Helper 'Access is available to accepted friends of the server owner.' Three plain setup steps Sign in, Copy your details, Open your player. Small Help link.
+Wordmark otpravkarr and the language switcher (`LanguageSwitcher.svelte`, docs/SPEC-i18n.md). Heading 'Stream access.' Body 'Sign in with Plex to get your channel access and set up your player.' Primary 'Continue with Plex'. Helper 'Access is available to accepted friends of the server owner.' Three plain setup steps Sign in, Copy your details, Open your player. Small Help link.
 
 ## Acceptance criteria
 

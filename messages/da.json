@@ -1,4 +1,5 @@
 {
 	"landing_title": "Adgang til streaming.",
-	"landing_sign_in_status": "Login med Plex bliver bygget om. Adgang gives til serverejerens accepterede venner."
+	"landing_sign_in_status": "Login med Plex bliver bygget om. Adgang gives til serverejerens accepterede venner.",
+	"language_switcher_label": "Sprog"
 }

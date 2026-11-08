@@ -42,7 +42,7 @@ tasks, one PR each, each test first. The tasks are in [todo.md](todo.md).
 
 ### Phase 2: each page in the viewer's language
 
-- [ ] Task 2: each request gets the viewer's language, the browser keeps it, the switcher changes
+- [x] Task 2: each request gets the viewer's language, the browser keeps it, the switcher changes
   it
 
 ### Checkpoint: after task 2
