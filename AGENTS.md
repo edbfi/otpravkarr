@@ -273,7 +273,9 @@ unit tests, one e2e smoke and the Bun web CI ([`docs/SPEC.md`](docs/SPEC.md)). P
 come next, in the order of the approved capability map in `docs/SPEC.md`, each through an
 owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
 ([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is built and ready for consumers. Nothing stores a
-secret yet, and no database exists.
+secret yet, and no database exists. Module 2, `i18n` ([`docs/SPEC-i18n.md`](docs/SPEC-i18n.md)),
+is built: pages are served in English or Danish, with a language switcher, number and date
+formatters, and a check of the message files.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -333,6 +335,8 @@ src/
       layout/LanguageSwitcher.svelte
                                  one native button per language, named in that language
     shared/                      browser-safe shared code
+      i18n/format.ts             `formatNumber` and `formatDateTime` in the current language;
+                                 `formatDateTime` needs a time zone
       i18n/messages.test.ts      the message check: every problem in `messages/*.json`
 static/                          served as is (the icon)
 tests/

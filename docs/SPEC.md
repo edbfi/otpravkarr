@@ -1,9 +1,9 @@
 # Spec: otpravkarr
 
 **Status:** the ground floor (skeleton) is specified here, approved by the orchestrator
-(2026-10-18) and built. The capability map below is approved; module 1, `secrets`, is built
-([SPEC-secrets.md](SPEC-secrets.md)), and module 2, `i18n`, is specified and approved by the owner
-(2026-11-08, [SPEC-i18n.md](SPEC-i18n.md)).
+(2026-10-18) and built. The capability map below is approved; module 1, `secrets`
+([SPEC-secrets.md](SPEC-secrets.md)), and module 2, `i18n` ([SPEC-i18n.md](SPEC-i18n.md)), are
+built.
 
 ## Objective
 
@@ -34,12 +34,12 @@ adds in that layout, and review checks them. In short:
 - Tests sit next to their source.
 
 **Every module writes its text in English and Danish** through `i18n` (D28): no user-facing text in
-components or services, and dates and numbers formatted for the viewer's locale.
+components or services, and dates and numbers formatted for the viewer's language.
 
 | # | Module id | Responsibility | Depends on | Surfaces |
 |---|---|---|---|---|
 | 1 | `secrets` | **Built.** Encrypts stored secrets (Plex token, Dispatcharr key, subscriber XC passwords, two-factor secrets, the OIDC client secret) before they reach the database (D27, D31), and the secret wrapper that shows only a redaction marker and opens at one named call | — | — |
-| 2 | `i18n` | The translation groundwork (D28) with Paraglide JS (D29): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's locale, and a check that every message exists in both languages | — | the language switcher in each shell |
+| 2 | `i18n` | **Built.** The translation groundwork (D28) with Paraglide JS (D29): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's language, and a check that every message exists in both languages | — | the language switcher in each shell |
 | 3 | `setup` | Startup checks, database and migrations, settings, structured logging with redaction, security headers and CSP (ground-floor choice 3), the setup gate, the bootstrap token, printed to the console and never through the stored logs, and claiming the instance for its one owner, with `sign-in`'s address hint on the claim page. otpravkarr adds the audit trail: its table and the one service every later change writes through | `secrets`, `i18n` | first-run setup (no brief yet) |
 | 4 | `sign-in` | Owner sign-in with username and password, signing the new owner in at the claim (D27), sessions, sign-out (POST only), rate limits, the cross-origin check (it asks the browser, stores no address and takes `ORIGIN` as an optional override) with its address hint on the claim and owner sign-in pages, app-named cookies that work over plain HTTP at home and behind an HTTPS proxy, password change, error pages, recovery (D27), and the admin shell | `setup` | owner sign-in (no brief yet); the admin shell; the password section of the owner's account settings |
 | 5 | `two-factor` | Optional but strongly recommended (D27): authenticator codes, backup codes and the challenge after every way the owner signs in (except the optional OIDC skip, D27), with replay protection and a limit on failed attempts. Recovery turns it off. Adds the offer to first-run setup, right after the owner account is created and before any connection step, and the reminder in the admin shell while it is off | `sign-in` | the two-factor offer in first-run setup; the owner's account settings (no brief yet); the reminder in the admin shell |
@@ -98,8 +98,6 @@ layout:
 
 ### Open decisions each module closes
 
-- `i18n`: the validation that D29 lists (pinned versions, the adapter-bun build, a Weblate round
-  trip).
 - `setup`: D15 (Drizzle and Turso pair) and the logging library half of D14.
 - `setup`: how responses sent before `handle` (such as Bun's `413` for a body over the limit) get
   the security headers.
@@ -839,10 +837,14 @@ export const GET: RequestHandler = () => healthResponse();
 - **Unit (Vitest, `node` environment):** the `/healthz` handler (status 200, body `ok`,
   `cache-control: no-store`), the `secrets` module (`config/secret-key.test.ts`, and
   `key-text.test.ts`, `keyring.test.ts`, `cipher.test.ts` and `secret.test.ts` in
-  `security/secrets/`, under `src/lib/server/`), and the message check
-  (`src/lib/shared/i18n/messages.test.ts`), which runs on `messages/*.json` and on small in-memory
-  files that each break one of its rules. Component tests use happy-dom when components exist;
-  never jsdom.
+  `security/secrets/`, under `src/lib/server/`), and in `src/lib/shared/i18n/`:
+  - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
+    language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone
+    it is given, not the machine's;
+  - `messages.test.ts`, the message check, finds every problem in `messages/*.json`, and breaks
+    each of its rules once in small files held in memory, to show that each is reported.
+
+  Component tests use happy-dom when components exist; never jsdom.
 - **e2e (Playwright, Chromium, under Bun):** against the built adapter-bun server, with a master key
   Playwright generates for each run, so CI needs no stored secret.
   - `smoke.test.ts` checks that `/` returns 200, shows the placeholder heading, hydrates (it waits
