@@ -68,7 +68,7 @@ Dark Matter. Warm orange against dark plum, generous editorial serif headings, r
 - `.impeccable/surfaces/*.md`: eight route briefs (`/`, `/portal`, `/portal/channels`, `/portal/setup`, `/admin`, `/admin/users`, `/admin/settings/connections`, `/admin/settings/lineup`), all marked as a proposed design seed for review.
 - `DESIGN.md` and `panda.config.ts`: the proposed Dark Matter design seed and its tokens.
 - `tests/fixtures/demo-fixtures.json`: a fictional fixture (snapshot date 2025-10-15: 42 users, 38 active, 4 inactive, four demo bundles with channel counts). The people in the briefs (Alex, Jordan, Morgan) and the `*.example` addresses are placeholders.
-- `static/otpravkarr-icon.svg`: the product icon. `LICENSE`: AGPL-3.0.
+- `static/otpravkarr-icon.svg`: the product icon. Licensing: [README.md](README.md#license).
 
 **Not on hand (never fabricate):**
 
