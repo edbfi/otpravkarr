@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="static/otpravkarr-icon.svg" alt="otpravkarr logo" width="256" height="256">
+  <img src="static/otpravkarr-icon.svg" alt="otpravkarr logo" width="160" height="160">
 </p>
 
 <h1 align="center">otpravkarr</h1>
@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/edbfi/otpravkarr/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--only-blue?style=flat" alt="License: AGPL-3.0-only"></a>
+  <a href="https://github.com/edbfi/otpravkarr/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-blue?style=flat" alt="License: AGPL-3.0-or-later"></a>
   <a href="https://github.com/oven-sh/bun" title="Bun source"><img src="https://img.shields.io/badge/Bun-000000?style=flat&amp;logo=bun&amp;logoColor=white" alt="Bun"></a>
   <a href="https://github.com/sveltejs/kit" title="SvelteKit source"><img src="https://img.shields.io/badge/SvelteKit-FF3E00?style=flat&amp;logo=svelte&amp;logoColor=white" alt="SvelteKit"></a>
   <a href="https://github.com/microsoft/TypeScript" title="TypeScript source"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat&amp;logo=typescript&amp;logoColor=white" alt="TypeScript"></a>
@@ -93,3 +93,11 @@ same key alongside them. Without it, stored secrets can't be read.
 Start with [AGENTS.md](AGENTS.md): the house rules, the workflow and where each document lives.
 The product and design context is in [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md) and
 [docs/](docs/); the skeleton's scope is [docs/SPEC.md](docs/SPEC.md).
+
+## License
+
+You may redistribute and modify Otpravkarr's original code under the GNU Affero General Public
+License, version 3 or (at your option) any later version (`AGPL-3.0-or-later`). See [LICENSE](LICENSE)
+for the full text.
+
+Third-party dependencies, vendored tools and upstream materials retain their own licenses and notices.
