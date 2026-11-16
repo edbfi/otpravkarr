@@ -12,7 +12,10 @@ hold the follow-ups #337–#342. Everything is the same except:
   underscores or dashes and the password typed twice, which SPEC.md's notes carried over from the
   legacy app.
 - **The redaction allowlist** keeps only the names otpravkarr's modules can log.
-- **Request and unhandled-error log entries** come with `sign-in`, which knows the client address.
+- **Unexpected errors** are logged through the app's logger, redacted, by a `handleError` hook
+  that obzorarr's built `setup` lacks (its `sign-in` adds one; found by the comradarr port). The
+  per-request entry, and the request id that ties an error to it, come with `sign-in`, which knows
+  the client address.
 - **No live streams and no stored logs:** shutdown has no streams to close, and logs go only to
   standard output, since otpravkarr has no `logs` module.
 - **Machine routes:** none yet; `sync` adds Dispatcharr's `m3u_refresh` webhook (D24).
@@ -29,7 +32,9 @@ hold the follow-ups #337–#342. Everything is the same except:
 - **Later first-run steps:** `two-factor`'s offer, then Plex and Dispatcharr; completing first run
   seeds `health` and lands on `/admin`.
 
-**Status:** proposed for the owner's approval. Module 3 of the capability map
+**Status:** approved by the owner (2026-11-16), with the capability-map changes and the new
+dependencies below; a set database path with no file creates a fresh database, and a database a
+newer otpravkarr migrated stops startup (the owner's answers). Module 3 of the capability map
 ([docs/SPEC.md](SPEC.md)); it closes D15, the logging half of D14, ground-floor choices 1 (the
 fonts) and 3, and `setup`'s line in "Open decisions each module closes".
 
@@ -186,10 +191,16 @@ there are no metrics, telemetry or outbound reporting.
 and upstream response bodies never reach the user. The only secrets printed on purpose are the
 bootstrap token and `sign-in`'s recovery token, on the console (D27).
 
-**Request and error entries** (otpravkarr) come with `sign-in`: one entry per request (method, the
-path without its query string, status, duration, client address), and an entry for each unhandled
-error (a request id, the error's class, message and stack). Jobs and the health probe log their own
-entries when they come. Until then, startup and the claim log their own failures.
+**Unexpected errors** (otpravkarr: obzorarr's built `setup` has no such hook): `handleError` in
+`hooks.server.ts` writes one error entry through the logger for every unexpected error in a page
+load, form action or endpoint, with the error's class, message and stack, the method and the path
+without its query string, all redacted. Without it SvelteKit prints the raw stack with
+`console.error`, which is neither redacted nor a JSON line. It returns SvelteKit's generic message,
+never the error's own; `sign-in`'s error pages choose the words the viewer sees.
+
+**Request entries** (otpravkarr) come with `sign-in`: one entry per request (method, the path
+without its query string, status, duration, client address), and a request id that ties an error
+entry to its request. Jobs and the health probe log their own entries when they come.
 
 Console output meant for whoever runs the server, such as the bootstrap token, is never a log
 entry. It still reaches the container's output, which is why the console is trusted (below).
@@ -396,7 +407,8 @@ on them; the owner approves the moves with this spec, and the capability map cha
   and keeps its public-URL rule. Whichever of the two is built first builds the shared URL rule.
 - **Plex's hosts in the CSP** (`img-src` for avatars, `connect-src`) are added by the module that
   first needs them in the browser; their note waits among `plex-connection`'s.
-- **The request and unhandled-error log entries** move to `sign-in` ([Logging](#logging)).
+- **The request log entries,** and the request id on error entries, move to `sign-in`
+  ([Logging](#logging)); `setup` keeps `handleError`, which logs unexpected errors.
 
 ## Validation
 
@@ -431,7 +443,7 @@ exact-pinned dev dependency at its newest release (D32):
 ```text
 src/env.ts                                  + OTPRAVKARR_DATABASE_PATH, ORIGIN, OTPRAVKARR_LOG_DEBUG
 src/hooks.server.ts                         init: startup; handle: language, headers,
-                                            cross-origin check, setup gate
+                                            cross-origin check, setup gate; handleError
 src/app.css                                 + the bundled fonts
 src/lib/server/config/config-error.ts       the error every variable check throws
 src/lib/server/config/error-code.ts         a system error's code, for messages without paths
@@ -488,6 +500,8 @@ Ported from obzorarr's tests, with otpravkarr's names.
   - the token's format, alphabet, expiry and comparison, with timers on a fake clock;
   - the credential rules at their limits, NFC, case, the repeat and run rule and the list;
   - the shutdown deadline with a cleanup that never finishes;
+  - `handleError`: an error holding a token in its message becomes one redacted JSON entry with its
+    class, stack, method and path, and the viewer gets SvelteKit's generic message;
   - against a temporary database file: migrations on a new database, nothing applied twice, the
     two migrators' records compared, rollback isolation, (otpravkarr) a database holding a
     migration the build doesn't bundle refused before anything is applied; and the claim: success;
