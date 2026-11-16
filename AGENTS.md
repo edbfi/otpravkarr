@@ -281,7 +281,8 @@ startup opens and migrates the database (D15), and refuses one a newer otpravkar
 log entry, an unexpected error's included, is one redacted JSON line on standard output; and the
 built server stops cleanly on `SIGTERM`, `SIGINT` and `SIGHUP`, closing the database; `ORIGIN` is
 checked at startup; every response through `handle` carries the security headers, every page a
-nonce-based CSP; and a state-changing request from another site gets "Access denied".
+nonce-based CSP; a state-changing request from another site gets "Access denied"; and while
+unclaimed, the server prints a bootstrap token to the console every 15 minutes.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -346,6 +347,8 @@ src/
                                  flush, and the entry for an unexpected error; redact.ts: the
                                  redaction rules every entry passes through
       security/cross-origin.ts   the cross-origin check: one pure module, copied from obzorarr
+      security/bootstrap-token.ts
+                                 the token: drawing, formatting, comparing, expiry
       security/access-denied.ts  the check's 403: the "Access denied" page with its own policy,
                                  or a JSON error
       security/headers.ts        the security headers for a request; HSTS only over HTTPS
@@ -356,8 +359,11 @@ src/
                                  secret bound to its table, field and row, and decrypts it only
                                  there
       services/setup/startup.ts  startup's steps in order: the key, the configuration, the
-                                 database; a failed step is logged, then thrown; and shutdown,
-                                 in the built server only
+                                 database, then first run; a failed step is logged, then
+                                 thrown; and shutdown, in the built server only
+      services/setup/first-run.ts
+                                 first run's state in memory, and the token printed while
+                                 unclaimed
     components/                  later: ui/ (Ark wrappers), <feature>/
       layout/LanguageSwitcher.svelte
                                  one native button per language, named in that language
@@ -370,7 +376,8 @@ tests/
   e2e/smoke.test.ts              Playwright smoke against the built server
   e2e/secret-key.test.ts         the built server refuses to start without a valid key
   e2e/setup.test.ts              first run and the request checks on the built server: so far,
-                                 the database, logging, shutdown, the headers and the CSP
+                                 the database, logging, shutdown, the headers and the CSP, the
+                                 cross-origin check and the token
   e2e/i18n.test.ts               the built server serves each viewer's language, the browser
                                  keeps it, and the switcher changes it
   fixtures/demo-fixtures.json    design fixtures

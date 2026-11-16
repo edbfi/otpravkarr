@@ -11,6 +11,7 @@ import { type Database, openDatabase } from "#lib/server/db/client.ts";
 import { migrateDatabase } from "#lib/server/db/migrate.ts";
 import { configureLogging, createLogger, flushLogs } from "#lib/server/logging/logger.ts";
 import { loadKeyring } from "#lib/server/security/secrets/keyring.ts";
+import { startFirstRun, stopFirstRun } from "./first-run.ts";
 
 /** Every variable startup reads. */
 export type StartupEnv = SecretKeyEnv & DatabasePathEnv & LogDebugEnv & OriginEnv;
@@ -54,7 +55,9 @@ export async function startUp(env: StartupEnv, options: { dev: boolean }): Promi
 	// adapter-bun registers its own `SIGTERM` and `SIGINT` handlers synchronously once `init`
 	// resolves. The app's come on the next turn of the event loop, so a signal never reaches only
 	// the app's handlers, which would swallow it; until then, Bun's default ends the process.
-	if (!options.dev) setImmediate(() => handleShutdown(process, closeServices));
+	if (!options.dev) {
+		setImmediate(() => handleShutdown(process, closeServices, { stopWork: stopFirstRun }));
+	}
 }
 
 /** The browser's address from `ORIGIN`, which startup checked, or undefined when it is unset. */
@@ -66,19 +69,25 @@ export function currentOrigin(): string | undefined {
  * Shutdown on top of adapter-bun 1.0.1, which drains requests on `SIGTERM` and `SIGINT`, then
  * emits `sveltekit:shutdown` without waiting for its listeners or exiting:
  * - `SIGHUP` counts as a stop and is passed on to the adapter as `SIGTERM`;
- * - on the signal, work stops while the adapter drains (no jobs or timers yet, and otpravkarr
- *   has no live streams);
+ * - on the signal, `stopWork` stops the jobs and timers while the adapter drains (otpravkarr
+ *   has no live streams to close);
  * - on `sveltekit:shutdown`, `cleanup` runs and the process exits 0, or exits 1 if the cleanup
  *   throws or hasn't finished by the deadline, after a flush bounded so the deadline still holds.
  */
 export function handleShutdown(
 	target: ShutdownTarget,
 	cleanup: () => Promise<void>,
-	deadlineMs = CLEANUP_DEADLINE_MS,
+	{
+		deadlineMs = CLEANUP_DEADLINE_MS,
+		stopWork = () => {},
+	}: { deadlineMs?: number; stopWork?: () => void } = {},
 ): void {
 	target.on("SIGHUP", () => target.kill(target.pid, "SIGTERM"));
 	for (const signal of ["SIGTERM", "SIGINT"]) {
-		target.on(signal, () => log.info("stopping", { signal }));
+		target.on(signal, () => {
+			log.info("stopping", { signal });
+			stopWork();
+		});
 	}
 	target.once("sveltekit:shutdown", () => {
 		let timer: ReturnType<typeof setTimeout> | undefined;
@@ -136,6 +145,8 @@ async function runSteps(env: StartupEnv): Promise<void> {
 	});
 	await migrateDatabase(db);
 	database = db;
+	// 4. Each module's startup work: `setup` prints the bootstrap token while unclaimed.
+	await startFirstRun({ db, origin });
 }
 
 /**
