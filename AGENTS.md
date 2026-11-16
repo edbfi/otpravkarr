@@ -314,9 +314,9 @@ src/
   app.d.ts                       SvelteKit ambient types
   env.ts                         declares the app's variables: private, read at runtime, optional
   hooks.server.ts                the `init` hook: startup, except while building; `handleError`:
-                                 logs an unexpected error through the logger; `handle`: the
-                                 language, then the security headers;
-                                 `handle`: each request's language, through Paraglide's middleware
+                                 logs an unexpected error through the logger; `handle`: each
+                                 request's language, through Paraglide's middleware, then the
+                                 security headers
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
     +layout.svelte               loads app.css; marks <html data-hydrated> once mounted

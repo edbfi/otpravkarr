@@ -124,7 +124,9 @@ binding for your platform, as `bun ci` installs it:
 
 Otpravkarr won't start if `ORIGIN` is empty or holds a path, a query, a fragment or credentials;
 leave it out instead. Over HTTPS, when `ORIGIN` is `https` or the browser shows it, pages ask
-browsers to keep using HTTPS.
+browsers to keep using HTTPS for a year. That covers every port of the host name, so another app on
+the same host name served over plain HTTP becomes unreachable from that browser until it moves to
+HTTPS.
 
 ## Logs
 

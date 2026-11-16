@@ -24,10 +24,11 @@ export function readOrigin(env: OriginEnv): string | undefined {
 	if (url.protocol !== "http:" && url.protocol !== "https:") {
 		throw refusal("ORIGIN must use http or https");
 	}
-	// The raw text is checked as well: the parser drops an empty `@`, `?` or `#`, and removes dot
-	// segments, so `https://host/app/..` would parse to a bare origin.
+	// The raw text is checked as well: the parser drops an empty `@`, `?` or `#`, removes dot
+	// segments and reads `\` as `/`, so `https://host/app/..` and `https://host\app\..` would
+	// parse to a bare origin.
 	const rest = value.slice(value.indexOf("//") + 2);
-	const authority = rest.split(/[/?#]/, 1)[0] ?? "";
+	const authority = rest.split(/[/\\?#]/, 1)[0] ?? "";
 	const rawPath = rest.slice(authority.length).split(/[?#]/, 1)[0] ?? "";
 	if (url.username !== "" || url.password !== "" || authority.includes("@")) {
 		throw refusal("ORIGIN must not hold credentials");
