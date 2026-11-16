@@ -273,11 +273,11 @@ unit tests, one e2e smoke and the Bun web CI ([`docs/SPEC.md`](docs/SPEC.md)). P
 come next, in the order of the approved capability map in `docs/SPEC.md`, each through an
 owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
 ([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is built and ready for consumers. Nothing stores a
-secret yet, and no database exists. Module 2, `i18n` ([`docs/SPEC-i18n.md`](docs/SPEC-i18n.md)),
+secret yet. Module 2, `i18n` ([`docs/SPEC-i18n.md`](docs/SPEC-i18n.md)),
 is built: pages are served in English or Danish, with a language switcher, number and date
 formatters, and a check of the message files. Module 3, `setup`
-([`docs/SPEC-setup.md`](docs/SPEC-setup.md)), is approved and being built from
-[`tasks/`](tasks/plan.md).
+([`docs/SPEC-setup.md`](docs/SPEC-setup.md)), is being built from [`tasks/`](tasks/plan.md):
+startup opens and migrates the database (D15), and refuses one a newer otpravkarr migrated.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -308,9 +308,8 @@ src/
                                  and `handle` writes the request's language into `<html lang>`
   app.css                        Panda layer order; the Vite plugin appends the generated CSS
   app.d.ts                       SvelteKit ambient types
-  env.ts                         declares `OTPRAVKARR_SECRET_KEY` and `OTPRAVKARR_SECRET_KEY_FILE`:
-                                 private, read at runtime, optional
-  hooks.server.ts                the `init` hook: loads the keyring, except while building;
+  env.ts                         declares the app's variables: private, read at runtime, optional
+  hooks.server.ts                the `init` hook: startup, except while building;
                                  `handle`: each request's language, through Paraglide's middleware
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
@@ -322,11 +321,21 @@ src/
   lib/                           imported as `#lib/<path>.<ext>`, e.g.
                                  `#lib/server/services/health.ts`
     paraglide/                   the compiled messages (generated, gitignored)
-    server/                      server-only: services/health.ts; later db/ (schema per aggregate),
+    server/                      server-only: services/health.ts; later
                                  providers/<plex|dispatcharr>/, services/<domain>/, jobs/,
                                  http/ (SSRF-safe fetch), logging/
-      config/secret-key.ts       the master key's text from `OTPRAVKARR_SECRET_KEY` or the file
+      config/                    one reader per variable, run once at startup; config-error.ts:
+                                 the error a failed check throws, naming the variable, never its
+                                 value; error-code.ts: a system error's code, for messages
+                                 without paths
+        secret-key.ts            the master key's text from `OTPRAVKARR_SECRET_KEY` or the file
                                  `OTPRAVKARR_SECRET_KEY_FILE` names; no key logic
+        database-path.ts         the database file's path; creates its folder
+      db/                        client.ts: opens the one database; migrate.ts: applies the
+                                 bundled migrations, forward only; one file per aggregate's
+                                 tables and named operations: settings.ts, owner.ts
+      services/setup/startup.ts  startup's steps in order: the key, the configuration, the
+                                 database
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
                                  malformed and weak keys; keyring.ts: loads the key and derives
                                  the AES key and key ID; secret.ts: the `Secret` wrapper,
@@ -344,6 +353,8 @@ static/                          served as is (the icon)
 tests/
   e2e/smoke.test.ts              Playwright smoke against the built server
   e2e/secret-key.test.ts         the built server refuses to start without a valid key
+  e2e/setup.test.ts              first run and the request checks on the built server: so far,
+                                 the database
   e2e/i18n.test.ts               the built server serves each viewer's language, the browser
                                  keeps it, and the switcher changes it
   fixtures/demo-fixtures.json    design fixtures
@@ -353,7 +364,8 @@ messages/en.json  messages/da.json
 project.inlang/                  settings.json: the locales and the i18next plugin;
                                  paraglide.config.ts: Paraglide's options, which the CLI and the
                                  Vite plugin both read
-drizzle/                         later: reviewed migrations
+drizzle/                         the reviewed migrations, which Drizzle Kit generates from
+                                 `db/` (`drizzle.config.ts`) and the build bundles
 panda.config.ts                  every design token; components use them through
                                  `#styled-system/<module>` (generated, gitignored)
 vite.config.ts                   SvelteKit (all its configuration), Panda, Paraglide and Vitest
