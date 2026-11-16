@@ -112,6 +112,54 @@ describe("logUnexpectedError", () => {
 		expect(lines[0]).not.toContain("abcd-efgh-ijkl");
 	});
 
+	// Logging never throws: `handleError` must not, and SvelteKit would then print the raw error.
+	it("never throws, describing an error it can't read or redact by its class and cleaned message", () => {
+		const withToJSON = Object.assign(
+			new Error("GET https://plex.tv/api?X-Plex-Token=abc123 failed"),
+			{
+				detail: {
+					toJSON() {
+						throw new Error("no");
+					},
+				},
+			},
+		);
+		const withGetter = Object.defineProperty(new TypeError("broken"), "extra", {
+			enumerable: true,
+			get() {
+				throw new Error("no");
+			},
+		});
+		let deep = new Error("bottom");
+		for (let i = 0; i < 20_000; i++) deep = new Error("level", { cause: deep });
+		const url = new URL("http://app.test/setup?token=abcd-efgh-ijkl");
+
+		for (const error of [withToJSON, withGetter, deep]) {
+			expect(() => logUnexpectedError(error, "GET", url)).not.toThrow();
+		}
+		const metadata = entries().map((entry) => entry.metadata);
+		expect(metadata).toEqual([
+			{
+				method: "GET",
+				path: "/setup",
+				error: { name: "Error", message: "GET https://plex.tv/api?X-Plex-Token=[redacted] failed" },
+			},
+			{ method: "GET", path: "/setup", error: { name: "TypeError", message: "broken" } },
+			{ method: "GET", path: "/setup", error: { name: "Error", message: "level" } },
+		]);
+		expect(lines.join("")).not.toContain("abc123");
+	});
+
+	it("describes a thrown value it can't read, that isn't an Error, as unreadable", () => {
+		const value = {
+			get secretive() {
+				throw new Error("no");
+			},
+		};
+		createLogger("startup").error("startup failed", { error: value });
+		expect(entries()[0]?.metadata).toEqual({ error: "[unreadable]" });
+	});
+
 	it("logs a thrown value that isn't an Error, redacted", () => {
 		logUnexpectedError({ session: "s3cret", detail: "boom" }, "GET", new URL("http://app.test/"));
 		const [entry] = entries();

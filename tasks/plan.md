@@ -107,6 +107,7 @@ differs.
 | Playwright's URL check wins the race against the token line | Medium | Task 9's `wait.stdout` pattern spans the token line through "Listening on" |
 | Startup forgets a completed first run after a restart | High | Task 8 loads the step pointer at startup and restarts the built server on a claimed file |
 | A shutdown cleanup hangs and the container is killed mid-write | Medium | Task 3's deadline test with a cleanup that never finishes; the README's `stop_grace_period` |
+| A failed query logs its bound parameters: Drizzle's `DrizzleQueryError` holds them in its message and its `params`, which no redaction rule matches, so the claim's insert could log the username and password hash | Medium | Task 8 tests that a failed claim's log entry holds neither, redacting the query error's parameters if it would |
 | A field error or a wrong token costs a hash | Medium | Task 8's unit tests prove field errors leave the token unused and wrong tokens never reach the hash |
 | Timer and timing tests flake under load (obzorarr #341) | Medium | The token tests use a fake clock and the redaction tests a growth ratio, as obzorarr's do now |
 | `node` sneaks into the validation | Low | Task 1 runs the gates with failing `node`, `npm` and `npx` shims on `PATH`, as CI does |

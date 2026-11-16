@@ -35,6 +35,40 @@ export function flushLogs(): Promise<void> {
 	return new Promise((resolve) => whenWritten.push(resolve));
 }
 
+/** What an entry holds for a value that can't be read or redacted. */
+const UNREADABLE = "[unreadable]";
+
+/**
+ * The metadata, redacted. Logging never throws, since its callers log while handling another
+ * failure: a value whose getter or `toJSON` throws, or one nested too deep to walk, becomes a
+ * description that can't leak (an error's class and its cleaned message), field by field.
+ */
+function redactOrDescribe(metadata: LogMetadata): unknown {
+	try {
+		return redact(metadata);
+	} catch {
+		const fields: Record<string, unknown> = {};
+		for (const [key, value] of Object.entries(metadata)) {
+			try {
+				fields[key] = redact(value);
+			} catch {
+				fields[key] = summary(value);
+			}
+		}
+		return redact(fields);
+	}
+}
+
+/** An error's class and cleaned message, read defensively; anything else is unreadable. */
+function summary(value: unknown): unknown {
+	try {
+		if (!(value instanceof Error)) return UNREADABLE;
+		return { name: String(value.name), message: redact(String(value.message)) };
+	} catch {
+		return UNREADABLE;
+	}
+}
+
 /**
  * A logger for `source`. Each entry is one JSON line on standard output (D11), redacted before
  * it is written (SPEC-setup.md, "Logging").
@@ -49,7 +83,7 @@ export function createLogger(source: string): Logger {
 				level,
 				source,
 				message: redact(message),
-				metadata: redact(metadata),
+				metadata: redactOrDescribe(metadata),
 			});
 			write(`${line}\n`);
 		};

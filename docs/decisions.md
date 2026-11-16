@@ -489,7 +489,7 @@ generated client.
 ### D14. Job lifecycle
 
 The concrete job lifecycle implementation (D7) isn't chosen. Close before the first background job
-lands. (Its logging half closed in D11.)
+lands.
 
 ### D16. Runtime validation gaps
 
