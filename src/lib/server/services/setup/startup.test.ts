@@ -303,6 +303,9 @@ describe("startUp's shutdown", () => {
 			await new Promise((resolve) => setImmediate(resolve));
 			expect(counts()).toEqual(before.map((listeners) => listeners.length + 1));
 		} finally {
+			// If an expect above failed, startup's handlers are still due on this turn; let them land
+			// first, so they're removed too and don't stay on the test's own process.
+			await new Promise((resolve) => setImmediate(resolve));
 			watched.forEach((event, index) => {
 				for (const listener of process.listeners(event)) {
 					if (!before[index]?.includes(listener)) process.removeListener(event, listener);
