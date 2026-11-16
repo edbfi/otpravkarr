@@ -279,7 +279,9 @@ formatters, and a check of the message files. Module 3, `setup`
 ([`docs/SPEC-setup.md`](docs/SPEC-setup.md)), is being built from [`tasks/`](tasks/plan.md):
 startup opens and migrates the database (D15), and refuses one a newer otpravkarr migrated; every
 log entry, an unexpected error's included, is one redacted JSON line on standard output; and the
-built server stops cleanly on `SIGTERM`, `SIGINT` and `SIGHUP`, closing the database.
+built server stops cleanly on `SIGTERM`, `SIGINT` and `SIGHUP`, closing the database; `ORIGIN` is
+checked at startup; and every response through `handle` carries the security headers, every page
+a nonce-based CSP.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -312,7 +314,8 @@ src/
   app.d.ts                       SvelteKit ambient types
   env.ts                         declares the app's variables: private, read at runtime, optional
   hooks.server.ts                the `init` hook: startup, except while building; `handleError`:
-                                 logs an unexpected error through the logger;
+                                 logs an unexpected error through the logger; `handle`: the
+                                 language, then the security headers;
                                  `handle`: each request's language, through Paraglide's middleware
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
@@ -335,21 +338,23 @@ src/
                                  `OTPRAVKARR_SECRET_KEY_FILE` names; no key logic
         database-path.ts         the database file's path; creates its folder
         log-debug.ts             `OTPRAVKARR_LOG_DEBUG`
+        origin.ts                `ORIGIN`, parsed and checked
       db/                        client.ts: opens the one database; migrate.ts: applies the
                                  bundled migrations, forward only; one file per aggregate's
                                  tables and named operations: settings.ts, owner.ts
       logging/                   logger.ts: one JSON line per entry on standard output, the
                                  flush, and the entry for an unexpected error; redact.ts: the
                                  redaction rules every entry passes through
-      services/setup/startup.ts  startup's steps in order: the key, the configuration, the
-                                 database; a failed step is logged, then thrown; and shutdown,
-                                 in the built server only
+      security/headers.ts        the security headers for a request; HSTS only over HTTPS
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
                                  malformed and weak keys; keyring.ts: loads the key and derives
                                  the AES key and key ID; secret.ts: the `Secret` wrapper,
                                  `[redacted]` everywhere but `reveal()`; cipher.ts: encrypts a
                                  secret bound to its table, field and row, and decrypts it only
                                  there
+      services/setup/startup.ts  startup's steps in order: the key, the configuration, the
+                                 database; a failed step is logged, then thrown; and shutdown,
+                                 in the built server only
     components/                  later: ui/ (Ark wrappers), <feature>/
       layout/LanguageSwitcher.svelte
                                  one native button per language, named in that language
@@ -362,7 +367,7 @@ tests/
   e2e/smoke.test.ts              Playwright smoke against the built server
   e2e/secret-key.test.ts         the built server refuses to start without a valid key
   e2e/setup.test.ts              first run and the request checks on the built server: so far,
-                                 the database, logging and shutdown
+                                 the database, logging, shutdown, the headers and the CSP
   e2e/i18n.test.ts               the built server serves each viewer's language, the browser
                                  keeps it, and the switcher changes it
   fixtures/demo-fixtures.json    design fixtures
@@ -376,7 +381,8 @@ drizzle/                         the reviewed migrations, which Drizzle Kit gene
                                  `db/` (`drizzle.config.ts`) and the build bundles
 panda.config.ts                  every design token; components use them through
                                  `#styled-system/<module>` (generated, gitignored)
-vite.config.ts                   SvelteKit (all its configuration), Panda, Paraglide and Vitest
+vite.config.ts                   SvelteKit (all its configuration, the CSP included), Panda,
+                                 Paraglide and Vitest
 playwright.config.ts  tsconfig.json  package.json  bun.lock
 ```
 
