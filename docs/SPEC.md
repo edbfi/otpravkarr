@@ -743,7 +743,9 @@ export const GET: RequestHandler = () => healthResponse();
   `config/database-path.test.ts`; `db/migrate.test.ts`, the bundled migrations on a temporary
   file against Drizzle Kit's file migrator, and the refusal of a database a newer build migrated,
   before anything is applied; `db/client.test.ts`, D5's rollback isolation, which fails on Drizzle
-  `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged before it is thrown;
+  `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged and flushed before it
+  is thrown, and shutdown: `SIGHUP` passed on as `SIGTERM`, the cleanup's order, exit codes and
+  5-second deadline, and no handlers in `dev`;
   `logging/redact.test.ts`, each redaction rule on its own and nested, the allowlist, encoded
   values and growth checks that catch a scan slower than linear; `logging/logger.test.ts`, the
   entry, the flush through a slow pipe, the redacted entry for an unexpected error, and logging
@@ -767,7 +769,8 @@ export const GET: RequestHandler = () => healthResponse();
     nothing on a second start on it, one uses the default path, and the others refuse a database
     folder they can't create, a path or file they can't open as a database, and a database a newer
     otpravkarr migrated, without echoing the path and naming the default when the variable is
-    unset; a bad `OTPRAVKARR_LOG_DEBUG` is one JSON log entry, and its value is never echoed.
+    unset; a bad `OTPRAVKARR_LOG_DEBUG` is one JSON log entry, and its value is never echoed; and
+    `SIGTERM` and `SIGHUP` each stop the server with exit code 0.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps
