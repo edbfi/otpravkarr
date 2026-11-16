@@ -746,8 +746,9 @@ export const GET: RequestHandler = () => healthResponse();
   `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged before it is thrown;
   `logging/redact.test.ts`, each redaction rule on its own and nested, the allowlist, encoded
   values and growth checks that catch a scan slower than linear; `logging/logger.test.ts`, the
-  entry, the flush through a slow pipe, and the redacted entry for an unexpected error;
-  `config/log-debug.test.ts`), and in `src/lib/shared/i18n/`:
+  entry, the flush through a slow pipe, the redacted entry for an unexpected error, and logging
+  that never throws; `config/log-debug.test.ts`), `src/hooks.server.test.ts` (`handleError` logs
+  only the errors the app's own code threw), and in `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
     language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone
     it is given, not the machine's;
