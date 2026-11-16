@@ -689,6 +689,39 @@ test.describe("the claim", () => {
 		}
 	});
 
+	test("without script, a failed claim reloads with focus on the first field to fix", async ({
+		browser,
+	}) => {
+		const server = await startServer(root, {
+			OTPRAVKARR_DATABASE_PATH: join(root, "data", "otpravkarr.db"),
+		});
+		const context = await browser.newContext({ javaScriptEnabled: false });
+		try {
+			const page = await context.newPage();
+			await page.goto(`${server.url}/setup`);
+			// A first visit puts focus nowhere.
+			expect(await page.locator("[autofocus]").count()).toBe(0);
+			await expect(page.locator("body")).toBeFocused();
+
+			await page.locator("#token").fill("aaaa-bbbb-cccc");
+			await page.locator("#username").fill("Owner");
+			await page.locator("#password").fill(PASSWORD);
+			await page.getByRole("button", { name: "Claim and create owner" }).click();
+			await expect(page.locator("#token-error")).toBeVisible();
+			await expect(page.locator("#token")).toBeFocused();
+
+			// The fields are checked before the token, so a short password is the field to fix.
+			await page.locator("#token").fill("aaaa-bbbb-cccc");
+			await page.locator("#password").fill("short");
+			await page.getByRole("button", { name: "Claim and create owner" }).click();
+			await expect(page.locator("#password-error")).toBeVisible();
+			await expect(page.locator("#password")).toBeFocused();
+		} finally {
+			await context.close();
+			await server.stop();
+		}
+	});
+
 	// otpravkarr's rule: the token must be typed; one in the URL is never read.
 	test("a token in /setup's query string is ignored", async ({ page }) => {
 		const server = await startServer(root, {

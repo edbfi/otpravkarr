@@ -49,6 +49,22 @@ const usernameError = $derived(
 const passwordError = $derived(
 	form?.passwordError && !edited.password ? passwordMessages[form.passwordError]() : undefined,
 );
+/**
+ * Without script, a failed claim reloads the page: focus goes where the submit handler below puts
+ * it, the first field to fix, and after a server failure the token, which the message asks for.
+ */
+const autofocusField = $derived(
+	form
+		? tokenError
+			? "token"
+			: usernameError
+				? "username"
+				: passwordError
+					? "password"
+					: "token"
+		: undefined,
+);
+
 // "Use at least 15 characters." already says what the helper says.
 const passwordHelp = $derived(!(passwordError && form?.passwordError === "too-short"));
 
@@ -209,7 +225,9 @@ const control = css({
 		>
 			<div class={field}>
 				<label class={label} for="token">{m.setup_token_label()}</label>
+				<!-- svelte-ignore a11y_autofocus: without script, a failed claim reloads with focus on the field to fix (autofocusField) -->
 				<input
+					autofocus={autofocusField === "token"}
 					bind:this={tokenInput}
 					class={[
 						control,
@@ -239,7 +257,9 @@ const control = css({
 
 			<div class={field}>
 				<label class={label} for="username">{m.setup_username_label()}</label>
+				<!-- svelte-ignore a11y_autofocus: as on the token field -->
 				<input
+					autofocus={autofocusField === "username"}
 					class={control}
 					id="username"
 					name="username"
@@ -283,7 +303,9 @@ const control = css({
 						},
 					})}
 				>
+					<!-- svelte-ignore a11y_autofocus: as on the token field -->
 					<input
+						autofocus={autofocusField === "password"}
 						bind:this={passwordInput}
 						class={css({
 							flex: "1",
