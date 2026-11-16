@@ -744,8 +744,13 @@ export const GET: RequestHandler = () => healthResponse();
   file against Drizzle Kit's file migrator, and the refusal of a database a newer build migrated,
   before anything is applied; `db/client.test.ts`, D5's rollback isolation, which fails on Drizzle
   `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged and flushed before it
-  is thrown, and shutdown: `SIGHUP` passed on as `SIGTERM`, the cleanup's order, exit codes and
-  its deadline, and no handlers in `dev`;
+  is thrown, and shutdown: `SIGHUP` passed on as `SIGTERM`, the work stopped on the signal, the
+  cleanup's order, exit codes and its deadline, and no handlers in `dev`;
+  `security/bootstrap-token.test.ts`, the token's alphabet, unbiased drawing, format, expiry and
+  constant-time comparison; `services/setup/first-run.test.ts`, the token printed while unclaimed
+  and renewed at expiry on a fake clock, held back during a claim, stopped by shutdown, and never
+  once claimed; `db/owner.test.ts`, `ownerExists` before and after the owner row, and the one-row
+  check;
   `logging/redact.test.ts`, each redaction rule on its own and nested, the allowlist, encoded
   values and growth checks that catch a scan slower than linear; `logging/logger.test.ts`, the
   entry, the flush through a slow pipe, the redacted entry for an unexpected error, and logging
@@ -782,7 +787,8 @@ export const GET: RequestHandler = () => healthResponse();
     an `ORIGIN` with credentials or a path stops the server without being echoed; a cross-site
     form POST gets the "Access denied" page with the headers, its own policy and the viewer's
     language; and a same-origin POST with no `Sec-Fetch-*` headers passes, on `localhost` and on a
-    plain-HTTP host name that isn't loopback (Chromium's `--host-resolver-rules`).
+    plain-HTTP host name that isn't loopback (Chromium's `--host-resolver-rules`); and a fresh
+    server prints the bootstrap token before it listens, in no log entry or response.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps

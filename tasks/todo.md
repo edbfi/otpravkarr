@@ -209,16 +209,16 @@ needed), `docs/SPEC.md` (the testing section and the `test` command), `AGENTS.md
 minutes. Shutdown stops the timer. First run's state is loaded into memory at startup.
 
 **Acceptance criteria:**
-- [ ] `server/security/bootstrap-token.test.ts` first fails, then passes: the format and alphabet,
+- [x] `server/security/bootstrap-token.test.ts` first fails, then passes: the format and alphabet,
   unbiased drawing (a mocked byte stream), accepted with or without dashes, in any case, trimmed;
   constant-time comparison; expiry at 15 minutes.
-- [ ] `server/services/setup/first-run.test.ts`, against a temporary file and a fake clock: a token
+- [x] `server/services/setup/first-run.test.ts`, against a temporary file and a fake clock: a token
   and a new one at expiry (none at 59 ms of a 60 ms lifetime, one at 60); no renewal while a claim
   is in progress; none after stopping; the full address when `ORIGIN` is set; none once claimed.
-- [ ] `owner.ts` gains `ownerExists`.
-- [ ] `startup.test.ts` gains: the signal handler stops the work (the token's timer) on `SIGTERM`
+- [x] `owner.ts` gains `ownerExists`.
+- [x] `startup.test.ts` gains: the signal handler stops the work (the token's timer) on `SIGTERM`
   and `SIGINT`.
-- [ ] `setup.test.ts`: the built server prints the token line before "Listening on"; neither form
+- [x] `setup.test.ts`: the built server prints the token line before "Listening on"; neither form
   of the token appears in a log entry or a response.
 
 **Verification:** the gates.
