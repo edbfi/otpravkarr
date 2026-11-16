@@ -742,32 +742,30 @@ export const GET: RequestHandler = () => healthResponse();
   `cache-control: no-store`), the `secrets` module (`config/secret-key.test.ts`, and
   `key-text.test.ts`, `keyring.test.ts`, `cipher.test.ts` and `secret.test.ts` in
   `security/secrets/`, under `src/lib/server/`), `setup`'s (under `src/lib/server/`:
-  `config/database-path.test.ts`; `db/migrate.test.ts`, the bundled migrations on a temporary
-  file against Drizzle Kit's file migrator, and the refusal of a database a newer build migrated,
-  before anything is applied; `db/client.test.ts`, D5's rollback isolation, which fails on Drizzle
-  `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged and flushed before it
-  is thrown, and shutdown: `SIGHUP` passed on as `SIGTERM`, the work stopped on the signal, the
+  `config/database-path.test.ts`; `db/migrate.test.ts`, the bundled migrations on a temporary file
+  against Drizzle Kit's file migrator, and the refusal of a database a newer build migrated, before
+  anything is applied; `db/client.test.ts`, D5's rollback isolation, which fails on Drizzle
+  `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged and flushed before it is
+  thrown, and shutdown: `SIGHUP` passed on as `SIGTERM`, the work stopped on the signal, the
   cleanup's order, exit codes and its deadline, and no handlers in `dev`;
   `security/bootstrap-token.test.ts`, the token's alphabet, unbiased drawing, format, expiry and
   constant-time comparison; `services/setup/first-run.test.ts`, the token printed while unclaimed
   and renewed at expiry on a fake clock, held back during a claim, stopped by shutdown, and never
   once claimed, the gate's decision for each path before and after the claim, and a restart on a
-  claimed database reading it back; `db/owner.test.ts`,
-  `ownerExists`, `insertOwner` and the one-row check; `db/settings.test.ts`;
-  `security/password.test.ts`, the credential rules at their limits, NFC, case, the app's name, the
-  username, the repeat and run rule and the list, and the argon2id round trip;
-  `services/setup/claim.test.ts`, the claim's success, field errors leaving the token unused, wrong
-  and expired tokens never reaching the hash, a second claim, two at once, a failed transaction
-  printing a new token (none once shutdown has begun), and the failed claim's log entry holding
-  neither username nor hash; `db/client.test.ts` also checks that a failed query's bound values
-  stay out of what is logged;
-  `logging/redact.test.ts`, each redaction rule on its own and nested, the allowlist, encoded
-  values and growth checks that catch a scan slower than linear; `logging/logger.test.ts`, the
-  entry, the flush through a slow pipe, the redacted entry for an unexpected error, and logging
-  that never throws; `config/log-debug.test.ts`; `config/origin.test.ts`;
-  `security/headers.test.ts`, the headers for HTTPS through `ORIGIN` or `Sec-Fetch-Site`, plain
-  HTTP, `localhost` and loopback; `security/cross-origin.test.ts`, the check against methods,
-  content types and `Origin`, `Sec-Fetch-Site`, `Host` and `ORIGIN` values;
+  claimed database reading it back; `db/owner.test.ts`, `ownerExists`, `insertOwner` and the one-row
+  check; `db/settings.test.ts`; `security/password.test.ts`, the credential rules at their limits,
+  NFC, case, the app's name, the username, the repeat and run rule and the list, and the argon2id
+  round trip; `services/setup/claim.test.ts`, the claim's success, field errors leaving the token
+  unused, wrong and expired tokens never reaching the hash, a second claim, two at once, a failed
+  transaction printing a new token (none once shutdown has begun), and the failed claim's log entry
+  holding neither username nor hash; `db/client.test.ts` also checks that a failed query's bound
+  values stay out of what is logged; `logging/redact.test.ts`, each redaction rule on its own and
+  nested, the allowlist, encoded values and growth checks that catch a scan slower than linear;
+  `logging/logger.test.ts`, the entry, the flush through a slow pipe, the redacted entry for an
+  unexpected error, and logging that never throws; `config/log-debug.test.ts`;
+  `config/origin.test.ts`; `security/headers.test.ts`, the headers for HTTPS through `ORIGIN` or
+  `Sec-Fetch-Site`, plain HTTP, `localhost` and loopback; `security/cross-origin.test.ts`, the check
+  against methods, content types and `Origin`, `Sec-Fetch-Site`, `Host` and `ORIGIN` values;
   `security/access-denied.test.ts`, the refusal page and its JSON form in both languages),
   `src/hooks.server.test.ts` (`handleError` logs only the errors the app's own code threw),
   `vite.config.test.ts` (SvelteKit's own form check and remote functions are off), and in
@@ -793,22 +791,22 @@ export const GET: RequestHandler = () => healthResponse();
   - `setup.test.ts` starts its own built servers: one migrates a new database file and applies
     nothing on a second start on it, one uses the default path, and the others refuse a database
     folder they can't create, a path or file they can't open as a database, and a database a newer
-    otpravkarr migrated, without echoing the path and naming the default when the variable is
-    unset; a bad `OTPRAVKARR_LOG_DEBUG` is one JSON log entry, and its value is never echoed;
-    `SIGTERM` and `SIGHUP` each stop the server with exit code 0; a page, `/healthz`, the gate's
-    redirect and a 404 carry the security headers, with no HSTS over plain HTTP; a page's scripts carry its policy's
-    nonce, the policy is the spec's directive for directive, and the browser reports no violation;
-    an `ORIGIN` with credentials or a path stops the server without being echoed; a cross-site
-    form POST gets the "Access denied" page with the headers, its own policy and the viewer's
-    language; and a same-origin POST with no `Sec-Fetch-*` headers passes, on `localhost` and on a
-    plain-HTTP host name that isn't loopback (Chromium's `--host-resolver-rules`), getting the
-    gate's 303 while unclaimed; every page sends a fresh server to `/setup` while `/healthz`
+    otpravkarr migrated, without echoing the path and naming the default when the variable is unset;
+    a bad `OTPRAVKARR_LOG_DEBUG` is one JSON log entry, and its value is never echoed; `SIGTERM` and
+    `SIGHUP` each stop the server with exit code 0; a page, `/healthz`, the gate's redirect and a
+    404 carry the security headers, with no HSTS over plain HTTP; a page's scripts carry its
+    policy's nonce, the policy is the spec's directive for directive, and the browser reports no
+    violation; an `ORIGIN` with credentials or a path stops the server without being echoed; a
+    cross-site form POST gets the "Access denied" page with the headers, its own policy and the
+    viewer's language; and a same-origin POST with no `Sec-Fetch-*` headers passes, on `localhost`
+    and on a plain-HTTP host name that isn't loopback (Chromium's `--host-resolver-rules`), getting
+    the gate's 303 while unclaimed; every page sends a fresh server to `/setup` while `/healthz`
     answers `ok`; a fresh server prints the bootstrap token before it listens, in no log entry or
     response; and the claim: a wrong token is refused with the username kept, the right one claims
     and lands on `/`, and `/setup` and its action then answer 404, also after a restart, which
     serves `/` without a redirect, with neither the token nor the password in a response or log
-    entry; the username stays while the claim runs; and a token
-    in `/setup`'s query string is ignored.
+    entry; the username stays while the claim runs; and a token in `/setup`'s query string is
+    ignored.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps
