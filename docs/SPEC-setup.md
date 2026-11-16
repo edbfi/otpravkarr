@@ -540,7 +540,7 @@ beside it.
 
 - **`docs/SPEC.md`:** the status line and row 3 (built); the tech-stack table (Turso, Drizzle, the
   fonts and the icons); the `db:generate`, `preview` and `smoke` command rows; the testing section;
-  "Open decisions": the `setup` lines go; ground-floor choices 1 and 3 close.
+  "Open decisions": the `setup` line goes; ground-floor choices 1 and 3 close.
 - **`docs/decisions.md`:** D15 moves to Decided with the validated pair, and D5's "(validation open
   in D15)" points to it; D14's logging half moves to Decided in D11 as the app's own logger and
   why, and D14 keeps only the job half. D16 stays open: the README's backup rule isn't a tested
