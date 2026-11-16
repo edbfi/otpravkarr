@@ -25,9 +25,14 @@ operations yet.
 - [ ] `server/db/migrate.test.ts` first fails, then passes, against a temporary file: the bundled
   migrations apply to a new database, both tables exist, a second run applies nothing, and the
   rows match Drizzle Kit's file migrator by name and time, with an empty `hash`.
-- [ ] Forward only, in `migrate.test.ts`: a database whose migrations table holds a name the build
-  doesn't bundle is refused before anything is applied, with a message that names neither path nor
-  value and says a newer otpravkarr migrated it; a pending migration still applies.
+- [ ] Forward only, in `migrate.test.ts`: `migrateDatabase` takes the migrations as a parameter that
+  defaults to the bundled set. A database the real migrator migrated, with an unknown name then
+  inserted into its table, is refused before anything is applied, with the spec's remedy ("run
+  that version again, or restore the backup taken with this one") and neither path nor value; a
+  database at an earlier set of two passed migrations applies the later one.
+- [ ] `server/services/setup/startup.test.ts` first fails, then passes: startup opens and migrates
+  the database at the path; a path that is a folder, and a file that isn't a database, are refused
+  naming the variable but never the path (Turso puts the full path in its open errors).
 - [ ] `server/db/client.test.ts` holds D5's rollback-isolation check and fails on
   `drizzle-orm@1.0.0-rc.4`.
 - [ ] `drizzle-orm` and `drizzle-kit` at the newest `rc` D5 allows and `@tursodatabase/database` at
@@ -36,11 +41,11 @@ operations yet.
   committed.
 - [ ] `settings` (key, value, update time) and `owner` (a fixed id, username, password hash,
   creation time; one row at most) match the spec.
-- [ ] `tests/e2e/setup.test.ts` first fails, then passes: the built server, on a new temporary
-  file, starts, serves `/healthz`, and starts again on the same file; it refuses to start with an
-  unwritable database folder, or a database holding an unknown migration, without echoing the
-  path. `playwright.config.ts` gives each run a temporary database, created and removed only in the
-  runner process, after the server exits.
+- [ ] `tests/e2e/setup.test.ts` first fails, then passes: the built server, on a new temporary file,
+  starts, serves `/healthz`, and starts again on the same file; it refuses to start with an
+  unwritable database folder, a file that isn't a database, or a database holding an unknown
+  migration, without echoing the path. `playwright.config.ts` gives each run a temporary database,
+  created and removed only in the runner process, after the server exits.
 - [ ] D15's validation passes with its evidence in the PR body: migrations, `check`, `bun ./build`
   through the native binding on Linux arm64 (this machine) and x64 (CI's `smoke`), rollback
   isolation, and all of it with failing `node`, `npm` and `npx` on `PATH`.
@@ -53,7 +58,7 @@ only `build/` (and the platform package if it must ship) opens and migrates a da
 **Files:** `package.json`, `bun.lock`, `drizzle.config.ts`, `drizzle/`, `src/env.ts`,
 `src/hooks.server.ts`, `server/config/{config-error,error-code,database-path}.ts` (+ test),
 `server/config/secret-key.ts`, `server/db/client.ts` (+ test), `server/db/migrate.ts` (+ test),
-`server/db/settings.ts`, `server/db/owner.ts`, `server/services/setup/startup.ts`,
+`server/db/settings.ts`, `server/db/owner.ts`, `server/services/setup/startup.ts` (+ test),
 `tests/e2e/setup.test.ts`, `playwright.config.ts`, `README.md` (the database, its backup and
 `--no-install`), `docs/SPEC.md` (the status line, the tech-stack table, the `db:generate`,
 `preview` and `smoke` Commands rows, the testing section, the "needs no `node_modules`" line),
@@ -76,12 +81,14 @@ logged, then thrown. `handleError` logs every unexpected error through it.
 - [ ] `server/logging/logger.test.ts`: the entry's shape, one line per entry, debug dropped unless
   enabled, and `flushLogs()` through a slow pipe.
 - [ ] `server/config/log-debug.test.ts`: `true`, `false`, empty as unset, and anything else refused
-  with one line that doesn't echo the value, before the database is opened.
-- [ ] `handleError` in `src/hooks.server.ts` logs an unexpected error as one redacted entry with its
-  class, message, stack, method and path without the query string, and returns SvelteKit's generic
-  message. Its test, beside the module that builds the entry, fails before the hook exists; an e2e
-  case in `setup.test.ts` triggers an error on the built server only if a route can do so without
-  test-only code, otherwise the unit test stands alone.
+  with one line that doesn't echo the value.
+- [ ] `startup.test.ts` gains: a failed step logged as one error entry, then thrown; a bad
+  `OTPRAVKARR_LOG_DEBUG` refused before the database folder exists, checked with `stat` (not
+  `Bun.file().exists()`, which is false for every folder).
+- [ ] `logUnexpectedError` in `logging/logger.ts` builds the entry for an unexpected error: one
+  redacted entry with its class, message, stack, method and path without the query string; its
+  cases in `logger.test.ts` (a token in the error's message comes out redacted) fail first.
+  `handleError` in `src/hooks.server.ts` only calls it and returns SvelteKit's generic message.
 - [ ] A startup failure is one log entry and the thrown error; the built server still exits
   non-zero before it listens (`setup.test.ts` and `secret-key.test.ts` pass).
 
@@ -92,9 +99,9 @@ line.
 
 **Files:** `server/logging/logger.ts` (+ test), `server/logging/redact.ts` (+ test),
 `server/config/log-debug.ts` (+ test), `src/env.ts`, `src/hooks.server.ts`,
-`server/services/setup/startup.ts`, `tests/e2e/secret-key.test.ts` if the error's format changes,
-`README.md` (logs and `OTPRAVKARR_LOG_DEBUG`), `docs/decisions.md` (D11 and D14's logging half),
-`docs/SPEC.md` (the testing section), `AGENTS.md`.
+`server/services/setup/startup.ts` (+ test), `tests/e2e/secret-key.test.ts` if the error's format
+changes, `README.md` (logs and `OTPRAVKARR_LOG_DEBUG`), `docs/decisions.md` (D11 and D14's logging
+half), `docs/SPEC.md` (the testing section), `AGENTS.md`.
 
 **Size:** M.
 
@@ -106,7 +113,7 @@ the logs and exit 0, or exit non-zero after a 5-second deadline. The handlers go
 built server, one turn after adapter-bun's.
 
 **Acceptance criteria:**
-- [ ] `server/services/setup/startup.test.ts` first fails, then passes: the cleanup's order, the
+- [ ] `server/services/setup/startup.test.ts` gains, each failing first: the cleanup's order, the
   deadline with a cleanup that never finishes, its own entry flushed for at most 250 ms, and no
   handler in `dev`.
 - [ ] `setup.test.ts`: `SIGHUP` and `SIGTERM` each shut the built server down with exit code 0.
@@ -118,7 +125,7 @@ built server, one turn after adapter-bun's.
 **Dependencies:** task 2.
 
 **Files:** `server/services/setup/startup.ts` (+ test), `src/hooks.server.ts`,
-`tests/e2e/setup.test.ts`, `README.md`, `AGENTS.md`.
+`tests/e2e/setup.test.ts`, `README.md`, `docs/SPEC.md` (the testing section), `AGENTS.md`.
 
 **Size:** M.
 
@@ -135,7 +142,8 @@ Ground-floor choice 3 closes.
 **Acceptance criteria:**
 - [ ] `server/config/origin.test.ts` first fails, then passes: unset and a bare origin with and
   without a trailing `/` accepted; an empty value, a path (`/app/..` and `/%2e` included), query,
-  fragment or credentials refused without echoing the value, before the database file is created.
+  fragment or credentials refused without echoing the value. `startup.test.ts` gains a bad `ORIGIN`
+  refused before the database folder exists.
 - [ ] `server/security/headers.test.ts`: the spec's headers for HTTPS through `ORIGIN`, HTTPS
   through `Sec-Fetch-Site`, plain HTTP, `localhost`, `*.localhost` and loopback hosts, and never
   `includeSubDomains`.
@@ -149,7 +157,7 @@ Ground-floor choice 3 closes.
 **Dependencies:** task 3.
 
 **Files:** `server/config/origin.ts` (+ test), `server/security/headers.ts` (+ test), `src/env.ts`,
-`src/hooks.server.ts`, `server/services/setup/startup.ts`, `vite.config.ts`,
+`src/hooks.server.ts`, `server/services/setup/startup.ts` (+ test), `vite.config.ts`,
 `tests/e2e/setup.test.ts`, `README.md` (`ORIGIN`), `docs/SPEC.md` (ground-floor choice 3, the
 testing section), `AGENTS.md`.
 
@@ -204,6 +212,8 @@ minutes. Shutdown stops the timer. First run's state is loaded into memory at st
   and a new one at expiry (none at 59 ms of a 60 ms lifetime, one at 60); no renewal while a claim
   is in progress; none after stopping; the full address when `ORIGIN` is set; none once claimed.
 - [ ] `owner.ts` gains `ownerExists`.
+- [ ] `startup.test.ts` gains: the signal handler stops the work (the token's timer) on `SIGTERM`
+  and `SIGINT`.
 - [ ] `setup.test.ts`: the built server prints the token line before "Listening on"; neither form
   of the token appears in a log entry or a response.
 
@@ -212,8 +222,8 @@ minutes. Shutdown stops the timer. First run's state is loaded into memory at st
 **Dependencies:** task 5.
 
 **Files:** `server/security/bootstrap-token.ts` (+ test), `server/services/setup/first-run.ts`
-(+ test), `server/services/setup/startup.ts`, `server/db/owner.ts` (+ test),
-`tests/e2e/setup.test.ts`, `AGENTS.md`.
+(+ test), `server/services/setup/startup.ts` (+ test), `server/db/owner.ts` (+ test),
+`tests/e2e/setup.test.ts`, `docs/SPEC.md` (the testing section), `AGENTS.md`.
 
 **Size:** M.
 
@@ -226,9 +236,11 @@ minutes. Shutdown stops the timer. First run's state is loaded into memory at st
 - [ ] `@fontsource-variable/fraunces`, `@fontsource-variable/instrument-sans` and
   `@fontsource/ibm-plex-mono` are exact-pinned dev dependencies, imported from `src/app.css` or
   the root layout; the built server serves the font files itself, under `font-src 'self'`.
-- [ ] `smoke.test.ts` first fails, then passes: the placeholder's display heading and body text
-  render in Fraunces and Instrument Sans (`document.fonts` reports them loaded), with no request
-  to another host.
+- [ ] `smoke.test.ts` first fails, then passes, as obzorarr's "the bundled fonts load under the
+  names Panda's font tokens give them": for each of `--fonts-display`, `--fonts-body` and
+  `--fonts-mono`, `document.fonts.load()` of its first family returns at least one face
+  (`document.fonts.check()` would pass a name the CSS never registers), with no request to another
+  host.
 
 **Verification:** the gates; `/` checked by hand in both languages.
 
@@ -264,10 +276,10 @@ yet.
   without dashes, claims and lands on `/`; `/setup` and its action then answer 404, also after a
   restart; neither the token nor the password appears in a response or a log entry.
 - [ ] The page follows `route-setup.md` through `/impeccable`, with the language switcher and
-  `@lucide/svelte`'s eye icons beside the Show/Hide text; every string is a `setup_…` message in
-  both languages. Checked at 360, 390, 768 and 1440 px, 200% zoom, the keyboard and reduced
-  motion, in every state the brief names, in English and Danish, with screenshots in the PR body,
-  and an Impeccable finish review.
+  `@lucide/svelte` (exact-pinned) eye icons beside the Show/Hide text; every string is a `setup_…`
+  message in both languages. Checked at 360, 390, 768 and 1440 px, 200% zoom, the keyboard and
+  reduced motion, in every state the brief names, in English and Danish, with screenshots in the PR
+  body, and an Impeccable finish review.
 
 **Verification:** the gates; a claim by hand in `preview` over plain HTTP on a LAN address.
 
@@ -279,7 +291,8 @@ yet.
 (+ tests), `src/routes/setup/` (`+page.svelte`, `+page.server.ts`, `token-format.ts` + test),
 `messages/en.json`, `messages/da.json`, `tests/e2e/setup.test.ts`,
 `.impeccable/surfaces/route-setup.md` (its status, through Impeccable), `DESIGN.md` if the finish
-review refreshes it, `AGENTS.md`.
+review refreshes it, `docs/SPEC.md` (the tech-stack table's icons, the testing section),
+`AGENTS.md`.
 
 **Size:** L. One coherent unit: the credential rules have no caller before the claim.
 
@@ -295,7 +308,9 @@ through the form, so the smoke and language tests run on a claimed instance.
 - [ ] `setup.test.ts`: every page sends a fresh instance to `/setup` and `/healthz` answers `ok`;
   the gate's redirect carries the headers; after a restart on a claimed file, `/` is served without
   a redirect. Earlier tests that expect a 404 or a same-origin POST's 405 claim their own servers
-  first.
+  first, through a `claim(server)` helper that posts the form with `Accept: text/html` (to `*/*`,
+  SvelteKit answers an action in JSON); the CSP test reads `/setup`; the token-leak test reads
+  `/setup` and `/healthz`, then claims and reads a 404.
 - [ ] `playwright.config.ts`: `wait.stdout` from the token line through "Listening on" replaces the
   `url` check; `tests/e2e/global-setup.ts` claims through the form in a browser; `smoke.test.ts`
   and `i18n.test.ts` pass unchanged.

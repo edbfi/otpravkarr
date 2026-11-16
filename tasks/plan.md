@@ -20,8 +20,8 @@ differs.
   the platform package beside `build/` as the spec says.
 - **Forward-only migrations land with the migrator** (owner's answer, 2026-11-16). Task 1 reads
   the migration names the database has recorded before applying any, and refuses a name the build
-  doesn't bundle. A test with a hand-made migrations table proves it refuses before anything is
-  applied. obzorarr lacks it, so task 1's PR names it under "Other apps".
+  doesn't bundle. A test on a table the real migrator wrote, with an unknown name added, proves it
+  refuses before anything is applied. obzorarr lacks it, so task 1's PR names it under "Other apps".
 - **The startup service grows task by task,** as in obzorarr: task 1 creates
   `services/setup/startup.ts` with the key, the configuration and the database;
   `OTPRAVKARR_LOG_DEBUG` (task 2) and `ORIGIN` (task 4) join the configuration step, so they are
@@ -113,8 +113,10 @@ differs.
 
 ## Other apps
 
-Each task's PR body names the sibling apps that need its change. Only the forward-only check
-(task 1) is new to all of them; the rest ports obzorarr's.
+Each task's PR body names the sibling apps that need its change. Two are new to obzorarr: the
+forward-only check (task 1), which obzorarr, comradarr, zondarr and zimuarr pick up from
+otpravkarr, and `handleError` (task 2), which obzorarr's `sign-in` thread is adding there. The rest
+ports obzorarr's.
 
 ## Open questions
 
