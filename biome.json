@@ -35,6 +35,18 @@
 			}
 		}
 	},
+	"overrides": [
+		{
+			"includes": ["src/routes/setup/+page.svelte"],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"noAutofocus": "off"
+					}
+				}
+			}
+		}
+	],
 	"html": {
 		"experimentalFullSupportEnabled": true,
 		"formatter": {

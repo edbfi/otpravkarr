@@ -803,8 +803,9 @@ export const GET: RequestHandler = () => healthResponse();
     before it listens, in no log entry or response; and the claim: a wrong token is refused with the
     username kept, the right one claims and lands on `/`, and `/setup` and its action then answer
     404, also after a restart, which serves `/` without a redirect, with neither the token nor the
-    password in a response or log entry; the username stays while the claim runs; and a token in
-    `/setup`'s query string is ignored.
+    password in a response or log entry; the username stays while the claim runs; without script, a
+    failed claim reloads with focus on the first field to fix; and a token in `/setup`'s query
+    string is ignored.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps
