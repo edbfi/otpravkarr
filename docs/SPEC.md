@@ -3,7 +3,7 @@
 **Status:** the ground floor (skeleton) is specified here, approved by the orchestrator
 (2026-10-18) and built. The capability map below is approved; module 1, `secrets`
 ([SPEC-secrets.md](SPEC-secrets.md)), and module 2, `i18n` ([SPEC-i18n.md](SPEC-i18n.md)), are
-built.
+built, and module 3, `setup`, is specified in [SPEC-setup.md](SPEC-setup.md).
 
 ## Objective
 
@@ -40,10 +40,10 @@ components or services, and dates and numbers formatted for the viewer's languag
 |---|---|---|---|---|
 | 1 | `secrets` | **Built.** Encrypts stored secrets (Plex token, Dispatcharr key, subscriber XC passwords, two-factor secrets, the OIDC client secret) before they reach the database (D27, D31), and the secret wrapper that shows only a redaction marker and opens at one named call | — | — |
 | 2 | `i18n` | **Built.** The translation groundwork (D28) with Paraglide JS (D29): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's language, and a check that every message exists in both languages | — | the language switcher in each shell |
-| 3 | `setup` | Startup checks, database and migrations, settings, structured logging with redaction, security headers and CSP (ground-floor choice 3), the setup gate, the bootstrap token, printed to the console and never through the stored logs, and claiming the instance for its one owner, with `sign-in`'s address hint on the claim page. otpravkarr adds the audit trail: its table and the one service every later change writes through | `secrets`, `i18n` | first-run setup (no brief yet) |
-| 4 | `sign-in` | Owner sign-in with username and password, signing the new owner in at the claim (D27), sessions, sign-out (POST only), rate limits, the cross-origin check (it asks the browser, stores no address and takes `ORIGIN` as an optional override) with its address hint on the claim and owner sign-in pages, app-named cookies that work over plain HTTP at home and behind an HTTPS proxy, password change, error pages, recovery (D27), and the admin shell | `setup` | owner sign-in (no brief yet); the admin shell; the password section of the owner's account settings |
+| 3 | `setup` | Startup checks, database and migrations, settings, structured logging with redaction, security headers and CSP (ground-floor choice 3), `ORIGIN` and the cross-origin check (it asks the browser, stores no address and takes `ORIGIN` as an optional override), the setup gate, the bootstrap token, printed to the console and never as a log entry, and claiming the instance for its one owner, with the owner's password rules and hashing | `secrets`, `i18n` | first-run setup (brief: `/setup`, the claim) |
+| 4 | `sign-in` | Owner sign-in with username and password, signing the new owner in at the claim (D27), sessions, sign-out (POST only), rate limits, the address hint on the claim and owner sign-in pages, app-named cookies that work over plain HTTP at home and behind an HTTPS proxy, password change, error pages, recovery (D27), and the admin shell. otpravkarr adds the audit trail: its table and the one service every later change writes through, starting with the claim, sign-in and sign-out; and the request log entries | `setup` | owner sign-in (no brief yet); the admin shell; the password section of the owner's account settings |
 | 5 | `two-factor` | Optional but strongly recommended (D27): authenticator codes, backup codes and the challenge after every way the owner signs in (except the optional OIDC skip, D27), with replay protection and a limit on failed attempts. Recovery turns it off. Adds the offer to first-run setup, right after the owner account is created and before any connection step, and the reminder in the admin shell while it is off | `sign-in` | the two-factor offer in first-run setup; the owner's account settings (no brief yet); the reminder in the admin shell |
-| 6 | `plex-connection` | Plex provider (D12, D18), SSRF-safe outbound HTTP (D8), and connecting, testing and saving the Plex server | `sign-in` | `/admin/settings/connections` (Plex form) |
+| 6 | `plex-connection` | Plex provider (D12, D18), SSRF-safe outbound HTTP (D8), the rules for settings URLs and secret settings, and connecting, testing and saving the Plex server | `sign-in` | `/admin/settings/connections` (Plex form) |
 | 7 | `dispatcharr-connection` | Dispatcharr provider with its service user (D25), version gate and contract tests (D26), and connecting, testing and saving the internal and public URLs and the key | `sign-in` | `/admin/settings/connections` (Dispatcharr form) |
 | 8 | `health` | Plex, Dispatcharr and database checks on a timer, public `/healthz` (`ok`, `degraded`, `unhealthy`), the exposure item (D19) and the version warning (D26) | `plex-connection`, `dispatcharr-connection` | `/admin` (health tiles); `/healthz` |
 | 9 | `lineup` | Lineup policies, core, fixed and approved groups, bundles, quarantine names, `hidden_from_output` (D24), content defaults (D22), and the offered and effective groups worked out from each person's choices | `dispatcharr-connection` | `/admin/settings/lineup` |
@@ -54,7 +54,7 @@ components or services, and dates and numbers formatted for the viewer's languag
 | 14 | `channel-choices` | Subscribers pick bundles or groups within policy, or see a locked view | `plex-sign-in`, `lineup` | `/portal/channels` |
 | 15 | `subscriber-admin` | Users table with filters and drift, details, disable, enable, re-provision, remove, rotate, changing groups and the lock, per-person content flags, and "Subscribe myself", keyed on the Plex account behind the server token, so it needs no owner Plex link. How the owner opens that subscriber view is settled in this module's spec | `accounts`, `lineup`, `plex-connection` | `/admin/users` |
 | 16 | `sync` | The reconcile job: friend sync, adopting or removing managed users through the marker (D23), quarantine refresh, the subscription sync, plugin scope checks, the `m3u_refresh` webhook (D24), the interval setting and running it by hand | `accounts`, `lineup`, `plex-connection` | `/admin` (sync card); `/admin/settings/connections` (sync interval) |
-| 17 | `audit-log` | The audit log page with filters, and the retention job (the writing comes with `setup`) | `sign-in` | audit log (no brief yet) |
+| 17 | `audit-log` | The audit log page with filters, and the retention job (the writing comes with `sign-in`) | `sign-in` | audit log (no brief yet) |
 | 18 | `oidc-sign-in` | Connecting one OpenID Connect provider (Authentik, Authelia, Pocket ID, Tinyauth and others) by its issuer, client id and secret, and linking the owner's account to it, after which it signs them in as the owner, and offering to skip `two-factor` when the provider's `amr` claim reports its own second factor (D27) | `two-factor` | the owner's account settings (no brief yet); its button on owner sign-in |
 | 19 | `plugin-advisories` | Read-only plugin cards: ECM scope, plugins that target owned profiles, and auto-sync groups without a scope (D24) | `scoping`, `lineup` | plugins (no brief yet) |
 | 20 | `overview` | The owner dashboard: health, user counts, sync, recent activity, available friends | `health`, `accounts`, `sync`, `audit-log` | `/admin` |
@@ -77,8 +77,8 @@ layout:
 |---|---|
 | `secrets` | `security/secrets/` (key checks, keyring, cipher, `Secret`), `config/secret-key.ts`, `src/env.ts` and the `init` hook in `hooks.server.ts` |
 | `i18n` | `messages/en.json` and `messages/da.json`, `project.inlang/` (the inlang project and Paraglide's options), `lib/shared/i18n/` (formatting and the message check), `lib/components/layout/LanguageSwitcher.svelte`; the language handle in `hooks.server.ts`, and `hooks.client.ts` |
-| `setup` | `db/` (client, migrations, settings, owner and audit schema), `config/`, `logging/`, `services/setup/`, `services/audit/record.ts`, `security/bootstrap-token.ts`, `security/headers.ts`; `routes/setup/`, and the setup gate and the headers in `hooks.server.ts` |
-| `sign-in` | `services/sign-in/` (sessions and their storage, recovery), `db/` session schema, `security/` (session-token and password hashing, rate limiting, the cross-origin check), `vite.config.ts` (SvelteKit's own form check off); the sign-in and the address hint at the claim in `routes/setup/`, `routes/(admin)/` layout, `lib/components/layout/` |
+| `setup` | `db/` (client, migrations, settings and owner schema), `config/`, `logging/` (with redaction), `services/setup/`, `security/` (bootstrap token, headers, the cross-origin check and its refusal, the password rules and hashing), `vite.config.ts` (SvelteKit's own form check off, the CSP); `routes/setup/`, and the headers, the cross-origin check, the setup gate and `handleError` in `hooks.server.ts` |
+| `sign-in` | `services/sign-in/` (sessions and their storage, recovery), `services/audit/record.ts`, `db/` session and audit schema, `security/` (session-token hashing, rate limiting); the sign-in, the claim's audit entry and the address hint at the claim in `routes/setup/`, `routes/(admin)/` layout, `lib/components/layout/`; the request log in `hooks.server.ts` |
 | `two-factor` | `services/two-factor/`, the owner schema's two-factor fields in `db/`; the offer in `routes/setup/`, the challenge page beside the sign-in page, its section of the owner's account settings, and the reminder in `lib/components/layout/` |
 | `plex-connection` | `providers/plex/`, `http/`, `services/connections/plex.ts`; `routes/(admin)/admin/settings/connections/` |
 | `dispatcharr-connection` | `providers/dispatcharr/`, `services/connections/dispatcharr.ts`; same route |
@@ -98,15 +98,13 @@ layout:
 
 ### Open decisions each module closes
 
-- `setup`: D15 (Drizzle and Turso pair) and the logging library half of D14.
-- `setup`: how responses sent before `handle` (such as Bun's `413` for a body over the limit) get
-  the security headers.
-- `setup`: whether the content security policy refuses inline style attributes, which Ark UI and
-  Svelte write.
+- `setup`: D15 (Drizzle and Turso pair) and the logging library half of D14. Its spec also answers
+  how responses sent before `handle` get the security headers (they don't, an accepted limit) and
+  whether the CSP refuses inline style attributes (it doesn't).
 - `sign-in`: how long an owner session lasts.
-- `sign-in`: the password rules: the minimum length, whether a list of common passwords is
-  refused, and how repeated failed sign-ins are slowed beyond the rate limits (backoff, or a lockout
-  where the app's approved docs allow one).
+- `sign-in`: how repeated failed sign-ins are slowed beyond the rate limits (backoff, or a lockout
+  where the app's approved docs allow one). The password rules are `setup`'s, since the claim sets
+  the first password ([SPEC-setup.md](SPEC-setup.md#first-run)).
 - `two-factor`: its limit on failed attempts (how many, and over what time).
 - The first module with a background job closes the job half of D14: `sign-in` if its session
   cleanup is a job, otherwise `health`.
@@ -153,9 +151,10 @@ layout:
 
 ### Surfaces with no brief yet
 
-First-run setup, owner sign-in, the owner's account settings, `/admin/plugins` and `/admin/audit`
-are needed (the last two are in PRODUCT.md's admin shell) but have no brief. Each gets one before
-its module is specced, starting from its module's [Module notes](#module-notes).
+First-run setup's steps after the claim, owner sign-in, the owner's account settings,
+`/admin/plugins` and `/admin/audit` are needed (the last two are in PRODUCT.md's admin shell) but
+have no brief. Each gets one before its module is specced, starting from its module's
+[Module notes](#module-notes).
 
 ### Module notes
 
@@ -164,100 +163,18 @@ app and adapted to the decisions. It is behaviour to keep unless the module's ap
 decision changes it. Layout, placement, visuals and exact wording are not behaviour: where a note
 describes them, DESIGN.md and the surface's brief win, and for a surface with no brief yet the note
 is only a starting point for that brief. Each block moves into its module's `SPEC-<id>.md` when that
-module is specced. Rate limits are listed once, under `sign-in`. `setup` and `sign-in` are shared
-with the other edbfi apps (D27), with obzorarr as their reference: a bullet or clause marked
-"(otpravkarr)" is this app's own, and the rest is the shared wording; a "(otpravkarr)" mark inside a
-bullet covers the rest of that bullet, and "(otpravkarr: …)" only its own parentheses. Decision
-numbers in these blocks are otpravkarr's.
-
-#### setup
-
-- **The setup gate.** Until first run is complete, every page except static assets, the claim,
-  sign-in and first run's own helpers sends the browser to the current first-run step. The server
-  keeps one current-step pointer: the browser can't skip ahead, each step's action checks that it is
-  the current step, and a step that offers Previous only moves the pointer back. Only the last
-  step's action completes first run. (otpravkarr) `/healthz` is exempt too, and going back keeps
-  what the owner typed. After the claim come `two-factor`'s offer, then Plex (`plex-connection`) and
-  Dispatcharr (`dispatcharr-connection`). Completing first run seeds `health` and lands on `/admin`;
-  afterwards the setup routes answer "not found".
-- **The bootstrap token** (D27) is 12 random lowercase letters and digits, shown as
-  `xxxx-xxxx-xxxx`, held only in memory (never logged or stored) and compared in constant time. It
-  is printed with the setup URL and is valid for 15 minutes, after which a new one is printed. Claim
-  attempts are rate-limited (`sign-in`). (otpravkarr) A token in the URL is ignored: it must be
-  typed.
-- **The claim** is a POST, cross-origin-checked like any other (`sign-in`), and it stores no
-  address. It needs a valid bootstrap token and the browser's address (`sign-in`). Using up the
-  token and creating the owner are one atomic step, and the owner session it starts follows
-  `sign-in`'s cookies.
-- **The owner account** (otpravkarr): the claim asks for a username of 3 to 32 letters, digits,
-  underscores or dashes, and the password twice; the password rules are `sign-in`'s open decision.
-  There is never a second owner (D27).
-- **The audit trail** (otpravkarr): one service writes every entry, and entries are never edited,
-  only removed by retention (`audit-log`). An entry has a time, an action, and where known the
-  actor (the owner, or a subscriber's Plex username for their own actions; none for the system) and
-  the client address, plus optional structured detail. Everything that changes state is audited,
-  first run included: each step as a configuration change with secret values left out, then "setup
-  completed". A configuration entry is written only when something actually changed. An entry
-  about a subscriber carries their Plex username and their Dispatcharr username, the latter as
-  Dispatcharr reported it, never a stale local copy, so a search on either finds it.
-- **Settings** (otpravkarr) hold one value per key: a write replaces it, and clearing writes an
-  empty value. Secrets among them are encrypted (`secrets`). A secret's field is blank again after
-  saving; other fields keep their values.
-- **Settings URLs:** upstream base URLs may not hold credentials, a query or a fragment.
-  (otpravkarr) Only `http` and `https` are accepted, and a URL is reduced to its origin. The Plex
-  server URL and Dispatcharr's internal URL carry secrets, so they must be HTTPS, except that plain
-  HTTP is allowed for loopback, private and local hosts (such as `http://dispatcharr:9191` on a
-  Docker network, `http://plex.internal:32400`, or an mDNS `.local` or VPN name) once the owner opts
-  in for that URL. A host counts as loopback, private or local by the address it resolves to when
-  the app connects (D8), never by its name: loopback, the private LAN ranges, link-local, IPv6
-  unique-local and the shared range VPNs such as Tailscale use (`100.64.0.0/10`). A local-looking
-  name that resolves to a public address gets no plain HTTP. Dispatcharr's public URL goes into the
-  URLs subscribers get, so it must be HTTPS, with no exception (`credentials`): saving a plain-HTTP
-  one is refused with a message that says why.
-- **Logging.** Four levels; debug entries are dropped unless debug logging is on. Each entry has a
-  level, a message, a source, structured metadata and a millisecond timestamp, and goes to standard
-  output (D11). Redaction runs before an entry is written anywhere: credentials in URLs, token-like
-  query parameters, token, authorisation and cookie fields in payloads and headers, and, at any
-  depth, any metadata key that looks like a token, secret, password, cookie, session or key.
-  (otpravkarr) One entry per request (method, the path without its query string, status, duration,
-  client address), plus job, health and unhandled-error entries (with a request id, the error's
-  class, message and stack). Query strings and request bodies are never logged, and upstream
-  response bodies never reach the user. The only secrets printed on purpose are the bootstrap and
-  recovery tokens, on the console (D27). There are no metrics, telemetry or outbound reporting.
-- **Security headers,** on every response, early returns (otpravkarr: and the setup gate's redirect)
-  included: framing denied, no MIME sniffing, a referrer policy of `same-origin` or
-  `strict-origin-when-cross-origin`, never `no-referrer` (which makes browsers send `Origin: null`
-  on the app's own form posts), a permissions policy denying camera, microphone and geolocation,
-  one-year strict transport security over HTTPS (known when `ORIGIN` is `https`, or when the browser
-  sent `Sec-Fetch-Site` to a host that isn't loopback, since browsers send it only to HTTPS and
-  loopback addresses), and a nonce-based content security policy: scripts from the app only; images
-  from the app and inline data (otpravkarr: and Plex's hosts, for avatars); fonts from the app
-  (DESIGN.md bundles them); connections to the app only (otpravkarr: and Plex); no framing; the app
-  only as base and form target. (otpravkarr: these are ground-floor choice 3; whether inline style
-  attributes are refused is for `setup`'s spec, since Ark UI and Svelte write some.)
-- **Startup and shutdown.** Startup runs once, before any request is served: migrations (D5), then
-  each module's startup work (otpravkarr: restoring the learned quarantine names, `lineup`, and one
-  health probe, `health`), then starting the jobs (otpravkarr: sync at its saved interval, health,
-  session cleanup and audit retention); a job that fails to start is logged, not fatal. Shutdown
-  stops the jobs, flushes the logs and drains open requests for a bounded time, then exits even if
-  an upstream call is still outstanding. A second signal exits at once, and a hang-up counts as a
-  stop. The environment sets the drain time (default 30 seconds, kept below the container's stop
-  timeout). (otpravkarr) It also sets the database location (by default a data directory created on
-  first start), the idle timeout (default 10 seconds; 0 turns it off) and the request body limit
-  (default about half a megabyte; unit suffixes or unlimited). In production, an explicitly set
-  database path that doesn't exist stops startup instead of creating an empty database, so a missing
-  volume can't pass for a fresh install. Pending migrations apply in order, each once, as one
-  all-or-nothing batch, and only go forward: a backup is a coherent snapshot of the database file
-  with the master key (D16, D31), noted with the app version that wrote it, and the app is never
-  downgraded across a migration.
-- **Trust:** anyone who can read the server console can claim a fresh install.
+module is specced (`setup`'s is in [SPEC-setup.md](SPEC-setup.md)). Rate limits are listed once,
+under `sign-in`. `setup` and `sign-in` are shared with the other edbfi apps (D27), with obzorarr as
+their reference: a bullet or clause marked "(otpravkarr)" is this app's own, and the rest is the
+shared wording; a "(otpravkarr)" mark inside a bullet covers the rest of that bullet, and
+"(otpravkarr: …)" only its own parentheses. Decision numbers in these blocks are otpravkarr's.
 
 #### sign-in
 
 - **Request order** (startup has already finished in SvelteKit's `init` hook): the language
-  (`i18n`, which refuses nothing), the cross-origin check, rate limits, sign-in, the setup gate,
-  then the owner check. Security headers go on every response, an early return from any stage
-  included.
+  (`i18n`, which refuses nothing), the cross-origin check (`setup`), rate limits, sign-in, the setup
+  gate (`setup`), then the owner check. Security headers go on every response, an early return from
+  any stage included.
 - **Owner-only pages** send someone who isn't signed in to owner sign-in, with a return path that
   keeps only the path, never the query string; where the app has member sessions, a signed-in member
   goes to their dashboard. An owner-only form action answers "forbidden"; a member's form action
@@ -278,31 +195,6 @@ numbers in these blocks are otpravkarr's.
   count only failed attempts, and owner sign-in shows when the next try is allowed; the claim and
   starting Plex sign-in count every attempt. The client-address header is set only when every
   request passes through a trusted proxy, and the address is taken that many hops from the right.
-- **SvelteKit's own form check is off:** `sveltekit({ csrf: { trustedOrigins: ['*'] } })` in
-  `vite.config.ts` (SvelteKit 3 takes its options in the `sveltekit()` call, with no `kit:`
-  wrapper). Remote functions stay off. A config test asserts both, so SvelteKit's only remaining
-  check before `handle` is the remote-function one, which nothing uses. The cross-origin check
-  replaces SvelteKit's form check.
-- **The cross-origin check** asks the browser, so the app doesn't need to know its own address and
-  stores none. It is the first check in `handle`, after only the language (`i18n`), for every
-  method except GET, HEAD and OPTIONS, and for every content type (form, JSON, multipart,
-  `text/plain`, empty). Internal `event.fetch` subrequests (`event.isSubRequest`) skip it.
-  - An `Origin` header, whenever it is present, must parse as one bare `http` or `https` origin;
-    `null`, a malformed value or several values are refused. This applies on every branch below.
-  - With `ORIGIN` set, a present `Origin` must equal `ORIGIN`, compared as parsed origins. Without
-    `Origin`, `Sec-Fetch-Site` must be `same-origin` or `none`.
-  - With `ORIGIN` unset, a present `Sec-Fetch-Site` passes only as `same-origin` or `none`
-    (`same-site` and `cross-site` are refused). Otherwise `Origin`'s host and port must equal the
-    `Host` header, with default ports normalised. Browsers send `Sec-Fetch-Site` only to HTTPS,
-    `localhost` and loopback addresses, so over plain HTTP outside loopback every browser gets
-    this comparison.
-  - A request with neither `Origin` nor `Sec-Fetch-Site` doesn't come from a browser. It passes only
-    on an explicit list of machine routes (otpravkarr: Dispatcharr's `m3u_refresh` webhook, with its
-    shared-secret header, D24): the API-key endpoints and other machine routes the app's approved
-    docs already name, each with the credentials those docs require. The session cookie is never
-    honoured on it: such a request that carries only a session cookie gets a 403.
-  - A refusal is a 403 with the app's own "Access denied" page, or a JSON error for JSON callers,
-    with the security headers and in the viewer's language.
 - **The browser's address** is `ORIGIN` when it is set, and otherwise the validated `Origin` of the
   POST that passed the cross-origin check. It decides the cookies' `Secure` flag, the OIDC
   `redirect_uri` and, where the app has Plex sign-in, Plex's forward URL. Every POST that sets or
@@ -323,30 +215,6 @@ numbers in these blocks are otpravkarr's.
   recover. (otpravkarr) otpravkarr has no address-check module, so `sign-in` carries the hint
   itself, on the owner sign-in page and on `setup`'s claim page, not on the subscribers' landing
   page.
-- **`ORIGIN`** is optional and never required. It is plain `ORIGIN`, not an app-prefixed name (an
-  app prefix would mean setting adapter-bun's `envPrefix`, which would then reject the master key's
-  variable). When set, it must be a bare `http` or `https` origin (a trailing `/` is fine; no path,
-  query, fragment or credentials), compared as a parsed origin, or startup stops with an error that
-  doesn't echo the value. adapter-bun 1.0.0 ignores `ORIGIN`; from 1.0.1 a set `ORIGIN` also
-  corrects SvelteKit's `event.url`, and an empty `ORIGIN=""` throws with the value in the message,
-  so the container image's entrypoint unsets an empty `ORIGIN` and its templates leave it out (the
-  image's work, not this repo's).
-- **When `ORIGIN` or a proxy fix is still needed:** behind a proxy that rewrites `Host`, over plain
-  HTTP for every browser, and over HTTPS only for browsers without `Sec-Fetch-Site` (Safari before
-  16.4, Firefox before 90, Chrome before 76). The proxy fix is `proxy_set_header Host $http_host`
-  (not `$host`, which drops a non-default port). Remote functions would need it too; they stay
-  off.
-- **Accepted residual risks.** Over plain HTTP, the `Origin` and `Host` comparison can't tell `http`
-  from `https`, which is harmless on a port that speaks only HTTP; over HTTPS it affects only
-  browsers without `Sec-Fetch-Site`, and only against a network attacker, and HSTS or `ORIGIN`
-  closes it. DNS rebinding reaches only actions that need no sign-in, because cookies don't follow
-  a rebind, and those are gated by a console token or rate-limited (otpravkarr: or, for
-  Dispatcharr's `m3u_refresh` webhook, by its shared secret, D24).
-- **Tests:** the cross-origin check is one pure module, unit-tested against a matrix of headers and
-  copied to each app as D27 shares the opening modules. One Playwright test against the built server
-  (`bun ./build`) checks that a cross-site form POST is refused and that a same-origin POST carrying
-  no `Sec-Fetch-*` headers passes, both on `localhost` and on a plain-HTTP host name that isn't
-  loopback (such as Chromium's `--host-resolver-rules="MAP app.test 127.0.0.1"`).
 - **Forwarded headers:** a forwarded protocol must be `http` or `https`, and a forwarded host with
   whitespace, control characters or URL-structural characters is rejected; forwarded headers never
   set the browser's address or change the strict-transport decision. (otpravkarr) otpravkarr reads
@@ -380,9 +248,39 @@ numbers in these blocks are otpravkarr's.
   takes the owner to owner sign-in and a subscriber to `/`.
 - **The admin shell** (otpravkarr): PRODUCT.md's sidebar, the signed-in owner and sign-out behind a
   confirmation; on phones the sidebar is a drawer that closes after navigating.
+- **The audit trail** (otpravkarr, moved from `setup`): one service writes every entry, and entries
+  are never edited, only removed by retention (`audit-log`). An entry has a time, an action, and
+  where known the actor (the owner, or a subscriber's Plex username for their own actions; none for
+  the system) and the client address, plus optional structured detail. Everything that changes state
+  is audited, first run included: each step as a configuration change with secret values left out,
+  then "setup completed". A configuration entry is written only when something actually changed. An
+  entry about a subscriber carries their Plex username and their Dispatcharr username, the latter as
+  Dispatcharr reported it, never a stale local copy, so a search on either finds it.
+- **Request log entries** (otpravkarr, moved from `setup`): one entry per request (method, the
+  path without its query string, status, duration, client address), written through `setup`'s
+  logger and redaction, and a request id that ties `setup`'s unhandled-error entries (the error's
+  class, message and stack) to their request.
 
 #### plex-connection
 
+- **Settings** (otpravkarr, moved from `setup`, which keeps one value per key): clearing a setting
+  writes an empty value. Secrets among them are encrypted (`secrets`); how a cleared secret is
+  stored is settled here, keeping SPEC-secrets.md's `NULL` for none. A secret's field is blank again
+  after saving; other fields keep their values.
+- **Settings URLs** (moved from `setup`): upstream base URLs may not hold credentials, a query or a
+  fragment. (otpravkarr) Only `http` and `https` are accepted, and a URL is reduced to its origin.
+  The Plex server URL and Dispatcharr's internal URL carry secrets, so they must be HTTPS, except
+  that plain HTTP is allowed for loopback, private and local hosts (such as
+  `http://dispatcharr:9191` on a Docker network, `http://plex.internal:32400`, or an mDNS `.local`
+  or VPN name) once the owner opts in for that URL. A host counts as loopback, private or local by
+  the address it resolves to when the app connects (D8), never by its name: loopback, the private
+  LAN ranges, link-local, IPv6 unique-local and the shared range VPNs such as Tailscale use
+  (`100.64.0.0/10`). A local-looking name that resolves to a public address gets no plain HTTP.
+  Dispatcharr's public URL goes into the URLs subscribers get, so it must be HTTPS, with no
+  exception (`credentials`): saving a plain-HTTP one is refused with a message that says why.
+- **Plex in the CSP** (otpravkarr, moved from `setup`): images from Plex's hosts, for avatars, and
+  connections to Plex join the content security policy with the module that first needs them in
+  the browser.
 - **Pull only:** nothing is written to Plex, and the friends list is fetched fresh for every
   subscriber sign-in and every sync, never from a cache (the dashboard's cache is `overview`'s).
 - **Connecting,** in first run and in the settings: the owner pastes the server URL and token, or
@@ -390,7 +288,7 @@ numbers in these blocks are otpravkarr's.
   popup, the account's servers are discovered and each server's connections ranked: remote HTTPS,
   then local HTTPS, then local HTTP, with loopback and container-internal addresses lower and Plex's
   relay last. The owner picks one, and picking a local HTTP connection asks for that URL's
-  plain-HTTP opt-in (`setup`); when discovery fails, typing a URL is offered.
+  plain-HTTP opt-in (above); when discovery fails, typing a URL is offered.
 - **Checking** reaches plex.tv with the token, then the server, and requires a friendly name, a
   machine id, and that the token's account has access to that server. Transient failures are retried
   with backoff while the seconds elapsed are shown; a bad token, a bad request or "not found" isn't
@@ -892,9 +790,9 @@ otpravkarr is a Bun web repo with edbfi-ci's Bun web templates:
 2. **Ark UI before its first use.** The skeleton installs `@ark-ui/svelte`, so the Panda and Ark
    pairing and `check-peers` are settled early; the first `ui/` wrapper comes with the first surface
    that needs one.
-3. **Security headers and CSP.** The legacy app set a strict CSP and security headers ([Module
-   notes](#module-notes), `setup`). They belong to the first module that serves real pages
-   (`setup`, whose claim page comes before `sign-in`), not the skeleton.
+3. **Security headers and CSP.** The legacy app set a strict CSP and security headers
+   ([SPEC-setup.md](SPEC-setup.md#security-headers-and-csp)). They belong to the first module that
+   serves real pages (`setup`, whose claim page comes before `sign-in`), not the skeleton.
 4. **Health.** `/healthz` always answers `ok`. The health module replaces it with the public `ok`,
    `degraded` or `unhealthy` of its [Module notes](#module-notes), from real Plex, Dispatcharr and
    database checks.
