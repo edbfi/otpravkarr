@@ -345,7 +345,7 @@ src/
       logging/                   logger.ts: one JSON line per entry on standard output, the
                                  flush, and the entry for an unexpected error; redact.ts: the
                                  redaction rules every entry passes through
-      security/cross-origin.ts   the cross-origin check: one pure module the other apps copy
+      security/cross-origin.ts   the cross-origin check: one pure module, copied from obzorarr
       security/access-denied.ts  the check's 403: the "Access denied" page with its own policy,
                                  or a JSON error
       security/headers.ts        the security headers for a request; HSTS only over HTTPS
