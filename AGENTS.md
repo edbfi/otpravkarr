@@ -282,8 +282,8 @@ log entry, an unexpected error's included, is one redacted JSON line on standard
 built server stops cleanly on `SIGTERM`, `SIGINT` and `SIGHUP`, closing the database; `ORIGIN` is
 checked at startup; every response through `handle` carries the security headers, every page a
 nonce-based CSP; a state-changing request from another site gets "Access denied"; and while
-unclaimed, the server prints a bootstrap token to the console every 15 minutes. DESIGN.md's fonts
-are bundled locally.
+unclaimed, the server prints a bootstrap token to the console every 15 minutes, which claims the
+instance at `/setup` and creates the owner. DESIGN.md's fonts are bundled locally.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -326,6 +326,8 @@ src/
     (public)/+page.svelte        `/`: placeholder page, its text from the messages, and the
                                  language switcher
     healthz/+server.ts           `/healthz`: public one-word status
+    setup/                       `/setup`, the claim: +page.svelte the form, +page.server.ts its
+                                 load and action; token-format.ts the token field's dashes
     (app)/ (admin)/ api/         later: subscriber portal, owner console, JSON endpoints
   lib/                           imported as `#lib/<path>.<ext>`, e.g.
                                  `#lib/server/services/health.ts`
@@ -342,7 +344,8 @@ src/
         database-path.ts         the database file's path; creates its folder
         log-debug.ts             `OTPRAVKARR_LOG_DEBUG`
         origin.ts                `ORIGIN`, parsed and checked
-      db/                        client.ts: opens the one database; migrate.ts: applies the
+      db/                        client.ts: opens the one database, and keeps a failed query's
+                                 bound values out of logs; migrate.ts: applies the
                                  bundled migrations, forward only; one file per aggregate's
                                  tables and named operations: settings.ts, owner.ts
       logging/                   logger.ts: one JSON line per entry on standard output, the
@@ -354,6 +357,8 @@ src/
       security/access-denied.ts  the check's 403: the "Access denied" page with its own policy,
                                  or a JSON error
       security/headers.ts        the security headers for a request; HSTS only over HTTPS
+      security/password.ts       the owner's username and password rules, hashing and verifying;
+                                 common-passwords.txt beside it, the bundled list
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
                                  malformed and weak keys; keyring.ts: loads the key and derives
                                  the AES key and key ID; secret.ts: the `Secret` wrapper,
@@ -364,8 +369,9 @@ src/
                                  database, then first run; a failed step is logged, then
                                  thrown; and shutdown, in the built server only
       services/setup/first-run.ts
-                                 first run's state in memory, and the token printed while
-                                 unclaimed
+                                 first run's state in memory and the step pointer, and the token
+                                 printed while unclaimed
+      services/setup/claim.ts    the claim: the fields, the token, the hash, one transaction
     components/                  later: ui/ (Ark wrappers), <feature>/
       layout/LanguageSwitcher.svelte
                                  one native button per language, named in that language
@@ -379,7 +385,7 @@ tests/
   e2e/secret-key.test.ts         the built server refuses to start without a valid key
   e2e/setup.test.ts              first run and the request checks on the built server: so far,
                                  the database, logging, shutdown, the headers and the CSP, the
-                                 cross-origin check and the token
+                                 cross-origin check, the token and the claim
   e2e/i18n.test.ts               the built server serves each viewer's language, the browser
                                  keeps it, and the switcher changes it
   fixtures/demo-fixtures.json    design fixtures

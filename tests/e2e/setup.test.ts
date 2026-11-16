@@ -507,3 +507,134 @@ test.describe("the bootstrap token", () => {
 		}
 	});
 });
+
+test.describe("the claim", () => {
+	const PASSWORD = "violet harbour lanterns";
+
+	test("a wrong token is refused, the right one claims, and /setup is then gone, also after a restart", async ({
+		page,
+	}) => {
+		const database = join(root, "data", "otpravkarr.db");
+		const first = await startServer(root, { OTPRAVKARR_DATABASE_PATH: database });
+		// Every response's body, read in full before the check below.
+		const reads: Promise<string>[] = [];
+		page.on("response", (response) => {
+			reads.push(response.text().catch(() => ""));
+		});
+		let token = "";
+		try {
+			token = /Setup token: ([a-z0-9-]{14}) /.exec(first.output())?.[1] ?? "";
+			await page.goto(`${first.url}/setup`);
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+
+			await page.locator("#token").fill("aaaa-bbbb-cccc");
+			await page.locator("#username").fill("Owner");
+			await page.locator("#password").fill(PASSWORD);
+			await page.getByRole("button", { name: "Claim and create owner" }).click();
+			await expect(page.locator("#token-error")).toHaveText(
+				"That setup token isn't valid. Use the newest one printed in the server console.",
+			);
+			await expect(page.locator("#token")).toHaveAttribute("aria-invalid", "true");
+			await expect(page.locator("#username")).toHaveValue("Owner");
+			await expect(page.locator("#token")).toHaveValue("");
+			await expect(page.locator("#password")).toHaveValue("");
+
+			await page.locator("#token").fill(token.toUpperCase().replaceAll("-", ""));
+			await page.locator("#password").fill(PASSWORD);
+			await page.getByRole("button", { name: "Claim and create owner" }).click();
+			await page.waitForURL(`${first.url}/`);
+			expect((await fetch(`${first.url}/setup`)).status).toBe(404);
+			const own = await fetch(`${first.url}/setup`, {
+				method: "POST",
+				headers: { origin: first.url, "content-type": "application/x-www-form-urlencoded" },
+				body: new URLSearchParams({ token, username: "second", password: PASSWORD }),
+			});
+			expect(own.status).toBe(404);
+		} finally {
+			await first.stop();
+		}
+
+		const bodies = await Promise.all(reads);
+		expect(
+			bodies.some((body) => body.includes("That setup token isn")),
+			"the refusal was read",
+		).toBe(true);
+		const output = first.output();
+		const entries = output.split("\n").filter((line) => line.startsWith("{"));
+		for (const secret of [token, token.replaceAll("-", ""), PASSWORD]) {
+			expect(
+				entries.some((entry) => entry.includes(secret)),
+				"a log entry holds it",
+			).toBe(false);
+			expect(
+				bodies.some((body) => body.includes(secret)),
+				"a response holds it",
+			).toBe(false);
+		}
+
+		const second = await startServer(root, { OTPRAVKARR_DATABASE_PATH: database });
+		try {
+			expect(second.output()).not.toContain("Setup token:");
+			expect((await fetch(`${second.url}/setup`)).status).toBe(404);
+		} finally {
+			await second.stop();
+		}
+	});
+
+	test("the typed username stays in its field while the claim runs", async ({ page }) => {
+		const server = await startServer(root, {
+			OTPRAVKARR_DATABASE_PATH: join(root, "data", "otpravkarr.db"),
+		});
+		try {
+			await page.goto(`${server.url}/setup`);
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+			// Hold the claim's request, so the page stays in its submitting state.
+			let release!: () => void;
+			const held = new Promise<void>((resolve) => {
+				release = resolve;
+			});
+			await page.route(`${server.url}/setup`, async (route) => {
+				if (route.request().method() === "POST") await held;
+				await route.continue();
+			});
+			await page.locator("#token").fill("aaaa-bbbb-cccc");
+			await page.locator("#username").fill("Owner");
+			await page.locator("#password").fill(PASSWORD);
+			await page.getByRole("button", { name: "Claim and create owner" }).click();
+			await expect(page.getByRole("button", { name: "Claiming…" })).toBeDisabled();
+			await expect(page.locator("#username")).toHaveValue("Owner");
+			release();
+			await expect(page.locator("#token-error")).toBeVisible();
+			await expect(page.locator("#username")).toHaveValue("Owner");
+		} finally {
+			await server.stop();
+		}
+	});
+
+	// otpravkarr's rule: the token must be typed; one in the URL is never read.
+	test("a token in /setup's query string is ignored", async ({ page }) => {
+		const server = await startServer(root, {
+			OTPRAVKARR_DATABASE_PATH: join(root, "data", "otpravkarr.db"),
+		});
+		try {
+			const token = /Setup token: ([a-z0-9-]{14}) /.exec(server.output())?.[1] ?? "";
+			await page.goto(`${server.url}/setup?token=${token}`);
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+			await expect(page.locator("#token")).toHaveValue("");
+
+			const form = await fetch(`${server.url}/setup?token=${token}`, {
+				method: "POST",
+				headers: {
+					origin: server.url,
+					accept: "text/html",
+					"content-type": "application/x-www-form-urlencoded",
+				},
+				body: new URLSearchParams({ username: "owner", password: PASSWORD }),
+			});
+			expect(form.status).toBe(400);
+			expect(await form.text()).toContain("That setup token isn");
+		} finally {
+			await server.stop();
+		}
+	});
+});

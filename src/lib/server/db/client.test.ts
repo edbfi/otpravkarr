@@ -1,8 +1,9 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DrizzleQueryError } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { type Database, openDatabase } from "./client.ts";
+import { type Database, openDatabase, withoutBoundValues } from "./client.ts";
 import { migrateDatabase } from "./migrate.ts";
 import { settings } from "./settings.ts";
 
@@ -66,5 +67,28 @@ describe("openDatabase", () => {
 		expect(await transaction).toBe("roll back");
 		expect(await outside).toBe("written");
 		expect(await keys()).toEqual(["outside"]);
+	});
+});
+
+describe("withoutBoundValues", () => {
+	it("keeps a failed query's statement and the driver's error, never its bound values", () => {
+		const cause = new Error("UNIQUE constraint failed: owner.id");
+		const failure = new DrizzleQueryError(
+			'insert into "owner" ("username", "password_hash") values (?, ?)',
+			["harbourmaster", "$argon2id$secret"],
+			cause,
+		);
+		const safe = withoutBoundValues(failure);
+		expect(safe).toEqual({
+			name: "DrizzleQueryError",
+			query: 'insert into "owner" ("username", "password_hash") values (?, ?)',
+			cause,
+		});
+		expect(JSON.stringify(safe)).not.toContain("harbourmaster");
+	});
+
+	it("passes any other error through", () => {
+		const other = new Error("disk full");
+		expect(withoutBoundValues(other)).toBe(other);
 	});
 });
