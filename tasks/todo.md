@@ -307,18 +307,18 @@ except `/setup` and `/healthz` gets a 303 to `/setup`. Playwright's global setup
 through the form, so the smoke and language tests run on a claimed instance.
 
 **Acceptance criteria:**
-- [ ] `first-run.test.ts` gains the gate's decision for each path, before and after the claim and
+- [x] `first-run.test.ts` gains the gate's decision for each path, before and after the claim and
   after a restart.
-- [ ] `setup.test.ts`: every page sends a fresh instance to `/setup` and `/healthz` answers `ok`;
+- [x] `setup.test.ts`: every page sends a fresh instance to `/setup` and `/healthz` answers `ok`;
   the gate's redirect carries the headers; after a restart on a claimed file, `/` is served without
   a redirect. Earlier tests that expect a 404 or a same-origin POST's 405 claim their own servers
   first, through a `claim(server)` helper that posts the form with `Accept: text/html` (to `*/*`,
   SvelteKit answers an action in JSON); the CSP test reads `/setup`; the token-leak test reads
   `/setup` and `/healthz`, then claims and reads a 404.
-- [ ] `playwright.config.ts`: `wait.stdout` from the token line through "Listening on" replaces the
+- [x] `playwright.config.ts`: `wait.stdout` from the token line through "Listening on" replaces the
   `url` check; `tests/e2e/global-setup.ts` claims through the form in a browser; `smoke.test.ts`
   and `i18n.test.ts` pass unchanged.
-- [ ] The README's first run: the token in the console, `/setup`, the password rules, and who can
+- [x] The README's first run: the token in the console, `/setup`, the password rules, and who can
   claim.
 
 **Verification:** the gates; success criterion 2 by hand over plain HTTP on a LAN address.
@@ -333,7 +333,7 @@ through the form, so the smoke and language tests run on a claimed instance.
 
 ## Checkpoint: complete
 
-- [ ] As in [plan.md](plan.md#checkpoint-complete).
+- [x] As in [plan.md](plan.md#checkpoint-complete).
 
 ## Task 10: close the work stream
 

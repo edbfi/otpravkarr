@@ -82,11 +82,11 @@ differs.
 - [x] Task 6: the bootstrap token
 - [x] Task 7: the fonts
 - [x] Task 8: the claim at `/setup`
-- [ ] Task 9: the setup gate
+- [x] Task 9: the setup gate
 
 ### Checkpoint: complete
 
-- [ ] Every success criterion in SPEC-setup.md is met.
+- [x] Every success criterion in SPEC-setup.md is met.
 
 ### Phase 4: closing
 

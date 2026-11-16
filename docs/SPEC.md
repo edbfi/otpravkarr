@@ -751,7 +751,8 @@ export const GET: RequestHandler = () => healthResponse();
   `security/bootstrap-token.test.ts`, the token's alphabet, unbiased drawing, format, expiry and
   constant-time comparison; `services/setup/first-run.test.ts`, the token printed while unclaimed
   and renewed at expiry on a fake clock, held back during a claim, stopped by shutdown, and never
-  once claimed, and a restart on a claimed database reading it back; `db/owner.test.ts`,
+  once claimed, the gate's decision for each path before and after the claim, and a restart on a
+  claimed database reading it back; `db/owner.test.ts`,
   `ownerExists`, `insertOwner` and the one-row check; `db/settings.test.ts`;
   `security/password.test.ts`, the credential rules at their limits, NFC, case, the app's name, the
   username, the repeat and run rule and the list, and the argon2id round trip;
@@ -779,7 +780,10 @@ export const GET: RequestHandler = () => healthResponse();
 
   Component tests use happy-dom when components exist; never jsdom.
 - **e2e (Playwright, Chromium, under Bun):** against the built adapter-bun server, with a master key
-  Playwright generates for each run, so CI needs no stored secret.
+  Playwright generates for each run, so CI needs no stored secret, and a temporary database. The web
+  server counts as started once its output runs from the token line through "Listening on", which
+  captures the token; `global-setup.ts` then claims the instance through the form in a browser, so
+  the smoke and language tests run on a claimed instance.
   - `smoke.test.ts` checks that `/` returns 200, shows the placeholder heading, hydrates (it waits
     for the `data-hydrated` attribute the root layout sets when mounted), applies the Panda
     background token and display text style and logs no console errors; that each font token's
@@ -791,17 +795,19 @@ export const GET: RequestHandler = () => healthResponse();
     folder they can't create, a path or file they can't open as a database, and a database a newer
     otpravkarr migrated, without echoing the path and naming the default when the variable is
     unset; a bad `OTPRAVKARR_LOG_DEBUG` is one JSON log entry, and its value is never echoed;
-    `SIGTERM` and `SIGHUP` each stop the server with exit code 0; a page, `/healthz` and a 404
-    carry the security headers, with no HSTS over plain HTTP; a page's scripts carry its policy's
+    `SIGTERM` and `SIGHUP` each stop the server with exit code 0; a page, `/healthz`, the gate's
+    redirect and a 404 carry the security headers, with no HSTS over plain HTTP; a page's scripts carry its policy's
     nonce, the policy is the spec's directive for directive, and the browser reports no violation;
     an `ORIGIN` with credentials or a path stops the server without being echoed; a cross-site
     form POST gets the "Access denied" page with the headers, its own policy and the viewer's
     language; and a same-origin POST with no `Sec-Fetch-*` headers passes, on `localhost` and on a
-    plain-HTTP host name that isn't loopback (Chromium's `--host-resolver-rules`); and a fresh
-    server prints the bootstrap token before it listens, in no log entry or response; and the
-    claim: a wrong token is refused with the username kept, the right one claims and lands on `/`,
-    and `/setup` and its action then answer 404, also after a restart, with neither the token nor
-    the password in a response or log entry; the username stays while the claim runs; and a token
+    plain-HTTP host name that isn't loopback (Chromium's `--host-resolver-rules`), getting the
+    gate's 303 while unclaimed; every page sends a fresh server to `/setup` while `/healthz`
+    answers `ok`; a fresh server prints the bootstrap token before it listens, in no log entry or
+    response; and the claim: a wrong token is refused with the username kept, the right one claims
+    and lands on `/`, and `/setup` and its action then answer 404, also after a restart, which
+    serves `/` without a redirect, with neither the token nor the password in a response or log
+    entry; the username stays while the claim runs; and a token
     in `/setup`'s query string is ignored.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
