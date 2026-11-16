@@ -9,6 +9,7 @@ import { logUnexpectedError } from "#lib/server/logging/logger.ts";
 import { accessDenied } from "#lib/server/security/access-denied.ts";
 import { crossOriginAllowed } from "#lib/server/security/cross-origin.ts";
 import { securityHeaders, withSecurityHeaders } from "#lib/server/security/headers.ts";
+import { firstRunRedirect } from "#lib/server/services/setup/first-run.ts";
 import { currentOrigin, startUp } from "#lib/server/services/setup/startup.ts";
 import { building, dev } from "$app/env";
 import * as env from "$app/env/private";
@@ -46,7 +47,18 @@ const crossOrigin: Handle = ({ event, resolve }) =>
 		? resolve(event)
 		: accessDenied(event.request);
 
-export const handle = sequence(language, headers, crossOrigin);
+/**
+ * The setup gate, the last stage: until first run is complete, every request but its current step
+ * and `/healthz` gets a 303 to that step, returned so it keeps the headers.
+ */
+const setupGate: Handle = ({ event, resolve }) => {
+	const step = firstRunRedirect(event.url.pathname);
+	return step === undefined
+		? resolve(event)
+		: new Response(null, { status: 303, headers: { location: step } });
+};
+
+export const handle = sequence(language, headers, crossOrigin, setupGate);
 
 /**
  * Logs an error the app's own code threw, redacted, in place of SvelteKit's `console.error`, and
