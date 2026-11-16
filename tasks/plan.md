@@ -56,7 +56,7 @@ differs.
 
 ### Phase 1: the foundations
 
-- [ ] Task 1: the database (D15), forward only
+- [x] Task 1: the database (D15), forward only
 - [ ] Task 2: logging with redaction, and `handleError`
 - [ ] Task 3: shutdown
 

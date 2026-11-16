@@ -16,38 +16,38 @@ now), then the database, opened, checked and migrated. Both tables go into the f
 operations yet.
 
 **Acceptance criteria:**
-- [ ] `server/config/database-path.test.ts` first fails, then passes: the default against the
+- [x] `server/config/database-path.test.ts` first fails, then passes: the default against the
   working directory, an empty variable counting as unset, a folder that is created, and a folder
   that can't be created or written refused with one line naming the variable and never echoing the
   path, using a parent that is a regular file so it holds as root. `config/config-error.ts` and
   `config/error-code.ts` come with it, and `config/secret-key.ts` uses `error-code.ts` instead of
   its own copy.
-- [ ] `server/db/migrate.test.ts` first fails, then passes, against a temporary file: the bundled
+- [x] `server/db/migrate.test.ts` first fails, then passes, against a temporary file: the bundled
   migrations apply to a new database, both tables exist, a second run applies nothing, and the
   rows match Drizzle Kit's file migrator by name and time, with an empty `hash`.
-- [ ] Forward only, in `migrate.test.ts`: `migrateDatabase` takes the migrations as a parameter that
+- [x] Forward only, in `migrate.test.ts`: `migrateDatabase` takes the migrations as a parameter that
   defaults to the bundled set. Two test migrations: a database migrated with the first, with an
   unknown name then inserted into its table, is refused when run with both, and the second's table
   and record don't exist afterwards, so nothing was applied; the message gives the spec's remedy
   ("run that version again, or restore the backup taken with this one") and neither path nor
   value. Without the unknown name, the same database applies the second.
-- [ ] `server/services/setup/startup.test.ts` first fails, then passes: startup opens and migrates
+- [x] `server/services/setup/startup.test.ts` first fails, then passes: startup opens and migrates
   the database at the path; a path that is a folder, and a file that isn't a database, are refused
   naming the variable but never the path (Turso puts the full path in its open errors).
-- [ ] `server/db/client.test.ts` holds D5's rollback-isolation check and fails on
+- [x] `server/db/client.test.ts` holds D5's rollback-isolation check and fails on
   `drizzle-orm@1.0.0-rc.4`.
-- [ ] `drizzle-orm` and `drizzle-kit` at the newest `rc` D5 allows and `@tursodatabase/database` at
+- [x] `drizzle-orm` and `drizzle-kit` at the newest `rc` D5 allows and `@tursodatabase/database` at
   its newest stable release, exact-pinned dev dependencies; `db:generate` runs Drizzle Kit, then
   `bun --bun biome format --write drizzle`; the first migration is generated, reviewed and
   committed.
-- [ ] `settings` (key, value, update time) and `owner` (a fixed id, username, password hash,
+- [x] `settings` (key, value, update time) and `owner` (a fixed id, username, password hash,
   creation time; one row at most) match the spec.
-- [ ] `tests/e2e/setup.test.ts` first fails, then passes: the built server, on a new temporary file,
+- [x] `tests/e2e/setup.test.ts` first fails, then passes: the built server, on a new temporary file,
   starts, serves `/healthz`, and starts again on the same file; it refuses to start with an
   unwritable database folder, a file that isn't a database, or a database holding an unknown
   migration, without echoing the path. `playwright.config.ts` gives each run a temporary database,
   created and removed only in the runner process, after the server exits.
-- [ ] D15's validation passes with its evidence in the PR body: migrations, `check`, `bun ./build`
+- [x] D15's validation passes with its evidence in the PR body: migrations, `check`, `bun ./build`
   through the native binding on Linux arm64 (this machine) and x64 (CI's `smoke`), rollback
   isolation, and all of it with failing `node`, `npm` and `npx` on `PATH`.
 
