@@ -175,17 +175,17 @@ language and the headers. SvelteKit's own form check goes off in the same PR. A 
 callers, built by `security/access-denied.ts`.
 
 **Acceptance criteria:**
-- [ ] `server/security/cross-origin.test.ts` first fails, then passes: obzorarr's matrix, with
+- [x] `server/security/cross-origin.test.ts` first fails, then passes: obzorarr's matrix, with
   requests that have neither header refused (otpravkarr has no machine routes yet).
-- [ ] `vite.config.test.ts` (added to Vitest's `include`) asserts that the options `vite.config.ts`
+- [x] `vite.config.test.ts` (added to Vitest's `include`) asserts that the options `vite.config.ts`
   exports and passes to `sveltekit()` trust every origin and leave remote functions off.
-- [ ] `server/security/access-denied.test.ts`: the page in each language with its policy, and the
+- [x] `server/security/access-denied.test.ts`: the page in each language with its policy, and the
   JSON error.
-- [ ] `setup.test.ts`: a cross-site form POST gets the 403 page with the headers, its own policy and
+- [x] `setup.test.ts`: a cross-site form POST gets the 403 page with the headers, its own policy and
   the viewer's language; a same-origin POST without `Sec-Fetch-*` passes the check (SvelteKit's
   405), on `localhost` and on `app.test` through Chromium's `--host-resolver-rules`, read with
   `headerValue()`.
-- [ ] The page's text is `error_access_denied_…` messages in both languages.
+- [x] The page's text is `error_access_denied_…` messages in both languages.
 
 **Verification:** the gates.
 
@@ -200,7 +200,7 @@ needed), `docs/SPEC.md` (the testing section and the `test` command), `AGENTS.md
 
 ## Checkpoint: after task 5
 
-- [ ] As in [plan.md](plan.md#checkpoint-after-task-5).
+- [x] As in [plan.md](plan.md#checkpoint-after-task-5).
 
 ## Task 6: the bootstrap token
 

@@ -116,7 +116,9 @@ binding for your platform, as `bun ci` installs it:
 
 ## The address browsers use
 
-`ORIGIN` is optional. It tells Otpravkarr the address browsers use, as a bare origin with no path:
+Otpravkarr asks each browser where a form or other change came from, and refuses one sent from
+another site with "Access denied". So it needs no address of its own: `ORIGIN` is optional, and
+tells Otpravkarr the address browsers use, as a bare origin with no path:
 
 | Variable | Holds | Default |
 | --- | --- | --- |
@@ -127,6 +129,13 @@ leave it out instead. Over HTTPS, when `ORIGIN` is `https` or the browser shows 
 browsers to keep using HTTPS for a year. That covers every port of the host name, so another app on
 the same host name served over plain HTTP becomes unreachable from that browser until it moves to
 HTTPS.
+
+**When Otpravkarr refuses its own forms with "Access denied":** behind a reverse proxy that
+rewrites the `Host` header, Otpravkarr can't match the browser's address to the one it was asked
+for. Set `ORIGIN` to the address browsers use, or have the proxy pass the browser's `Host` on: in
+nginx, `proxy_set_header Host $http_host;` (not `$host`, which drops a port that isn't the default).
+Over plain HTTP this affects every browser; over HTTPS only older ones (Safari before 16.4, Firefox
+before 90, Chrome before 76), since current browsers say where a request came from themselves.
 
 ## Logs
 
