@@ -745,7 +745,7 @@ export const GET: RequestHandler = () => healthResponse();
   before anything is applied; `db/client.test.ts`, D5's rollback isolation, which fails on Drizzle
   `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged and flushed before it
   is thrown, and shutdown: `SIGHUP` passed on as `SIGTERM`, the cleanup's order, exit codes and
-  5-second deadline, and no handlers in `dev`;
+  its deadline, and no handlers in `dev`;
   `logging/redact.test.ts`, each redaction rule on its own and nested, the allowlist, encoded
   values and growth checks that catch a scan slower than linear; `logging/logger.test.ts`, the
   entry, the flush through a slow pipe, the redacted entry for an unexpected error, and logging

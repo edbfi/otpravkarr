@@ -55,6 +55,11 @@ async function failure(path: string): Promise<ConfigError> {
 }
 
 describe("startUp", () => {
+	// Each successful start opens a database; close it, so handles don't pile up across tests.
+	afterEach(async () => {
+		await closeServices();
+	});
+
 	it("opens and migrates the database at the path", async () => {
 		const path = join(root, "data", "app.db");
 		await startUp({ OTPRAVKARR_SECRET_KEY: key(), OTPRAVKARR_DATABASE_PATH: path }, { dev: true });
