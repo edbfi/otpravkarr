@@ -275,7 +275,9 @@ owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
 ([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is built and ready for consumers. Nothing stores a
 secret yet, and no database exists. Module 2, `i18n` ([`docs/SPEC-i18n.md`](docs/SPEC-i18n.md)),
 is built: pages are served in English or Danish, with a language switcher, number and date
-formatters, and a check of the message files.
+formatters, and a check of the message files. Module 3, `setup`
+([`docs/SPEC-setup.md`](docs/SPEC-setup.md)), is approved and being built from
+[`tasks/`](tasks/plan.md).
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
