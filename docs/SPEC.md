@@ -275,6 +275,7 @@ shared wording; a "(otpravkarr)" mark inside a bullet covers the rest of that bu
   (`100.64.0.0/10`). A local-looking name that resolves to a public address gets no plain HTTP.
   Dispatcharr's public URL goes into the URLs subscribers get, so it must be HTTPS, with no
   exception (`credentials`): saving a plain-HTTP one is refused with a message that says why.
+  Whichever of `plex-connection` and `dispatcharr-connection` is built first builds this URL rule.
 - **Plex in the CSP** (otpravkarr, moved from `setup`): images from Plex's hosts, for avatars, and
   connections to Plex join the content security policy with the module that first needs them in
   the browser.
@@ -792,18 +793,18 @@ export const GET: RequestHandler = () => healthResponse();
     a bad `OTPRAVKARR_LOG_DEBUG` is one JSON log entry, and its value is never echoed; `SIGTERM` and
     `SIGHUP` each stop the server with exit code 0; a page, `/healthz`, the gate's redirect and a
     404 carry the security headers, with no HSTS over plain HTTP; a page's scripts carry its
-    policy's nonce, the policy is the spec's directive for directive, and the browser reports no
-    violation; an `ORIGIN` with credentials or a path stops the server without being echoed; a
-    cross-site form POST gets the "Access denied" page with the headers, its own policy and the
-    viewer's language; and a same-origin POST with no `Sec-Fetch-*` headers passes, on `localhost`
-    and on a plain-HTTP host name that isn't loopback (Chromium's `--host-resolver-rules`), getting
-    the gate's 303 while unclaimed; every page sends a fresh server to `/setup` while `/healthz`
-    answers `ok`; a fresh server prints the bootstrap token before it listens, in no log entry or
-    response; and the claim: a wrong token is refused with the username kept, the right one claims
-    and lands on `/`, and `/setup` and its action then answer 404, also after a restart, which
-    serves `/` without a redirect, with neither the token nor the password in a response or log
-    entry; the username stays while the claim runs; and a token in `/setup`'s query string is
-    ignored.
+    policy's nonce, the policy is `vite.config.ts`'s directive for directive, and the browser
+    reports no violation; an `ORIGIN` with credentials or a path stops the server without being
+    echoed; a cross-site form POST gets the "Access denied" page with the headers, its own policy
+    and the viewer's language; and a same-origin POST with no `Sec-Fetch-*` headers passes, on
+    `localhost` and on a plain-HTTP host name that isn't loopback (Chromium's
+    `--host-resolver-rules`), getting the gate's 303 while unclaimed; every page sends a fresh
+    server to `/setup` while `/healthz` answers `ok`; a fresh server prints the bootstrap token
+    before it listens, in no log entry or response; and the claim: a wrong token is refused with the
+    username kept, the right one claims and lands on `/`, and `/setup` and its action then answer
+    404, also after a restart, which serves `/` without a redirect, with neither the token nor the
+    password in a response or log entry; the username stays while the claim runs; and a token in
+    `/setup`'s query string is ignored.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps

@@ -140,7 +140,8 @@ unexpected error in a page load, form action or endpoint, with the method and th
 query string. Without it SvelteKit prints the raw stack with `console.error`, which is neither
 redacted nor a JSON line. The viewer gets SvelteKit's generic message, never the error's own;
 `sign-in`'s error pages choose the words. The per-request entry and the request id that ties an
-error to its request come with `sign-in` (SPEC.md's `sign-in` notes).
+error to its request come with `sign-in` (SPEC.md's `sign-in` notes). Jobs and the health probe log
+their own entries when they come.
 
 Console output meant for whoever runs the server, such as the bootstrap token, is never a
 log entry. It still reaches the container's output, which is why the console is trusted (below).
