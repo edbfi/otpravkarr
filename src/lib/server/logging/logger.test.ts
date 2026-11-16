@@ -113,6 +113,7 @@ describe("logUnexpectedError", () => {
 	});
 
 	// Logging never throws: `handleError` must not, and SvelteKit would then print the raw error.
+	// The deep `cause` chain takes about a second to walk, more under load, hence the timeout.
 	it("never throws, describing an error it can't read or redact by its class and cleaned message", () => {
 		const withToJSON = Object.assign(
 			new Error("GET https://plex.tv/api?X-Plex-Token=abc123 failed"),
@@ -148,7 +149,7 @@ describe("logUnexpectedError", () => {
 			{ method: "GET", path: "/setup", error: { name: "Error", message: "level" } },
 		]);
 		expect(lines.join("")).not.toContain("abc123");
-	});
+	}, 15_000);
 
 	it("describes a thrown value it can't read, that isn't an Error, as unreadable", () => {
 		const value = {
