@@ -237,10 +237,10 @@ minutes. Shutdown stops the timer. First run's state is loaded into memory at st
 (ground-floor choice 1). Only the weights and subsets the tokens use.
 
 **Acceptance criteria:**
-- [ ] `@fontsource-variable/fraunces`, `@fontsource-variable/instrument-sans` and
+- [x] `@fontsource-variable/fraunces`, `@fontsource-variable/instrument-sans` and
   `@fontsource/ibm-plex-mono` are exact-pinned dev dependencies, imported from `src/app.css` or
   the root layout; the built server serves the font files itself, under `font-src 'self'`.
-- [ ] `smoke.test.ts` first fails, then passes, as obzorarr's "the bundled fonts load under the
+- [x] `smoke.test.ts` first fails, then passes, as obzorarr's "the bundled fonts load under the
   names Panda's font tokens give them": for each of `--fonts-display`, `--fonts-body` and
   `--fonts-mono`, `document.fonts.load()` of its first family returns at least one face
   (`document.fonts.check()` would pass a name the CSS never registers), with no request to another

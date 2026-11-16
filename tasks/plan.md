@@ -80,7 +80,7 @@ differs.
 ### Phase 3: first run
 
 - [x] Task 6: the bootstrap token
-- [ ] Task 7: the fonts
+- [x] Task 7: the fonts
 - [ ] Task 8: the claim at `/setup`
 - [ ] Task 9: the setup gate
 

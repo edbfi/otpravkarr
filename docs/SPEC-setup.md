@@ -444,7 +444,7 @@ exact-pinned dev dependency at its newest release (D32):
 src/env.ts                                  + OTPRAVKARR_DATABASE_PATH, ORIGIN, OTPRAVKARR_LOG_DEBUG
 src/hooks.server.ts                         init: startup; handle: language, headers,
                                             cross-origin check, setup gate; handleError
-src/app.css                                 + the bundled fonts
+src/routes/+layout.svelte                   + the bundled fonts
 src/lib/server/config/config-error.ts       the error every variable check throws
 src/lib/server/config/error-code.ts         a system error's code, for messages without paths
 src/lib/server/config/database-path.ts      the database file's path
