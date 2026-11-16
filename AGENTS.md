@@ -282,7 +282,8 @@ log entry, an unexpected error's included, is one redacted JSON line on standard
 built server stops cleanly on `SIGTERM`, `SIGINT` and `SIGHUP`, closing the database; `ORIGIN` is
 checked at startup; every response through `handle` carries the security headers, every page a
 nonce-based CSP; a state-changing request from another site gets "Access denied"; and while
-unclaimed, the server prints a bootstrap token to the console every 15 minutes.
+unclaimed, the server prints a bootstrap token to the console every 15 minutes. DESIGN.md's fonts
+are bundled locally.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
