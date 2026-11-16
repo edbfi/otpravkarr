@@ -21,8 +21,11 @@ let lines: string[];
 
 beforeEach(() => {
 	lines = [];
-	vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+	vi.spyOn(process.stdout, "write").mockImplementation((chunk, ...rest: unknown[]) => {
 		lines.push(String(chunk));
+		// `flushLogs` waits for each entry's write callback, so the mock calls it.
+		const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
+		done?.();
 		return true;
 	});
 });
@@ -92,6 +95,30 @@ describe("startUp", () => {
 			metadata: { error: { name: "ConfigError" } },
 		});
 		expect(lines[0]).not.toContain(root);
+	});
+
+	it("throws only once the failure's entry has left the process", async () => {
+		const path = join(root, "flushed-directory");
+		await mkdir(path);
+		const pending: (() => void)[] = [];
+		vi.mocked(process.stdout.write).mockImplementation((chunk, ...rest: unknown[]) => {
+			lines.push(String(chunk));
+			const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
+			if (done) pending.push(done);
+			return true;
+		});
+		let settled = false;
+		const failure = startUp({ OTPRAVKARR_SECRET_KEY: key(), OTPRAVKARR_DATABASE_PATH: path }).catch(
+			(error: unknown) => {
+				settled = true;
+				return error;
+			},
+		);
+		await vi.waitFor(() => expect(pending).toHaveLength(1));
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		expect(settled).toBe(false);
+		for (const done of pending) done();
+		expect(await failure).toBeInstanceOf(ConfigError);
 	});
 
 	it("refuses an OTPRAVKARR_LOG_DEBUG that isn't true or false, before the database opens", async () => {

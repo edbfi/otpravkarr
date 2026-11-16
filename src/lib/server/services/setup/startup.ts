@@ -8,7 +8,7 @@ import { type LogDebugEnv, readLogDebug } from "#lib/server/config/log-debug.ts"
 import type { SecretKeyEnv } from "#lib/server/config/secret-key.ts";
 import { openDatabase } from "#lib/server/db/client.ts";
 import { migrateDatabase } from "#lib/server/db/migrate.ts";
-import { configureLogging, createLogger } from "#lib/server/logging/logger.ts";
+import { configureLogging, createLogger, flushLogs } from "#lib/server/logging/logger.ts";
 import { loadKeyring } from "#lib/server/security/secrets/keyring.ts";
 
 /** Every variable startup reads. */
@@ -26,6 +26,9 @@ export async function startUp(env: StartupEnv): Promise<void> {
 		await runSteps(env);
 	} catch (error) {
 		log.error("startup failed", { error });
+		// The process ends with the thrown error, so the entry must have left it first, even when
+		// standard output's reader is slow.
+		await flushLogs();
 		throw error;
 	}
 }
