@@ -320,7 +320,8 @@ src/
                                  security headers, then the cross-origin check
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
-    +layout.svelte               loads app.css; marks <html data-hydrated> once mounted
+    +layout.svelte               loads app.css and the bundled fonts; marks <html data-hydrated>
+                                 once mounted
     (public)/+page.svelte        `/`: placeholder page, its text from the messages, and the
                                  language switcher
     healthz/+server.ts           `/healthz`: public one-word status

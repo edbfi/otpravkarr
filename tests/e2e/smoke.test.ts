@@ -23,6 +23,31 @@ test("/ serves the placeholder page, hydrated and styled, without console errors
 	expect(errors).toEqual([]);
 });
 
+test("the bundled fonts load under the names Panda's font tokens give them, from the app only", async ({
+	page,
+}) => {
+	const hosts = new Set<string>();
+	page.on("request", (request) => hosts.add(new URL(request.url()).host));
+	await page.goto("/");
+	// Each token's first family, loaded alone: `load()` returns its bundled faces, and none for a
+	// name the bundled CSS doesn't register, where `document.fonts.check()` would pass it. Loading
+	// the whole stack could match a bundled fallback instead (docs/SPEC.md, "Testing strategy").
+	const faces = await page.evaluate(async () => {
+		const root = getComputedStyle(document.documentElement);
+		const counts: Record<string, number> = {};
+		for (const name of ["display", "body", "mono"]) {
+			const family = root.getPropertyValue(`--fonts-${name}`).split(",")[0]?.trim() ?? "";
+			counts[name] = (await document.fonts.load(`16px ${family}`)).length;
+		}
+		return counts;
+	});
+	expect(faces.display).toBeGreaterThan(0);
+	expect(faces.body).toBeGreaterThan(0);
+	expect(faces.mono).toBeGreaterThan(0);
+	// DESIGN.md: no remote font requests; everything comes from the app itself.
+	expect([...hosts]).toEqual([new URL(page.url()).host]);
+});
+
 test("/healthz answers ok", async ({ request }) => {
 	const response = await request.get("/healthz");
 	expect(response.status()).toBe(200);

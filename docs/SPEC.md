@@ -662,6 +662,7 @@ beside `build/` (D15).
 | Build | `vite` / `@sveltejs/vite-plugin-svelte` |
 | Adapter | `@sveltejs/adapter-bun` |
 | Styling | `@pandacss/dev`, `@pandacss/vite` (its Vite plugin), `@pandacss/preset-base` |
+| Fonts | `@fontsource-variable/fraunces`, `@fontsource-variable/instrument-sans`, `@fontsource/ibm-plex-mono` (400 and 500), imported in the root layout |
 | Primitives | `@ark-ui/svelte` |
 | Database | `@tursodatabase/database` (embedded Turso), `drizzle-orm` and `drizzle-kit` (the `rc` dist-tag, D32) |
 | Translation | `@inlang/paraglide-js` (compiles the messages), `@inlang/plugin-i18next` (reads their i18next JSON v4 files) |
@@ -773,8 +774,9 @@ export const GET: RequestHandler = () => healthResponse();
   Playwright generates for each run, so CI needs no stored secret.
   - `smoke.test.ts` checks that `/` returns 200, shows the placeholder heading, hydrates (it waits
     for the `data-hydrated` attribute the root layout sets when mounted), applies the Panda
-    background token and display text style and logs no console errors, and that `/healthz`
-    returns `ok`.
+    background token and display text style and logs no console errors; that each font token's
+    first family loads bundled faces, with no request to another host; and that `/healthz` returns
+    `ok`.
   - `secret-key.test.ts` checks that the built server refuses to start without a valid key.
   - `setup.test.ts` starts its own built servers: one migrates a new database file and applies
     nothing on a second start on it, one uses the default path, and the others refuse a database
@@ -823,9 +825,9 @@ otpravkarr is a Bun web repo with edbfi-ci's Bun web templates:
 
 ## Ground-floor choices
 
-1. **Fonts.** DESIGN.md wants Fraunces, Instrument Sans and IBM Plex Mono bundled locally. The
-   skeleton defines the font tokens with system fallbacks; the first surface adds the font files (a
-   dependency the owner approves then).
+1. **Fonts.** Closed: `setup`, whose claim page is the first surface, bundled DESIGN.md's Fraunces,
+   Instrument Sans and IBM Plex Mono through their fontsource packages, approved by the owner with
+   [SPEC-setup.md](SPEC-setup.md#dependencies).
 2. **Ark UI before its first use.** The skeleton installs `@ark-ui/svelte`, so the Panda and Ark
    pairing and `check-peers` are settled early; the first `ui/` wrapper comes with the first surface
    that needs one.
