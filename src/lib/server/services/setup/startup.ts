@@ -60,6 +60,12 @@ export async function startUp(env: StartupEnv, options: { dev: boolean }): Promi
 	}
 }
 
+/** The database startup opened, for the services a request calls. */
+export function currentDatabase(): Database {
+	if (database === undefined) throw new Error("the database is used before startup opened it");
+	return database;
+}
+
 /** The browser's address from `ORIGIN`, which startup checked, or undefined when it is unset. */
 export function currentOrigin(): string | undefined {
 	return origin;

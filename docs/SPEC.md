@@ -662,6 +662,7 @@ beside `build/` (D15).
 | Build | `vite` / `@sveltejs/vite-plugin-svelte` |
 | Adapter | `@sveltejs/adapter-bun` |
 | Styling | `@pandacss/dev`, `@pandacss/vite` (its Vite plugin), `@pandacss/preset-base` |
+| Icons | `@lucide/svelte`, imported one icon per path |
 | Fonts | `@fontsource-variable/fraunces`, `@fontsource-variable/instrument-sans`, `@fontsource/ibm-plex-mono` (400 and 500), imported in the root layout |
 | Primitives | `@ark-ui/svelte` |
 | Database | `@tursodatabase/database` (embedded Turso), `drizzle-orm` and `drizzle-kit` (the `rc` dist-tag, D32) |
@@ -750,8 +751,15 @@ export const GET: RequestHandler = () => healthResponse();
   `security/bootstrap-token.test.ts`, the token's alphabet, unbiased drawing, format, expiry and
   constant-time comparison; `services/setup/first-run.test.ts`, the token printed while unclaimed
   and renewed at expiry on a fake clock, held back during a claim, stopped by shutdown, and never
-  once claimed; `db/owner.test.ts`, `ownerExists` before and after the owner row, and the one-row
-  check;
+  once claimed, and a restart on a claimed database reading it back; `db/owner.test.ts`,
+  `ownerExists`, `insertOwner` and the one-row check; `db/settings.test.ts`;
+  `security/password.test.ts`, the credential rules at their limits, NFC, case, the app's name, the
+  username, the repeat and run rule and the list, and the argon2id round trip;
+  `services/setup/claim.test.ts`, the claim's success, field errors leaving the token unused, wrong
+  and expired tokens never reaching the hash, a second claim, two at once, a failed transaction
+  printing a new token (none once shutdown has begun), and the failed claim's log entry holding
+  neither username nor hash; `db/client.test.ts` also checks that a failed query's bound values
+  stay out of what is logged;
   `logging/redact.test.ts`, each redaction rule on its own and nested, the allowlist, encoded
   values and growth checks that catch a scan slower than linear; `logging/logger.test.ts`, the
   entry, the flush through a slow pipe, the redacted entry for an unexpected error, and logging
@@ -790,7 +798,11 @@ export const GET: RequestHandler = () => healthResponse();
     form POST gets the "Access denied" page with the headers, its own policy and the viewer's
     language; and a same-origin POST with no `Sec-Fetch-*` headers passes, on `localhost` and on a
     plain-HTTP host name that isn't loopback (Chromium's `--host-resolver-rules`); and a fresh
-    server prints the bootstrap token before it listens, in no log entry or response.
+    server prints the bootstrap token before it listens, in no log entry or response; and the
+    claim: a wrong token is refused with the username kept, the right one claims and lands on `/`,
+    and `/setup` and its action then answer 404, also after a restart, with neither the token nor
+    the password in a response or log entry; the username stays while the claim runs; and a token
+    in `/setup`'s query string is ignored.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps

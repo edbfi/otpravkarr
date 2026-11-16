@@ -2,6 +2,27 @@
   "telemetry": false,
   "updateCheck": false,
   "detector": {
-    "extensions": [{ "ext": ".svelte", "engine": "html" }]
+    "extensions": [
+      {
+        "ext": ".svelte",
+        "engine": "html"
+      }
+    ],
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "display",
+        "createdAt": "2026-11-16T13:04:01.352Z",
+        "reason": "agent: panda.config.ts font tokens referenced by name (display, mono), whose values are DESIGN.md's Fraunces and IBM Plex Mono"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "mono",
+        "createdAt": "2026-11-16T13:04:01.388Z",
+        "reason": "agent: panda.config.ts font tokens referenced by name (display, mono), whose values are DESIGN.md's Fraunces and IBM Plex Mono"
+      }
+    ]
   }
 }

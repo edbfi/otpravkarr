@@ -264,22 +264,22 @@ first run and sends the browser to `/`; then `/setup` and its action answer "not
 yet.
 
 **Acceptance criteria:**
-- [ ] `server/security/password.test.ts` first fails, then passes: obzorarr's cases at `b59b909`
+- [x] `server/security/password.test.ts` first fails, then passes: obzorarr's cases at `b59b909`
   (the limits, NFC, case, the app's name as `otpravkarr`, the username from 4 characters, the list,
   the repeat and run rule with its Unicode cases, and the argon2id round trip).
-- [ ] `security/common-passwords.txt` is obzorarr's file, byte for byte, with `password.ts` naming
+- [x] `security/common-passwords.txt` is obzorarr's file, byte for byte, with `password.ts` naming
   its source, commit and rebuild recipe.
-- [ ] `server/services/setup/claim.test.ts`, against a temporary file: success; a field error
+- [x] `server/services/setup/claim.test.ts`, against a temporary file: success; a field error
   leaving the token unused; a wrong and an expired token never reaching the hash; a second claim;
   two at once leaving one owner; a failed transaction printing a new token, but none once shutdown
   has begun.
-- [ ] `first-run.test.ts`: a restart on a claimed database starts complete and prints nothing.
-- [ ] `src/routes/setup/token-format.test.ts`: the token field's dashes, caret and Backspace.
-- [ ] `setup.test.ts`: a wrong token refused with the spec's message, the username kept and the
+- [x] `first-run.test.ts`: a restart on a claimed database starts complete and prints nothing.
+- [x] `src/routes/setup/token-format.test.ts`: the token field's dashes, caret and Backspace.
+- [x] `setup.test.ts`: a wrong token refused with the spec's message, the username kept and the
   rest cleared; a token in `/setup`'s query string ignored; the right one, typed in upper case
   without dashes, claims and lands on `/`; `/setup` and its action then answer 404, also after a
   restart; neither the token nor the password appears in a response or a log entry.
-- [ ] The page follows `route-setup.md` through `/impeccable`, with the language switcher and
+- [x] The page follows `route-setup.md` through `/impeccable`, with the language switcher and
   `@lucide/svelte` (exact-pinned) eye icons beside the Show/Hide text; every string is a `setup_…`
   message in both languages. Checked at 360, 390, 768 and 1440 px, 200% zoom, the keyboard and
   reduced motion, in every state the brief names, in English and Danish, with screenshots in the PR

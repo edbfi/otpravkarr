@@ -9,7 +9,7 @@ related_targets: []
 
 ## Status
 
-Proposed brief for review, with no mockup yet. Mode: **operate**. Audience: **the person installing otpravkarr**, who can read the server console. Route: `/setup`. Module: `setup` ([docs/SPEC-setup.md](../../docs/SPEC-setup.md)). Ported from obzorarr's claim brief for behaviour; the look is otpravkarr's own (Dark Matter).
+Approved by the owner with `setup`'s spec (2026-11-16) and built in its task 8, code-led, with no mockup. Mode: **operate**. Audience: **the person installing otpravkarr**, who can read the server console. Route: `/setup`. Module: `setup` ([docs/SPEC-setup.md](../../docs/SPEC-setup.md)). Ported from obzorarr's claim brief for behaviour; the look is otpravkarr's own (Dark Matter).
 
 ## Purpose and composition
 
@@ -36,3 +36,17 @@ Heading 'Claim this otpravkarr'. One line: 'Enter the setup token printed in the
 ## Handoff prompt
 
 > Implement only this surface in otpravkarr's existing application. Read PRODUCT.md, DESIGN.md, docs/SPEC-setup.md and this brief first. Reuse existing Panda CSS tokens; build native accessible form controls. Keep it quiet: this is an operational screen.
+
+## Direction contract
+
+THESIS: a console-to-browser handoff for the person who just started otpravkarr: one quiet, familiar form whose only unusual input, the token, reads like the console line it came from; it refuses the multi-card onboarding wizard.
+
+OWN-WORLD: Dark Matter at its quietest: `background` page, one flat `surface` panel with a 1px `border` and `panel` radius, Fraunces `h1`, Instrument Sans labels and helpers in `muted`, `text-field` controls on `control-border`, the token in IBM Plex Mono, one solid `primary` button with `background`-coloured text, `danger` text for errors, the `secondary` focus ring. No grain, no imagery.
+
+STORY: the installer reads one line, copies the token from the console, picks a username and a password, and claims the instance in one submission; a refused token says where to find the right one.
+
+FIRST VIEWPORT: a header across the 672px form width with the otpravkarr icon and lowercase wordmark at the start and the language switcher at the end; below it the panel: `h1`, the one line, then the token, username and password fields with their helpers, then the full-width primary button. At 360px the button is above the fold.
+
+FORM: seed: none (pinned) "One quiet, centred form within the 672px form width: the first screen a fresh install shows, before anyone is signed in."
+
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
