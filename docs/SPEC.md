@@ -746,10 +746,11 @@ export const GET: RequestHandler = () => healthResponse();
   `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged and flushed before it
   is thrown, and shutdown: `SIGHUP` passed on as `SIGTERM`, the work stopped on the signal, the
   cleanup's order, exit codes and its deadline, and no handlers in `dev`;
-  `security/bootstrap-token.test.ts`, the token's alphabet, unbiased drawing, format, comparison
-  and expiry; `services/setup/first-run.test.ts`, the token printed while unclaimed and renewed at
-  expiry on a fake clock, held back during a claim, stopped by shutdown, and never once claimed;
-  `db/owner.test.ts`;
+  `security/bootstrap-token.test.ts`, the token's alphabet, unbiased drawing, format, expiry and
+  constant-time comparison; `services/setup/first-run.test.ts`, the token printed while unclaimed
+  and renewed at expiry on a fake clock, held back during a claim, stopped by shutdown, and never
+  once claimed; `db/owner.test.ts`, `ownerExists` before and after the owner row, and the one-row
+  check;
   `logging/redact.test.ts`, each redaction rule on its own and nested, the allowlist, encoded
   values and growth checks that catch a scan slower than linear; `logging/logger.test.ts`, the
   entry, the flush through a slow pipe, the redacted entry for an unexpected error, and logging

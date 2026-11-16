@@ -1,4 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
+
+// The real comparison, spied on, so a test can see the constant-time one is what decides.
+vi.mock("node:crypto", async (original) => {
+	const actual = await original<typeof import("node:crypto")>();
+	return { ...actual, timingSafeEqual: vi.fn(actual.timingSafeEqual) };
+});
+
+const { timingSafeEqual } = await import("node:crypto");
+
 import {
 	drawToken,
 	formatToken,
@@ -85,5 +94,14 @@ describe("issueToken and isTokenValid", () => {
 		expect(issued.value).toMatch(/^[a-z0-9]{12}$/);
 		expect(isTokenValid(issued, 1_000_000 + TOKEN_LIFETIME_MS - 1)).toBe(true);
 		expect(isTokenValid(issued, 1_000_000 + TOKEN_LIFETIME_MS)).toBe(false);
+	});
+});
+
+describe("tokenMatches' comparison", () => {
+	it("is the constant-time one for a well-formed entry, and decides the answer", () => {
+		vi.mocked(timingSafeEqual).mockClear();
+		expect(tokenMatches("abcd2345wxyz", "ABCD-2345-WXYZ")).toBe(true);
+		expect(tokenMatches("abcd2345wxyz", "abcd2345wxyy")).toBe(false);
+		expect(timingSafeEqual).toHaveBeenCalledTimes(2);
 	});
 });
