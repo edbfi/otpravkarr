@@ -75,24 +75,24 @@ redacted before it is written, with debug behind `OTPRAVKARR_LOG_DEBUG`. A faile
 logged, then thrown. `handleError` logs every unexpected error through it.
 
 **Acceptance criteria:**
-- [ ] `server/logging/redact.test.ts` first fails, then passes: obzorarr's cases at `b59b909` (each
+- [x] `server/logging/redact.test.ts` first fails, then passes: obzorarr's cases at `b59b909` (each
   rule on its own and nested, encoded values up to three decodings, a bare encoded query, the
   linear-time growth checks with their retries), with the allowlist reduced to `keyId` and
   `authError`, and `ratingKey` among the names redacted.
-- [ ] `server/logging/logger.test.ts`: the entry's shape, one line per entry, debug dropped unless
+- [x] `server/logging/logger.test.ts`: the entry's shape, one line per entry, debug dropped unless
   enabled, and `flushLogs()` through a slow pipe.
-- [ ] `server/config/log-debug.test.ts`: `true`, `false`, empty as unset, and anything else refused
+- [x] `server/config/log-debug.test.ts`: `true`, `false`, empty as unset, and anything else refused
   with one line that doesn't echo the value.
-- [ ] `startup.test.ts` gains: a failed step logged as one error entry, then thrown; a bad
+- [x] `startup.test.ts` gains: a failed step logged as one error entry, then thrown; a bad
   `OTPRAVKARR_LOG_DEBUG` refused before the database folder exists, checked with `stat` (not
   `Bun.file().exists()`, which is false for every folder).
-- [ ] `logUnexpectedError` in `logging/logger.ts` builds the entry for an unexpected error: one
+- [x] `logUnexpectedError` in `logging/logger.ts` builds the entry for an unexpected error: one
   redacted entry with its class, message, stack, method and path without the query string; its
   cases in `logger.test.ts` (a token in the error's message comes out redacted) fail first.
   `handleError` in `src/hooks.server.ts` only calls it and returns SvelteKit's generic message.
-- [ ] A startup failure is one log entry and the thrown error; the built server still exits
+- [x] A startup failure is one log entry and the thrown error; the built server still exits
   non-zero before it listens (`setup.test.ts` and `secret-key.test.ts` pass).
-- [ ] `setup.test.ts` gains: the built server with a bad `OTPRAVKARR_LOG_DEBUG` exits non-zero
+- [x] `setup.test.ts` gains: the built server with a bad `OTPRAVKARR_LOG_DEBUG` exits non-zero
   before it listens, printing one JSON error entry that doesn't contain the value.
 
 **Verification:** the gates; the built server with a bad `OTPRAVKARR_LOG_DEBUG` prints one JSON
