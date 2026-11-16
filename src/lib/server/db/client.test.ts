@@ -57,6 +57,9 @@ describe("openDatabase", () => {
 				() => "written",
 				(error: Error) => error.message,
 			);
+		// A fixed pause, since neither Drizzle nor Turso shows when a statement reaches the
+		// connection. On a runner too slow to submit the write within it, the write lands after
+		// the rollback, and the test passes on rc.4 too: it fails open, never flakes.
 		await new Promise((resolve) => setTimeout(resolve, 50));
 		release();
 

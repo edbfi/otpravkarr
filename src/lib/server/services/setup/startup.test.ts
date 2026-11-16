@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { connect } from "@tursodatabase/database";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ConfigError } from "#lib/server/config/config-error.ts";
 import { startUp } from "./startup.ts";
@@ -31,7 +32,18 @@ describe("startUp", () => {
 	it("opens and migrates the database at the path", async () => {
 		const path = join(root, "data", "app.db");
 		await startUp({ OTPRAVKARR_SECRET_KEY: key(), OTPRAVKARR_DATABASE_PATH: path });
-		expect(await Bun.file(path).exists()).toBe(true);
+		// Turso creates the file on open, so the migration step shows only in the tables.
+		const db = await connect(path);
+		try {
+			const tables = (await (
+				await db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+			).all()) as { name: string }[];
+			expect(tables.map((table) => table.name)).toEqual(
+				expect.arrayContaining(["__drizzle_migrations", "owner", "settings"]),
+			);
+		} finally {
+			db.close();
+		}
 	});
 
 	// Turso's own messages hold the path, so startup replaces them.
