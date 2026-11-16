@@ -9,7 +9,7 @@ related_targets: []
 
 ## Status
 
-Approved by the owner with `setup`'s spec (2026-11-16) and built in its task 8, code-led, with no mockup. Mode: **operate**. Audience: **the person installing otpravkarr**, who can read the server console. Route: `/setup`. Module: `setup` ([docs/SPEC-setup.md](../../docs/SPEC-setup.md)). Ported from obzorarr's claim brief for behaviour; the look is otpravkarr's own (Dark Matter).
+Approved by the owner with `setup`'s spec (2026-11-16) and built in #244, code-led, with no mockup. Mode: **operate**. Audience: **the person installing otpravkarr**, who can read the server console. Route: `/setup`. Module: `setup` ([docs/SPEC-setup.md](../../docs/SPEC-setup.md)). Ported from obzorarr's claim brief for behaviour; the look is otpravkarr's own (Dark Matter).
 
 ## Purpose and composition
 

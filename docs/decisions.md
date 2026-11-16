@@ -162,9 +162,9 @@ validation in `setup`, in otpravkarr, on Linux arm64 and x64 with no `node`, `np
   connection in place (`db/client.test.ts`, which fails on `1.0.0-rc.4`).
 
 Why: the plain release candidate carries the Turso transaction fix D5 needs, and every check D5
-named passed with it, as it had in obzorarr. Shipping one platform package is the fallback
-SPEC-setup.md set for a binding that can't be bundled; bundling it would mean copying a native file
-into wherever the bundler places Turso's loader, which breaks silently when the chunks move.
+named passed with it, as it had in obzorarr. Shipping one platform package is the fallback for a
+binding that can't be bundled; bundling it would mean copying a native file into wherever the
+bundler places Turso's loader, which breaks silently when the chunks move.
 
 ### D19. Friends get per-user XC URLs only; otpravkarr warns about Dispatcharr exposure
 

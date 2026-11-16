@@ -3,7 +3,7 @@
 **Status:** the ground floor (skeleton) is specified here, approved by the orchestrator
 (2026-10-18) and built. The capability map below is approved; module 1, `secrets`
 ([SPEC-secrets.md](SPEC-secrets.md)), and module 2, `i18n` ([SPEC-i18n.md](SPEC-i18n.md)), are
-built, and module 3, `setup` ([SPEC-setup.md](SPEC-setup.md)), is being built.
+built, and module 3, `setup` ([SPEC-setup.md](SPEC-setup.md)), is built.
 
 ## Objective
 
@@ -40,7 +40,7 @@ components or services, and dates and numbers formatted for the viewer's languag
 |---|---|---|---|---|
 | 1 | `secrets` | **Built.** Encrypts stored secrets (Plex token, Dispatcharr key, subscriber XC passwords, two-factor secrets, the OIDC client secret) before they reach the database (D27, D31), and the secret wrapper that shows only a redaction marker and opens at one named call | — | — |
 | 2 | `i18n` | **Built.** The translation groundwork (D28) with Paraglide JS (D29): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's language, and a check that every message exists in both languages | — | the language switcher in each shell |
-| 3 | `setup` | Startup checks, database and migrations, settings, structured logging with redaction, security headers and CSP (ground-floor choice 3), `ORIGIN` and the cross-origin check (it asks the browser, stores no address and takes `ORIGIN` as an optional override), the setup gate, the bootstrap token, printed to the console and never as a log entry, and claiming the instance for its one owner, with the owner's password rules and hashing | `secrets`, `i18n` | first-run setup (brief: `/setup`, the claim) |
+| 3 | `setup` | **Built.** Startup checks, database and migrations, settings, structured logging with redaction, security headers and CSP (ground-floor choice 3), `ORIGIN` and the cross-origin check (it asks the browser, stores no address and takes `ORIGIN` as an optional override), the setup gate, the bootstrap token, printed to the console and never as a log entry, and claiming the instance for its one owner, with the owner's password rules and hashing | `secrets`, `i18n` | first-run setup (brief: `/setup`, the claim) |
 | 4 | `sign-in` | Owner sign-in with username and password, signing the new owner in at the claim (D27), sessions, sign-out (POST only), rate limits, the address hint on the claim and owner sign-in pages, app-named cookies that work over plain HTTP at home and behind an HTTPS proxy, password change, error pages, recovery (D27), and the admin shell. otpravkarr adds the audit trail: its table and the one service every later change writes through, starting with the claim, sign-in and sign-out; and the request log entries | `setup` | owner sign-in (no brief yet); the admin shell; the password section of the owner's account settings |
 | 5 | `two-factor` | Optional but strongly recommended (D27): authenticator codes, backup codes and the challenge after every way the owner signs in (except the optional OIDC skip, D27), with replay protection and a limit on failed attempts. Recovery turns it off. Adds the offer to first-run setup, right after the owner account is created and before any connection step, and the reminder in the admin shell while it is off | `sign-in` | the two-factor offer in first-run setup; the owner's account settings (no brief yet); the reminder in the admin shell |
 | 6 | `plex-connection` | Plex provider (D12, D18), SSRF-safe outbound HTTP (D8), the rules for settings URLs and secret settings, and connecting, testing and saving the Plex server | `sign-in` | `/admin/settings/connections` (Plex form) |
@@ -98,9 +98,6 @@ layout:
 
 ### Open decisions each module closes
 
-- `setup`: it closed D15 and D14's logging half; its spec also answers how responses sent before
-  `handle` get the security headers (they don't, an accepted limit) and whether the CSP refuses
-  inline style attributes (it doesn't).
 - `sign-in`: how long an owner session lasts.
 - `sign-in`: how repeated failed sign-ins are slowed beyond the rate limits (backoff, or a lockout
   where the app's approved docs allow one). The password rules are `setup`'s, since the claim sets
@@ -278,6 +275,7 @@ shared wording; a "(otpravkarr)" mark inside a bullet covers the rest of that bu
   (`100.64.0.0/10`). A local-looking name that resolves to a public address gets no plain HTTP.
   Dispatcharr's public URL goes into the URLs subscribers get, so it must be HTTPS, with no
   exception (`credentials`): saving a plain-HTTP one is refused with a message that says why.
+  Whichever of `plex-connection` and `dispatcharr-connection` is built first builds this URL rule.
 - **Plex in the CSP** (otpravkarr, moved from `setup`): images from Plex's hosts, for avatars, and
   connections to Plex join the content security policy with the module that first needs them in
   the browser.
@@ -795,18 +793,18 @@ export const GET: RequestHandler = () => healthResponse();
     a bad `OTPRAVKARR_LOG_DEBUG` is one JSON log entry, and its value is never echoed; `SIGTERM` and
     `SIGHUP` each stop the server with exit code 0; a page, `/healthz`, the gate's redirect and a
     404 carry the security headers, with no HSTS over plain HTTP; a page's scripts carry its
-    policy's nonce, the policy is the spec's directive for directive, and the browser reports no
-    violation; an `ORIGIN` with credentials or a path stops the server without being echoed; a
-    cross-site form POST gets the "Access denied" page with the headers, its own policy and the
-    viewer's language; and a same-origin POST with no `Sec-Fetch-*` headers passes, on `localhost`
-    and on a plain-HTTP host name that isn't loopback (Chromium's `--host-resolver-rules`), getting
-    the gate's 303 while unclaimed; every page sends a fresh server to `/setup` while `/healthz`
-    answers `ok`; a fresh server prints the bootstrap token before it listens, in no log entry or
-    response; and the claim: a wrong token is refused with the username kept, the right one claims
-    and lands on `/`, and `/setup` and its action then answer 404, also after a restart, which
-    serves `/` without a redirect, with neither the token nor the password in a response or log
-    entry; the username stays while the claim runs; and a token in `/setup`'s query string is
-    ignored.
+    policy's nonce, the policy is `vite.config.ts`'s directive for directive, and the browser
+    reports no violation; an `ORIGIN` with credentials or a path stops the server without being
+    echoed; a cross-site form POST gets the "Access denied" page with the headers, its own policy
+    and the viewer's language; and a same-origin POST with no `Sec-Fetch-*` headers passes, on
+    `localhost` and on a plain-HTTP host name that isn't loopback (Chromium's
+    `--host-resolver-rules`), getting the gate's 303 while unclaimed; every page sends a fresh
+    server to `/setup` while `/healthz` answers `ok`; a fresh server prints the bootstrap token
+    before it listens, in no log entry or response; and the claim: a wrong token is refused with the
+    username kept, the right one claims and lands on `/`, and `/setup` and its action then answer
+    404, also after a restart, which serves `/` without a redirect, with neither the token nor the
+    password in a response or log entry; the username stays while the claim runs; and a token in
+    `/setup`'s query string is ignored.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps
@@ -843,7 +841,7 @@ otpravkarr is a Bun web repo with edbfi-ci's Bun web templates:
 
 1. **Fonts.** Closed: `setup`, whose claim page is the first surface, bundled DESIGN.md's Fraunces,
    Instrument Sans and IBM Plex Mono through their fontsource packages, approved by the owner with
-   [SPEC-setup.md](SPEC-setup.md#dependencies).
+   `setup`'s spec (#235).
 2. **Ark UI before its first use.** The skeleton installs `@ark-ui/svelte`, so the Panda and Ark
    pairing and `check-peers` are settled early; the first `ui/` wrapper comes with the first surface
    that needs one.

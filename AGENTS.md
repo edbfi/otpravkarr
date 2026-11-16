@@ -275,15 +275,15 @@ next, in the order of the approved capability map in `docs/SPEC.md`, each throug
 and ready for consumers. Nothing stores a secret yet. Module 2, `i18n`
 ([`docs/SPEC-i18n.md`](docs/SPEC-i18n.md)), is built: pages are served in English or Danish, with a
 language switcher, number and date formatters, and a check of the message files. Module 3, `setup`
-([`docs/SPEC-setup.md`](docs/SPEC-setup.md)), is being built from [`tasks/`](tasks/plan.md): startup
-opens and migrates the database (D15), and refuses one a newer otpravkarr migrated; every log entry,
-an unexpected error's included, is one redacted JSON line on standard output; and the built server
-stops cleanly on `SIGTERM`, `SIGINT` and `SIGHUP`, closing the database; `ORIGIN` is checked at
-startup; every response through `handle` carries the security headers, every page a nonce-based CSP;
-a state-changing request from another site gets "Access denied"; and while unclaimed, the server
-sends every page but `/healthz` to `/setup` and prints a bootstrap token to the console every 15
-minutes, which claims the instance there and creates the owner. DESIGN.md's fonts are bundled
-locally.
+([`docs/SPEC-setup.md`](docs/SPEC-setup.md)), is built: startup opens and migrates the database
+(D15), and refuses one a newer otpravkarr migrated; every log entry, an unexpected error's included,
+is one redacted JSON line on standard output; and the built server stops cleanly on `SIGTERM`,
+`SIGINT` and `SIGHUP`, closing the database; `ORIGIN` is checked at startup; every response through
+`handle` carries the security headers, every page a nonce-based CSP; a state-changing request from
+another site gets "Access denied"; and while unclaimed, the server sends every page but `/healthz`
+to `/setup` and prints a bootstrap token to the console every 15 minutes, which claims the instance
+there and creates the owner. DESIGN.md's fonts are bundled locally. The owner can't sign in yet:
+module 4, `sign-in`, comes next.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
