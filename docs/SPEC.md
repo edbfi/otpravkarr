@@ -98,15 +98,15 @@ layout:
 
 ### Open decisions each module closes
 
-- `setup`: the logging library half of D14 (it closed D15). Its spec also answers
-  how responses sent before `handle` get the security headers (they don't, an accepted limit) and
-  whether the CSP refuses inline style attributes (it doesn't).
+- `setup`: it closed D15 and D14's logging half; its spec also answers how responses sent before
+  `handle` get the security headers (they don't, an accepted limit) and whether the CSP refuses
+  inline style attributes (it doesn't).
 - `sign-in`: how long an owner session lasts.
 - `sign-in`: how repeated failed sign-ins are slowed beyond the rate limits (backoff, or a lockout
   where the app's approved docs allow one). The password rules are `setup`'s, since the claim sets
   the first password ([SPEC-setup.md](SPEC-setup.md#first-run)).
 - `two-factor`: its limit on failed attempts (how many, and over what time).
-- The first module with a background job closes the job half of D14: `sign-in` if its session
+- The first module with a background job closes D14, the job lifecycle: `sign-in` if its session
   cleanup is a job, otherwise `health`.
 - `plex-connection`: D18. `health`: D20 (the exposure item belongs to the Dispatcharr health check,
   D19).
@@ -743,7 +743,11 @@ export const GET: RequestHandler = () => healthResponse();
   `config/database-path.test.ts`; `db/migrate.test.ts`, the bundled migrations on a temporary
   file against Drizzle Kit's file migrator, and the refusal of a database a newer build migrated,
   before anything is applied; `db/client.test.ts`, D5's rollback isolation, which fails on Drizzle
-  `1.0.0-rc.4`; `services/setup/startup.test.ts`), and in `src/lib/shared/i18n/`:
+  `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged before it is thrown;
+  `logging/redact.test.ts`, each redaction rule on its own and nested, the allowlist, encoded
+  values and growth checks that catch a scan slower than linear; `logging/logger.test.ts`, the
+  entry, the flush through a slow pipe, and the redacted entry for an unexpected error;
+  `config/log-debug.test.ts`), and in `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
     language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone
     it is given, not the machine's;
@@ -762,7 +766,7 @@ export const GET: RequestHandler = () => healthResponse();
     nothing on a second start on it, one uses the default path, and the others refuse a database
     folder they can't create, a path or file they can't open as a database, and a database a newer
     otpravkarr migrated, without echoing the path and naming the default when the variable is
-    unset.
+    unset; a bad `OTPRAVKARR_LOG_DEBUG` is one JSON log entry, and its value is never echoed.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps
