@@ -21,16 +21,17 @@ hold the follow-ups #337–#342. Everything is the same except:
   would stop every first start at a path the image or the admin sets.
 - **(otpravkarr) A database a newer otpravkarr migrated** stops startup
   ([Migrations](#migrations)).
-- **Rules with nothing to act on yet** move to `plex-connection`: settings URLs, secret settings,
-  and Plex's hosts in the CSP.
+- **Rules with nothing to act on yet** move to the modules that first act on them: settings URLs
+  and secret settings to `plex-connection`, and Plex's hosts in the CSP to the module that first
+  needs them in the browser, with their note kept among `plex-connection`'s until then.
 - **The claim page** has its own brief in otpravkarr's design, and as otpravkarr's first real
   surface it brings the fonts and the icon family ([Dependencies](#dependencies)).
 - **Later first-run steps:** `two-factor`'s offer, then Plex and Dispatcharr; completing first run
   seeds `health` and lands on `/admin`.
 
 **Status:** proposed for the owner's approval. Module 3 of the capability map
-([docs/SPEC.md](SPEC.md)); it closes D15 and the logging half of D14, ground-floor choice 3, and
-`setup`'s two lines in "Open decisions each module closes".
+([docs/SPEC.md](SPEC.md)); it closes D15, the logging half of D14, ground-floor choices 1 (the
+fonts) and 3, and `setup`'s line in "Open decisions each module closes".
 
 **Reading the marks.** A bullet or clause marked "(otpravkarr)" is this app's own; the rest is the
 shared wording. A "(otpravkarr)" mark inside a bullet covers the rest of that bullet, and
@@ -124,10 +125,10 @@ listeners. The app adds, in the built server only (so Ctrl+C still ends `dev`):
 
 ## The database
 
-**Versions:** `@tursodatabase/database` and `drizzle-orm` and `drizzle-kit` on the `rc` dist-tag
-(D5, D32), each at its newest release that D5 allows when the build starts (obzorarr validated
-`0.8.3` with `1.0.0-rc.5`), exact-pinned dev dependencies. The build validates the pair in
-otpravkarr ([Validation](#validation)), which closes D15; obzorarr's result is evidence, not proof.
+**Versions:** `drizzle-orm` and `drizzle-kit` on the `rc` dist-tag, at the newest release D5 allows,
+and `@tursodatabase/database` on its newest stable release (D5, D32; obzorarr validated `1.0.0-rc.5`
+with `0.8.3`), exact-pinned dev dependencies. The build validates the pair in otpravkarr
+([Validation](#validation)), which closes D15; obzorarr's result is evidence, not proof.
 
 **Access** follows D6: the client in `db/client.ts` opens the one file; each aggregate's file in
 `db/` holds its tables and its named operations; services own the transactions, and every statement
@@ -181,9 +182,9 @@ there are no metrics, telemetry or outbound reporting.
   credential.);
 - a `Secret` (`secrets`) is already `[redacted]`.
 
-**What is never logged** (otpravkarr): query strings and request bodies, and upstream response
-bodies, which also never reach the user. The only secrets printed on purpose are the bootstrap
-token and `sign-in`'s recovery token, on the console (D27).
+**Requests and upstream bodies** (otpravkarr): a request's query string and body are never logged,
+and upstream response bodies never reach the user. The only secrets printed on purpose are the
+bootstrap token and `sign-in`'s recovery token, on the console (D27).
 
 **Request and error entries** (otpravkarr) come with `sign-in`: one entry per request (method, the
 path without its query string, status, duration, client address), and an entry for each unhandled
@@ -382,8 +383,8 @@ No release is cut between `setup` and `sign-in`.
 ## Moved out of `setup`
 
 (otpravkarr) The capability map and SPEC.md's `setup` notes give `setup` some rules with nothing to
-act on in it. They move, word for word, to the first module that acts on them; the owner approves
-the moves with this spec, and the capability map changes with it:
+act on in it. They move, with only the wording their new home needs, to the first module that acts
+on them; the owner approves the moves with this spec, and the capability map changes with it:
 - **The audit trail** moves to `sign-in` (rows 3 and 4, and "Where modules live"). It needs the
   client address and an actor, which `sign-in` brings; its first writers after the claim, owner
   sign-in and sign-out, are `sign-in`'s; and no release is cut in between, so the claim is audited
@@ -394,7 +395,7 @@ the moves with this spec, and the capability map changes with it:
   `plex-connection`, the first connection form; `dispatcharr-connection` follows the same URL rule
   and keeps its public-URL rule. Whichever of the two is built first builds the shared URL rule.
 - **Plex's hosts in the CSP** (`img-src` for avatars, `connect-src`) are added by the module that
-  first needs them in the browser.
+  first needs them in the browser; their note waits among `plex-connection`'s.
 - **The request and unhandled-error log entries** move to `sign-in` ([Logging](#logging)).
 
 ## Validation
@@ -402,8 +403,9 @@ the moves with this spec, and the capability map changes with it:
 The build runs D15's validation in otpravkarr with the pinned versions, and records the evidence in
 its PR body:
 - **Migrations:** Drizzle Kit generates the first migration from the schema; the built server
-  applies the bundled migrations to a new database, records them as Drizzle Kit's own migrator
-  would (a unit test compares the two), and on a second start finds nothing to apply.
+  applies the bundled migrations to a new database, records them with the names and times Drizzle
+  Kit's own migrator would, with an empty `hash` where it writes a SHA-256 (a unit test compares the
+  two), and on a second start finds nothing to apply.
 - **Type checking:** `check` passes with the schema, client and operations.
 - **The production build:** `bun ./build` opens the database through Turso's native binding on
   Linux x64 and arm64. Where the binding can't be bundled (obzorarr found it can't), the platform's
@@ -539,8 +541,10 @@ beside it.
 - **`docs/SPEC.md`:** the status line and row 3 (built); the tech-stack table (Turso, Drizzle, the
   fonts and the icons); the `db:generate`, `preview` and `smoke` command rows; the testing section;
   "Open decisions": the `setup` lines go; ground-floor choices 1 and 3 close.
-- **`docs/decisions.md`:** D15 moves to Decided with the validated pair; D14's logging half moves to
-  Decided in D11 as the app's own logger and why, and D14 keeps only the job half.
+- **`docs/decisions.md`:** D15 moves to Decided with the validated pair, and D5's "(validation open
+  in D15)" points to it; D14's logging half moves to Decided in D11 as the app's own logger and
+  why, and D14 keeps only the job half. D16 stays open: the README's backup rule isn't a tested
+  restore procedure.
 - **README:** the variables above, the database and its backup, `ORIGIN` and the proxy fix, first
   run (the token in the console), logs, and stopping with the server's limits.
 - **AGENTS.md:** the status and the structure tree.
