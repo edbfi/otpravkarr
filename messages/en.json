@@ -4,7 +4,6 @@
 	"language_switcher_label": "Language",
 	"error_access_denied_title": "Access denied",
 	"error_access_denied_description": "The request was refused because it didn't come from this site.",
-	"setup_page_title": "Claim this otpravkarr",
 	"setup_title": "Claim this otpravkarr",
 	"setup_intro": "Enter the setup token printed in the server console, then create the owner account.",
 	"setup_token_label": "Setup token",

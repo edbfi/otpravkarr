@@ -74,6 +74,7 @@ function formatToken(event: Event & { currentTarget: HTMLInputElement }) {
 
 /** Backspace or Delete next to a dash removes the character beyond it. */
 function stepOverDash(event: InputEvent & { currentTarget: HTMLInputElement }) {
+	edited.token = true;
 	const input = event.currentTarget;
 	const caret = input.selectionStart;
 	if (caret === null || caret !== input.selectionEnd) return;
@@ -142,7 +143,7 @@ const control = css({
 </script>
 
 <svelte:head>
-	<title>{m.setup_page_title()}</title>
+	<title>{m.setup_title()}</title>
 </svelte:head>
 
 <div

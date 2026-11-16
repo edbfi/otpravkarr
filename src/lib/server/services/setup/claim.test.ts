@@ -159,6 +159,31 @@ describe("claimInstance", () => {
 		expect(printed).toHaveLength(1);
 	});
 
+	it("rolls the owner back when the step pointer can't be saved, and a retry then claims", async () => {
+		const { db, printed, token } = await freshInstance();
+		vi.spyOn(process.stdout, "write").mockImplementation((_chunk, ...rest: unknown[]) => {
+			const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
+			done?.();
+			return true;
+		});
+		// Without its table, the pointer's write fails after the owner's insert, in one transaction.
+		await (await db.$client.prepare("ALTER TABLE settings RENAME TO settings_away")).run();
+		const used = token();
+		expect(await claimInstance(db, { token: used, username: "owner", password: PASSWORD })).toEqual(
+			{ status: "failed" },
+		);
+		expect(await db.select().from(owner)).toEqual([]);
+		expect(isClaimed()).toBe(false);
+		expect(printed).toHaveLength(2);
+
+		await (await db.$client.prepare("ALTER TABLE settings_away RENAME TO settings")).run();
+		expect(
+			await claimInstance(db, { token: token(), username: "owner", password: PASSWORD }),
+		).toEqual({ status: "claimed" });
+		expect(await db.select().from(owner)).toHaveLength(1);
+		expect(await readSetting(db, FIRST_RUN_STEP_KEY)).toBe("complete");
+	});
+
 	it("prints a new token when the claim fails after the token was used up", async () => {
 		const { db, printed, token } = await freshInstance();
 		// An owner written behind first run's back makes the claim's insert fail.

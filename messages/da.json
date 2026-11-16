@@ -4,7 +4,6 @@
 	"language_switcher_label": "Sprog",
 	"error_access_denied_title": "Adgang nægtet",
 	"error_access_denied_description": "Anmodningen blev afvist, fordi den ikke kom fra dette websted.",
-	"setup_page_title": "Tag denne otpravkarr i brug",
 	"setup_title": "Tag denne otpravkarr i brug",
 	"setup_intro": "Skriv opsætningskoden fra serverkonsollen, og opret derefter ejerkontoen.",
 	"setup_token_label": "Opsætningskode",

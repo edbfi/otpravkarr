@@ -9,7 +9,7 @@ import type { Actions, PageServerLoad } from "./$types";
 type Invalid = Extract<ClaimResult, { status: "invalid" }>;
 
 /** What a failed claim sends back: the typed username and what went wrong, nothing else. */
-export type ClaimFailure = {
+type ClaimFailure = {
 	username: string;
 	usernameError?: Invalid["username"];
 	passwordError?: Invalid["password"];

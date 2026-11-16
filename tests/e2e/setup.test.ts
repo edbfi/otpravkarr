@@ -632,7 +632,13 @@ test.describe("the claim", () => {
 				body: new URLSearchParams({ username: "owner", password: PASSWORD }),
 			});
 			expect(form.status).toBe(400);
-			expect(await form.text()).toContain("That setup token isn");
+			const html = await form.text();
+			expect(html).toContain("That setup token isn");
+			// Without script, the server's page keeps the username and clears the token.
+			const field = (id: string) =>
+				new RegExp(`<input[^>]*\\bid="${id}"[^>]*>`).exec(html)?.[0] ?? "";
+			expect(field("username")).toContain('value="owner"');
+			expect(field("token")).not.toContain(token);
 		} finally {
 			await server.stop();
 		}
