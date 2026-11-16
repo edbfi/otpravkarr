@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/tursodatabase/wasm-migrator";
 import type { Database } from "./client.ts";
 
@@ -32,19 +33,21 @@ const TABLE = "__drizzle_migrations";
 
 /** The names of the migrations `db` has recorded; none on a new database. */
 async function recordedNames(db: Database): Promise<(string | null)[]> {
-	const table = await (
-		await db.$client.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
-	).get(TABLE);
-	if (table === undefined) return [];
-	const rows = (await (await db.$client.prepare(`SELECT name FROM ${TABLE}`)).all()) as {
-		name: string | null;
-	}[];
+	const tables = await db.all<{ name: string }>(
+		sql`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ${TABLE}`,
+	);
+	if (tables.length === 0) return [];
+	const rows = await db.all<{ name: string | null }>(
+		sql`SELECT name FROM ${sql.identifier(TABLE)}`,
+	);
 	return rows.map((row) => row.name);
 }
 
 /**
  * Applies the migrations `db` hasn't recorded yet, in one transaction, and only forward: a database
- * that records a migration not in `bundled` is refused before anything is applied.
+ * that records a migration not in `bundled` is refused before anything is applied. Nothing can
+ * record a migration between the check and the migrator, because the app is the database's one
+ * migration owner and runs this once at startup, on its one connection (D5, D6).
  */
 export async function migrateDatabase(
 	db: Database,

@@ -136,6 +136,18 @@ describe("migrateDatabase", () => {
 		expect(await recorded(db)).toEqual(before);
 	});
 
+	it("refuses a recorded migration with no name, which this build can't match", async () => {
+		const db = await newDatabase("nameless.db");
+		await migrateDatabase(db, FIRST);
+		await (
+			await db.$client.prepare(
+				"INSERT INTO __drizzle_migrations (hash, created_at, name, applied_at) VALUES ('', 1767484800000, NULL, NULL)",
+			)
+		).run();
+		await expect(migrateDatabase(db, BOTH)).rejects.toBeInstanceOf(NewerDatabaseError);
+		expect(await tables(db)).not.toContain("second");
+	});
+
 	it("names neither the path nor the unknown migration when it refuses", async () => {
 		const db = await newDatabase("newer-quiet.db");
 		await migrateDatabase(db, FIRST);
