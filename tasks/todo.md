@@ -26,10 +26,11 @@ operations yet.
   migrations apply to a new database, both tables exist, a second run applies nothing, and the
   rows match Drizzle Kit's file migrator by name and time, with an empty `hash`.
 - [ ] Forward only, in `migrate.test.ts`: `migrateDatabase` takes the migrations as a parameter that
-  defaults to the bundled set. A database the real migrator migrated, with an unknown name then
-  inserted into its table, is refused before anything is applied, with the spec's remedy ("run
-  that version again, or restore the backup taken with this one") and neither path nor value; a
-  database at an earlier set of two passed migrations applies the later one.
+  defaults to the bundled set. Two test migrations: a database migrated with the first, with an
+  unknown name then inserted into its table, is refused when run with both, and the second's table
+  and record don't exist afterwards, so nothing was applied; the message gives the spec's remedy
+  ("run that version again, or restore the backup taken with this one") and neither path nor
+  value. Without the unknown name, the same database applies the second.
 - [ ] `server/services/setup/startup.test.ts` first fails, then passes: startup opens and migrates
   the database at the path; a path that is a folder, and a file that isn't a database, are refused
   naming the variable but never the path (Turso puts the full path in its open errors).
@@ -91,6 +92,8 @@ logged, then thrown. `handleError` logs every unexpected error through it.
   `handleError` in `src/hooks.server.ts` only calls it and returns SvelteKit's generic message.
 - [ ] A startup failure is one log entry and the thrown error; the built server still exits
   non-zero before it listens (`setup.test.ts` and `secret-key.test.ts` pass).
+- [ ] `setup.test.ts` gains: the built server with a bad `OTPRAVKARR_LOG_DEBUG` exits non-zero
+  before it listens, printing one JSON error entry that doesn't contain the value.
 
 **Verification:** the gates; the built server with a bad `OTPRAVKARR_LOG_DEBUG` prints one JSON
 line.
@@ -99,9 +102,10 @@ line.
 
 **Files:** `server/logging/logger.ts` (+ test), `server/logging/redact.ts` (+ test),
 `server/config/log-debug.ts` (+ test), `src/env.ts`, `src/hooks.server.ts`,
-`server/services/setup/startup.ts` (+ test), `tests/e2e/secret-key.test.ts` if the error's format
-changes, `README.md` (logs and `OTPRAVKARR_LOG_DEBUG`), `docs/decisions.md` (D11 and D14's logging
-half), `docs/SPEC.md` (the testing section), `AGENTS.md`.
+`server/services/setup/startup.ts` (+ test), `tests/e2e/setup.test.ts`,
+`tests/e2e/secret-key.test.ts` if the error's format changes, `README.md` (logs and
+`OTPRAVKARR_LOG_DEBUG`), `docs/decisions.md` (D11 and D14's logging half), `docs/SPEC.md` (the
+testing section), `AGENTS.md`.
 
 **Size:** M.
 
