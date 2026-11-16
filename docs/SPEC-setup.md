@@ -103,9 +103,9 @@ bundled into the build, which applies them at startup. (otpravkarr) **They only 
 the database records a migration this build doesn't bundle, a newer otpravkarr migrated it, and
 startup stops before applying anything, saying to run that version again or restore the backup
 taken with this one. An older build would otherwise run on a schema it doesn't know and could
-enforce Dispatcharr profiles from data it misreads. The README's backup rule (a snapshot of the
-database folder taken while stopped, kept with the master key and noted with the version) is what
-makes the restore possible; D16 stays open for a tested restore procedure.
+enforce Dispatcharr profiles from data it misreads. The README's backup rule (a copy of the
+database folder taken while stopped and noted with the version, and the master key backed up too)
+is what makes the restore possible; D16 stays open for a tested restore procedure.
 
 **Tables:**
 - **`settings`:** one value per key. `setup` stores first run's step pointer here; later modules
