@@ -280,8 +280,8 @@ formatters, and a check of the message files. Module 3, `setup`
 startup opens and migrates the database (D15), and refuses one a newer otpravkarr migrated; every
 log entry, an unexpected error's included, is one redacted JSON line on standard output; and the
 built server stops cleanly on `SIGTERM`, `SIGINT` and `SIGHUP`, closing the database; `ORIGIN` is
-checked at startup; and every response through `handle` carries the security headers, every page
-a nonce-based CSP.
+checked at startup; every response through `handle` carries the security headers, every page a
+nonce-based CSP; and a state-changing request from another site gets "Access denied".
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -315,8 +315,8 @@ src/
   env.ts                         declares the app's variables: private, read at runtime, optional
   hooks.server.ts                the `init` hook: startup, except while building; `handleError`:
                                  logs an unexpected error through the logger; `handle`: each
-                                 request's language, through Paraglide's middleware, then the
-                                 security headers
+                                 request's language, through Paraglide's middleware, the
+                                 security headers, then the cross-origin check
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
     +layout.svelte               loads app.css; marks <html data-hydrated> once mounted
@@ -345,6 +345,9 @@ src/
       logging/                   logger.ts: one JSON line per entry on standard output, the
                                  flush, and the entry for an unexpected error; redact.ts: the
                                  redaction rules every entry passes through
+      security/cross-origin.ts   the cross-origin check: one pure module the other apps copy
+      security/access-denied.ts  the check's 403: the "Access denied" page with its own policy,
+                                 or a JSON error
       security/headers.ts        the security headers for a request; HSTS only over HTTPS
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
                                  malformed and weak keys; keyring.ts: loads the key and derives
@@ -381,9 +384,10 @@ drizzle/                         the reviewed migrations, which Drizzle Kit gene
                                  `db/` (`drizzle.config.ts`) and the build bundles
 panda.config.ts                  every design token; components use them through
                                  `#styled-system/<module>` (generated, gitignored)
-vite.config.ts                   SvelteKit (all its configuration, the CSP included), Panda,
-                                 Paraglide and Vitest
+vite.config.ts                   SvelteKit (all its configuration, exported as `kit`: the CSP,
+                                 and SvelteKit's own form check off), Panda, Paraglide and Vitest
+vite.config.test.ts              SvelteKit's form check and remote functions stay off
 playwright.config.ts  tsconfig.json  package.json  bun.lock
 ```
 
-Vitest runs `src/**/*.test.ts`; Playwright runs `tests/e2e/`.
+Vitest runs `src/**/*.test.ts` and `vite.config.test.ts`; Playwright runs `tests/e2e/`.

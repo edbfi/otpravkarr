@@ -1,5 +1,7 @@
 {
 	"landing_title": "Adgang til streaming.",
 	"landing_sign_in_status": "Login med Plex bliver bygget om. Adgang gives til serverejerens accepterede venner.",
-	"language_switcher_label": "Sprog"
+	"language_switcher_label": "Sprog",
+	"error_access_denied_title": "Adgang nægtet",
+	"error_access_denied_description": "Anmodningen blev afvist, fordi den ikke kom fra dette websted."
 }
