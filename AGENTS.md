@@ -278,7 +278,8 @@ is built: pages are served in English or Danish, with a language switcher, numbe
 formatters, and a check of the message files. Module 3, `setup`
 ([`docs/SPEC-setup.md`](docs/SPEC-setup.md)), is being built from [`tasks/`](tasks/plan.md):
 startup opens and migrates the database (D15), and refuses one a newer otpravkarr migrated; every
-log entry, an unexpected error's included, is one redacted JSON line on standard output.
+log entry, an unexpected error's included, is one redacted JSON line on standard output; and the
+built server stops cleanly on `SIGTERM`, `SIGINT` and `SIGHUP`, closing the database.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -341,7 +342,8 @@ src/
                                  flush, and the entry for an unexpected error; redact.ts: the
                                  redaction rules every entry passes through
       services/setup/startup.ts  startup's steps in order: the key, the configuration, the
-                                 database; a failed step is logged, then thrown
+                                 database; a failed step is logged, then thrown; and shutdown,
+                                 in the built server only
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
                                  malformed and weak keys; keyring.ts: loads the key and derives
                                  the AES key and key ID; secret.ts: the `Secret` wrapper,
@@ -360,7 +362,7 @@ tests/
   e2e/smoke.test.ts              Playwright smoke against the built server
   e2e/secret-key.test.ts         the built server refuses to start without a valid key
   e2e/setup.test.ts              first run and the request checks on the built server: so far,
-                                 the database and logging
+                                 the database, logging and shutdown
   e2e/i18n.test.ts               the built server serves each viewer's language, the browser
                                  keeps it, and the switcher changes it
   fixtures/demo-fixtures.json    design fixtures

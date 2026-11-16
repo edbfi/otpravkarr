@@ -117,11 +117,11 @@ the logs and exit 0, or exit non-zero after a 5-second deadline. The handlers go
 built server, one turn after adapter-bun's.
 
 **Acceptance criteria:**
-- [ ] `server/services/setup/startup.test.ts` gains, each failing first: the cleanup's order, the
+- [x] `server/services/setup/startup.test.ts` gains, each failing first: the cleanup's order, the
   deadline with a cleanup that never finishes, its own entry flushed for at most 250 ms, and no
   handler in `dev`.
-- [ ] `setup.test.ts`: `SIGHUP` and `SIGTERM` each shut the built server down with exit code 0.
-- [ ] The README lists adapter-bun's `SHUTDOWN_TIMEOUT`, `CONNECTION_IDLE_TIMEOUT` and
+- [x] `setup.test.ts`: `SIGHUP` and `SIGTERM` each shut the built server down with exit code 0.
+- [x] The README lists adapter-bun's `SHUTDOWN_TIMEOUT`, `CONNECTION_IDLE_TIMEOUT` and
   `BODY_SIZE_LIMIT`, and Compose's `stop_grace_period` above `SHUTDOWN_TIMEOUT` plus 5 seconds.
 
 **Verification:** the gates; Ctrl+C still stops `bun run --bun dev`.
@@ -135,7 +135,7 @@ built server, one turn after adapter-bun's.
 
 ## Checkpoint: after task 3
 
-- [ ] As in [plan.md](plan.md#checkpoint-after-task-3).
+- [x] As in [plan.md](plan.md#checkpoint-after-task-3).
 
 ## Task 4: `ORIGIN`, the security headers and the CSP
 
