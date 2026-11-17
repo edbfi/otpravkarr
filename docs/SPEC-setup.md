@@ -228,12 +228,13 @@ and the setup routes then answer "not found".
 address. A new one is printed every 15 minutes until the claim, and none after it. (otpravkarr) It
 is read only from the claim form's field, so a token in the URL is ignored.
 
-**The claim** checks the fields, then checks and uses up the token with no `await` between the
-two, then hashes the password, then creates the owner and moves the step pointer in one
-transaction. The cheap checks come first so a wrong guess never costs a hash, and a field error
-leaves the token unused. The claim stores no address, and nothing but the owner row and the
-pointer. After it, the claim no longer exists: `/setup` answers "not found" once first run is
-complete (D27), and the claim action answers it whenever the instance is claimed.
+**The claim** checks the fields, then checks and uses up the token with no `await` between the two,
+then hashes the password, then creates the owner and moves the step pointer in one transaction. The
+cheap checks come first so a wrong guess never costs a hash, and a field error leaves the token
+unused. The claim stores no address, and nothing but the owner row and the pointer. A failed claim
+answers with the "Error: " title and the error summary (D33). After a successful claim, the claim no
+longer exists: `/setup` answers "not found" once first run is complete (D27), and the claim action
+answers it whenever the instance is claimed.
 
 **Owner credentials,** in `security/password.ts`, which `sign-in`'s password change and recovery
 reuse:

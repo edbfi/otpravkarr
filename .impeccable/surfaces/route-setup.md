@@ -25,8 +25,8 @@ Heading 'Claim this otpravkarr'. One line: 'Enter the setup token printed in the
 
 ## Acceptance criteria
 
-- Errors sit beside their field with helper/error IDs and `aria-invalid`; a wrong or expired token gets one message that names the console, never which of the two it was.
-- After a failed submit, the username is kept; the token and password are not, and focus moves to the first field with an error.
+- After a failed submit the title starts with 'Error: ', and the error summary (D33) is first in the form: 'There is a problem', then the problems in field order, each field's linking to it, a page-level one as text. Field errors also sit beside their field with helper/error IDs and `aria-invalid`. With JavaScript, focus moves to the summary after each failure; without it, nothing is focused. A wrong or expired token gets one message that names the console, never which of the two it was.
+- After a failed submit, the username is kept; the token and password are not.
 - The token field takes the token with or without dashes and in any case, and inserts the dashes as it is typed (it still takes any form without JavaScript). It is not a password field, so the person can check what they typed, and it is set in IBM Plex Mono, like the console line it came from. A token in the page's URL is ignored.
 - The Show/Hide button reveals only what was just typed, says whether the password is shown, and appears only once the page has JavaScript.
 - No other viewer, server, Plex or Dispatcharr detail appears.
