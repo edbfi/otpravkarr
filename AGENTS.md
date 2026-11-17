@@ -327,8 +327,10 @@ src/
     (public)/+page.svelte        `/`: placeholder page, its text from the messages, and the
                                  language switcher
     healthz/+server.ts           `/healthz`: public one-word status
-    setup/                       `/setup`, the claim: +page.svelte the form, +page.server.ts its
-                                 load and action; token-format.ts the token field's dashes
+    setup/                       `/setup`, the claim: +page.svelte the page, a skip link to the
+                                 main content, shown only while it has focus, then the header and
+                                 the form's panel; +page.server.ts its load and action;
+                                 token-format.ts the token field's dashes
     (app)/ (admin)/ api/         later: subscriber portal, owner console, JSON endpoints
   lib/                           imported as `#lib/<path>.<ext>`, e.g.
                                  `#lib/server/services/health.ts`
@@ -398,6 +400,8 @@ tests/
                                  keeps it, and the switcher changes it
   e2e/error-summary.test.ts      failed submits without and with JavaScript, and with a late script:
                                  the title, the summary, its links and where focus goes
+  e2e/skip-link.test.ts          the claim page's skip link, with and without JavaScript and in
+                                 Danish
   fixtures/demo-fixtures.json    design fixtures
 messages/en.json  messages/da.json
                                  the messages, flat i18next JSON v4, at the root where Weblate
