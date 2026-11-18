@@ -183,8 +183,9 @@ language, styled only with tokens. Buttons, not a `<select>` (the owner's choice
 - **Sharing the cookie:** it keeps Paraglide's default name. Cookies ignore ports, so every app on
   the same host shares it. A choice made in one edbfi app carries over to the others there. A value
   another app wrote that isn't `en` or `da` is ignored.
-- **Without JavaScript** the switcher does nothing, and the browser's preferred languages still
-  apply.
+- **Without JavaScript** its buttons would do nothing, so the switcher stays hidden until the page
+  has hydrated, keeping its place so nothing moves when it appears; the browser's preferred
+  languages still apply.
 - **Where it shows:** on the placeholder `/`, beside the wordmark, and in the landing brief's
   required content; each shell (PRODUCT.md's subscriber and admin shells) places it when that shell
   is built. It needs no brief of its own.
