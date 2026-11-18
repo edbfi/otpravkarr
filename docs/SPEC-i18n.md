@@ -186,9 +186,10 @@ language, styled only with tokens. Buttons, not a `<select>` (the owner's choice
 - **Without JavaScript** its buttons would do nothing, so the switcher stays hidden until the page
   has hydrated, keeping its place so nothing moves when it appears; the browser's preferred
   languages still apply.
-- **Where it shows:** on the placeholder `/`, beside the wordmark, and in the landing brief's
-  required content; each shell (PRODUCT.md's subscriber and admin shells) places it when that shell
-  is built. It needs no brief of its own.
+- **Where it shows:** on the placeholder `/`, beside the wordmark, in the claim page's header at
+  `/setup` (the route-setup brief), and in the landing brief's required content; each shell
+  (PRODUCT.md's subscriber and admin shells) places it when that shell is built. It needs no brief
+  of its own.
 
 ### Focus
 
