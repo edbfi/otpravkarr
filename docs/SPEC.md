@@ -822,8 +822,10 @@ export const GET: RequestHandler = () => healthResponse();
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps
     the next visit in English; and that a browser whose `Accept-Language` says `fr-FR` but whose
     `navigator.languages` lists `da-DK` gets English, the switcher marks English as current after
-    hydration, pressing it does nothing, and no cookie is written. None logs a console error. The
-    smoke test runs in English, Playwright's default.
+    hydration, pressing it does nothing, and no cookie is written; and that the switcher stays
+    hidden until the page has script, keeping its place: without JavaScript Tab never reaches it,
+    and with the scripts held back it appears on hydration where it was. None logs a console error.
+    The smoke test runs in English, Playwright's default.
 - prek runs the unit tests (`tests` hook); CI's `smoke` job builds with no key and runs `smoke`.
 
 ## CI and repo tooling
