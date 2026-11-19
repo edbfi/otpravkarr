@@ -53,7 +53,7 @@ Subscriber shell: sticky top header otpravkarr, My access, My channels, Setup gu
 
 ## Confirmed visual direction
 
-Dark Matter. Warm orange against dark plum, generous editorial serif headings, restrained grain only on landing, translucent sticky subscriber header. Operational pages flat; one quiet photographic crop on landing only. The selected direction is confirmed; these expanded layouts and exact token values are a proposed design seed for review.
+Dark Matter. Warm orange against dark plum, generous editorial serif headings, restrained grain only on landing, translucent sticky subscriber header. Operational pages flat; one quiet photographic crop on landing only. The selected direction is confirmed; the surface briefs' layouts and the exact token values are a proposed design seed for review.
 
 ## Evidence on Hand
 
@@ -64,7 +64,6 @@ Dark Matter. Warm orange against dark plum, generous editorial serif headings, r
 - `docs/research/plex.md`: how Plex behaved as the legacy app found it, not re-verified; the Plex library audit (D18) checks it.
 - `docs/decisions.md`: the decided and open `D<n>` entries for the stack and the Dispatcharr access model.
 - `docs/SPEC.md`: the built ground-floor spec, the approved capability map and its Module notes.
-- `docs/design/screens/01-landing.webp` to `docs/design/screens/10-recovery-and-components.webp` and `docs/design/references/dark-matter.webp`: generated raster mockups and the selected direction reference. Their body text, numbers and icons are illustrative, not specification.
 - `.impeccable/surfaces/*.md`: eight route briefs (`/`, `/portal`, `/portal/channels`, `/portal/setup`, `/admin`, `/admin/users`, `/admin/settings/connections`, `/admin/settings/lineup`), all marked as a proposed design seed for review.
 - `DESIGN.md` and `panda.config.ts`: the proposed Dark Matter design seed and its tokens.
 - `tests/fixtures/demo-fixtures.json`: a fictional fixture (snapshot date 2025-10-15: 42 users, 38 active, 4 inactive, four demo bundles with channel counts). The people in the briefs (Alex, Jordan, Morgan) and the `*.example` addresses are placeholders.
