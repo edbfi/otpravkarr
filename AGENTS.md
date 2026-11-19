@@ -300,8 +300,7 @@ and `preview` need, see the README's [Master key](README.md#master-key).
 - Product: [PRODUCT.md](PRODUCT.md), and the capability map and Module notes in
   [docs/SPEC.md](docs/SPEC.md).
 - Design: [DESIGN.md](DESIGN.md), the [surface briefs](.impeccable/surfaces/) (one per route),
-  [screens and references](docs/design/), [design tokens](panda.config.ts),
-  [demo fixtures](tests/fixtures/demo-fixtures.json).
+  [design tokens](panda.config.ts), [demo fixtures](tests/fixtures/demo-fixtures.json).
 - Decisions: [docs/decisions.md](docs/decisions.md). Research: [docs/research/](docs/research/).
 
 ## Structure
