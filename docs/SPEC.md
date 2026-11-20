@@ -1,15 +1,13 @@
 # Spec: otpravkarr
 
 **Status:** the ground floor (skeleton) is specified here, approved by the orchestrator
-(2026-10-18) and built. The capability map below is approved; module 1, `secrets`
+(2026-10-18) and built. The capability map below records the earlier approval and the product revisions now due; module 1, `secrets`
 ([SPEC-secrets.md](SPEC-secrets.md)), and module 2, `i18n` ([SPEC-i18n.md](SPEC-i18n.md)), are
 built, and module 3, `setup` ([SPEC-setup.md](SPEC-setup.md)), is built.
 
 ## Objective
 
-otpravkarr lets the accepted Plex friends of a server owner sign in with Plex and get their own
-scoped IPTV account on the owner's Dispatcharr, through a subscriber portal and an owner console
-([PRODUCT.md](../PRODUCT.md)).
+otpravkarr lets a Plex owner share existing Dispatcharr lineups. Eligible friends receive a personal viewing account on first sign-in ([Product Purpose](../PRODUCT.md#product-purpose)).
 
 **This spec covers only the ground floor:** an empty, production-shaped SvelteKit app that builds,
 type-checks, tests, lints and serves on Bun, styled from the design tokens, with the edbfi Bun web
@@ -17,6 +15,8 @@ CI around it. It has no database, authentication, Plex, Dispatcharr or product f
 to make the first module spec cheap to build: every later PR adds behaviour, not plumbing.
 
 ## Capability map
+
+**Revision pending owner review.** The map and module notes below predate the approved [product goals](../PRODUCT.md#product-purpose). Before specifying affected modules, revise first-run eligibility, profile assignment, account and sign-in flows, subscriber choices, admin controls, sync and plugin advisories. Automatic eligibility and profiles maintained per group are superseded. Existing Dispatcharr profiles supply the shared lineups.
 
 **Status:** approved by the owner (2026-10-23), with the shared opening widened on 2026-10-24
 (D27; shared rows aligned 2026-10-30). Module ids never change. Each module gets its own

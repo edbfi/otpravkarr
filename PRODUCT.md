@@ -2,7 +2,13 @@
 
 <!-- impeccable:product-schema 1 -->
 
-Self-service IPTV access for accepted Plex friends, backed by Dispatcharr with subscriber and owner surfaces.
+## Product Purpose
+
+otpravkarr lets a Plex server owner share their Dispatcharr TV lineup with the people they share Plex with. Each viewer gets personal playback details for their own IPTV player.
+
+- **The admin** chooses during onboarding whether all accepted Plex friends may join or only the friends they select. They choose a starter lineup separately. Their dashboard shows who may join, who has joined, which lineups each person receives and which extra lineups they may choose. The admin can change the preset later and preview who would gain or lose access.
+- **The viewer** signs in with Plex. Only an eligible person's first successful sign-in creates their Dispatcharr viewing account. Someone who has yet to join needs no account there, however many friends the owner has. The viewer gets a playlist link, an M3U download, guide and Xtream Codes details, and short instructions for their player.
+- **The lineup** is built in Dispatcharr. The admin shares its channel profiles through otpravkarr, individually or in combination. Editing a profile in Dispatcharr updates the lineup for everyone who receives it. Optional plugins run there too.
 
 ## Platform
 
@@ -27,33 +33,33 @@ Subscriber shell: sticky top header otpravkarr, My access, My channels, Setup gu
 
 - otpravkarr is a small bridge between one Plex server owner's existing circle of friends and that owner's Dispatcharr. It is not a multi-tenant or commercial IPTV panel: there is no sign-up, pricing or purchase, and no access for anyone outside the owner's accepted Plex friends.
 - The alternative it replaces is the owner creating Dispatcharr accounts by hand, handing out passwords and remembering to delete them.
-- The mechanism a neighbouring tool can't truthfully claim: the owner's Plex friends list is the identity and entitlement source. An accepted friend gets their own scoped Dispatcharr account the first time they sign in with Plex, and losing the friendship removes access, without the owner creating, handing out or deleting accounts by hand.
-- Scoping is enforced inside Dispatcharr itself, through the Dispatcharr channel profiles assigned to each subscriber's account, at stream time, so a subscriber's channel limit holds in their player and not only in the portal. otpravkarr's own playlist filtering is information hygiene, not the boundary.
-- Subscribers never need Dispatcharr itself. Everything they can see or change is in otpravkarr, inside the limits the owner sets there, and the owner controls those limits finely: which channel groups and bundles each person gets or may pick, and whether movies, series, catch-up or adult content are on (D21, D22).
-- It stays narrow on purpose: Dispatcharr and its plugins own channels, groups, guide data and video; otpravkarr owns who gets an account, which channel groups that account can see and which kinds of content are on for it.
+- An accepted Plex friendship and the owner’s chosen preset determine eligibility. Selecting a friend or refreshing the roster records eligibility only. Losing the friendship or revoking access disables playback when otpravkarr processes the change.
+- Dispatcharr enforces the combined set of enabled live channels in a viewer’s assigned profiles at playback. The assignment must be verified before otpravkarr issues credentials.
+- Subscribers use otpravkarr to manage the lineups the owner offers them. The owner controls movie, series, catch-up and adult content settings (D21, D22).
+- Dispatcharr and its optional plugins manage imports, channels, groups, profile contents, guide data and streams. otpravkarr manages viewer accounts and assigns existing profiles. A group the admin wants to share independently can have its own Dispatcharr profile.
 
 ## Operating Context
 
-- **Scale and shape.** One self-hosted instance for one owner and tens (not thousands) of subscribers, against a Dispatcharr catalogue of hundreds to a few thousand channels and up to around a thousand groups. It runs as one process in one container on one port, with container packaging in the separate `otpravkarr-docker` repository; horizontal scaling is an accepted limit, not a goal.
+- **Scale and shape.** One owner may have hundreds of Plex friends. A provider catalogue may have hundreds of thousands of entries. Viewers choose from the lineups the owner offers. First sign-in and player import at this scale still need measurement (D16). It runs as one process in one container on one port, with container packaging in the separate `otpravkarr-docker` repository; horizontal scaling is an accepted limit, not a goal.
 - **Upstream systems.** Plex (plex.tv account services and the owner's Plex Media Server) for sign-in, identity and the friends list; nothing is written to Plex. Dispatcharr for users, channel profiles, channel groups, the guide and streams, plus the Dispatcharr plugins installed there, which may rename, regroup, quarantine or hide channels on their own schedules.
-- **Downstream.** The subscriber's own IPTV player apps, fed with Dispatcharr's playlist, player-API and guide URLs. The setup guide recommends free and open-source players only, computers first: [Open TV](https://github.com/Fredolx/open-tv) (shipped as Fred.TV; Windows, macOS, Linux), [IINA](https://iina.io/) (macOS) and [VLC](https://www.videolan.org/vlc/) (every platform, phones and TVs included). Other Xtream-Codes-capable players should work with the same URLs, but none is verified yet.
+- **Downstream.** The subscriber's own IPTV player apps, fed with Dispatcharr's playlist, player-API and guide URLs. The setup guide recommends free and open-source players only, computers first: [Fred TV](https://github.com/Fredolx/open-tv) (Windows, macOS and Linux), [IINA](https://iina.io/) (macOS) and [VLC](https://www.videolan.org/vlc/) (every platform, phones and TVs included). Other Xtream-Codes-capable players should work with the same URLs, but none is verified yet.
 - **Network placement.** Typically on the same private network as Dispatcharr and behind the operator's reverse proxy. The operator controls the host, the proxy and Dispatcharr; Dispatcharr's public ingress is the operator's concern, outside the app.
-- **Subscriber ritual.** Sign in with Plex once; copy the playlist, player-API and guide URLs (or show a QR code on request) into a player; come back occasionally to change channel bundles or groups where policy allows, refresh credentials, or re-download a playlist snapshot.
-- **Owner ritual.** A one-time first-run setup that connects Plex and Dispatcharr; then occasional visits to the admin console to check Plex, Dispatcharr and database health, run a sync by hand, manage subscribers, review the audit log, and set lineup policy and bundles. A background sync on an interval (15 minutes by default in the legacy app) keeps Plex friendships, local records and Dispatcharr accounts converged in between.
+- **Subscriber ritual.** Sign in with Plex once; copy the playlist, player-API and guide URLs (or show a QR code on request) into a player; come back occasionally to change their selected lineups where the owner allows, refresh credentials, or re-download a playlist snapshot.
+- **Owner ritual.** A one-time first-run setup that connects Plex and Dispatcharr; then occasional visits to the admin console to check Plex, Dispatcharr and database health, run a sync by hand, manage subscribers, review the audit log, and set eligibility and share lineups. A background sync on an interval (15 minutes by default in the legacy app) keeps Plex friendships, local records and Dispatcharr accounts converged in between.
 - **Language.** The legacy app was British English only with en-GB dates, and one portal string assumed a Danish core lineup from the original deployment. The rewrite is translatable (D28): British English, the default, and Danish, with dates and numbers formatted for each viewer's language. Lineup wording comes from the owner's own configuration, never from a hard-coded lineup.
-- **Rewrite state.** The rewrite has only its ground floor (an empty SvelteKit app with `/healthz`), `secrets`, which nothing uses yet, and `i18n`, which serves the placeholder page in English or Danish; routes in this file are proposed information architecture, not implemented endpoints.
+- **Rewrite state.** The foundation includes startup and health checks, secret storage support, English and Danish text, and the first-run owner claim. The subscriber portal and sharing dashboard are planned.
 
 ## Product requirements
 
-- Name always lowercase otpravkarr. Plex accepted friendship grants access; pending friendship does not.
+- Name always lowercase otpravkarr. Only accepted friends who meet the owner’s eligibility preset can join.
 - Credentials masked until revealed. QR code generated only when Show QR code is pressed.
 - Streams and guide come from Dispatcharr. No embedded video player or programme guide.
-- Core channels are included under core-plus-bundles; zero approved groups means zero channels.
+- A viewer can receive a fixed lineup and optional extras. Dispatcharr allows every otherwise eligible channel when a viewer has no assigned profiles. If otpravkarr detects this, it withholds new playback credentials and disables existing ones until it verifies the intended lineup.
 - Downloaded M3U is a snapshot and does not update automatically. Owner and subscriber sessions are separate.
 
-## Confirmed visual direction
+## Visual goals
 
-Dark Matter. Warm orange against dark plum, generous editorial serif headings, restrained grain only on landing, translucent sticky subscriber header. Operational pages flat; one quiet photographic crop on landing only. The selected direction is confirmed; the surface briefs' layouts and the exact token values are a proposed design seed for review.
+Offer light and dark colour schemes. Keep motion subtle on the dashboard and viewer pages. The earlier Dark Matter design seed has been withdrawn. The visual design phase follows the product goals.
 
 ## Evidence on Hand
 
@@ -63,9 +69,9 @@ Dark Matter. Warm orange against dark plum, generous editorial serif headings, r
 - `docs/research/dispatcharr.md`: research against Dispatcharr v0.32.0 (sources read 2026-10-18), including where current Dispatcharr behaviour differs from what the legacy app assumed. The owner has reviewed it, and its candidate decisions are now D19–D26.
 - `docs/research/plex.md`: how Plex behaved as the legacy app found it, not re-verified; the Plex library audit (D18) checks it.
 - `docs/decisions.md`: the decided and open `D<n>` entries for the stack and the Dispatcharr access model.
-- `docs/SPEC.md`: the built ground-floor spec, the approved capability map and its Module notes.
-- `.impeccable/surfaces/*.md`: eight route briefs (`/`, `/portal`, `/portal/channels`, `/portal/setup`, `/admin`, `/admin/users`, `/admin/settings/connections`, `/admin/settings/lineup`), all marked as a proposed design seed for review.
-- `DESIGN.md` and `panda.config.ts`: the proposed Dark Matter design seed and its tokens.
+- `docs/SPEC.md`: the built ground-floor spec, the capability map and its Module notes, with the product changes awaiting a revised map marked there.
+- `.impeccable/surfaces/*.md`: eight route briefs (`/`, `/portal`, `/portal/channels`, `/portal/setup`, `/admin`, `/admin/users`, `/admin/settings/connections`, `/admin/settings/lineup`), from the withdrawn design seed. The briefs need revision against the approved product goals before use.
+- `DESIGN.md` and `panda.config.ts`: the withdrawn Dark Matter seed and the tokens used by the existing foundation.
 - `tests/fixtures/demo-fixtures.json`: a fictional fixture (snapshot date 2025-10-15: 42 users, 38 active, 4 inactive, four demo bundles with channel counts). The people in the briefs (Alex, Jordan, Morgan) and the `*.example` addresses are placeholders.
 - `static/otpravkarr-icon.svg`: the product icon. Licensing: [README.md](README.md#license).
 
@@ -81,10 +87,10 @@ Dark Matter. Warm orange against dark plum, generous editorial serif headings, r
 
 ## Product Principles
 
-1. **Plex friendship is the only entitlement.** An accepted friendship grants access, a pending one grants nothing, and when the friendship ends access ends. Nobody gets in by signing up, paying or being added by hand.
-2. **Fail closed on exposure.** Zero groups means zero channels. When information is missing, a check fails or scoping can't be confirmed, otpravkarr narrows or withholds access rather than widening it.
-3. **Stay a bridge.** Dispatcharr and its plugins own channels, groups, guide data and video; otpravkarr owns only who has an account, which groups it can see and which kinds of content are on for it. It doesn't serve video, edit the catalogue or change plugin settings.
-4. **Access never widens silently.** What a subscriber or the owner chose is kept apart from what is currently in effect. Catalogue churn can take channels out of effect, but choices survive and nothing is granted that nobody chose.
+1. **The owner decides who may join.** Plex confirms friendship. The owner chooses whether that is sufficient or a personal grant is also required.
+2. **Fail closed on exposure.** Withhold or disable playback credentials when a viewer has no verified shared lineup. When information is missing, a check fails or scoping can't be confirmed, otpravkarr narrows or withholds access rather than widening it.
+3. **Keep catalogue editing in Dispatcharr.** otpravkarr shows which profiles each person can watch and manages their access to those profiles.
+4. **Share profiles deliberately.** A new profile needs the owner’s approval before it can be offered. Changes inside an already shared profile follow Dispatcharr. Flag discrepancies between the profiles a viewer should receive and those actually assigned.
 5. **The owner decides; subscribers never need Dispatcharr.** Every control a subscriber has lives in otpravkarr and covers only what the owner allows. Nothing sends a subscriber into Dispatcharr to manage their own access.
 6. **Say the consequence first.** Every action that changes or ends access says what will happen before it happens, secrets stay hidden until the person asks, and a slow or failing upstream shows an honest degraded state instead of a hang or a blank page.
 
