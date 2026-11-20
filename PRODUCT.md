@@ -38,6 +38,12 @@ Subscriber shell: sticky top header otpravkarr, My access, My channels, Setup gu
 - Subscribers use otpravkarr to manage the lineups the owner offers them. The owner controls movie, series, catch-up and adult content settings (D21, D22).
 - Dispatcharr and its optional plugins manage imports, channels, groups, profile contents, guide data and streams. otpravkarr manages viewer accounts and assigns existing profiles. A group the admin wants to share independently can have its own Dispatcharr profile.
 
+### Plugin overview
+
+The admin can opt in to a read-only overview of the plugins Dispatcharr detects. It covers Lineuparr, IPTV Checker, Channel Mapparr, Stream Mapparr, EPG Janitor, Event Channel Managarr, Newsflasharr and Dustarr. Sharing works with monitoring switched off or with no plugins installed.
+
+Show which plugins are enabled. Where Dispatcharr supplies the information, show what matters for that plugin, such as the shared profile Lineuparr targets or the time and outcome of IPTV Checker's last completed scan. When run information is unavailable, say so and link to Dispatcharr for details. The admin runs and configures plugins there.
+
 ## Operating Context
 
 - **Scale and shape.** One owner may have hundreds of Plex friends. A provider catalogue may have hundreds of thousands of entries. Viewers choose from the lineups the owner offers. First sign-in and player import at this scale still need measurement (D16). It runs as one process in one container on one port, with container packaging in the separate `otpravkarr-docker` repository; horizontal scaling is an accepted limit, not a goal.
