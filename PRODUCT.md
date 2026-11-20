@@ -54,7 +54,7 @@ Subscriber shell: sticky top header otpravkarr, My access, My channels, Setup gu
 - Name always lowercase otpravkarr. Only accepted friends who meet the owner’s eligibility preset can join.
 - Credentials masked until revealed. QR code generated only when Show QR code is pressed.
 - Streams and guide come from Dispatcharr. No embedded video player or programme guide.
-- A viewer can receive a fixed lineup and optional extras. If their last shared profile disappears, disable playback credentials on detection. An empty Dispatcharr profile list permits channels within the viewer’s other limits.
+- A viewer can receive a fixed lineup and optional extras. Dispatcharr allows every otherwise eligible channel when a viewer has no assigned profiles. If otpravkarr detects this, it withholds new playback credentials and disables existing ones until it verifies the intended lineup.
 - Downloaded M3U is a snapshot and does not update automatically. Owner and subscriber sessions are separate.
 
 ## Visual goals
@@ -70,7 +70,7 @@ Offer light and dark colour schemes. Keep motion subtle on the dashboard and vie
 - `docs/research/plex.md`: how Plex behaved as the legacy app found it, not re-verified; the Plex library audit (D18) checks it.
 - `docs/decisions.md`: the decided and open `D<n>` entries for the stack and the Dispatcharr access model.
 - `docs/SPEC.md`: the built ground-floor spec, the capability map and its Module notes, with the product changes awaiting a revised map marked there.
-- `.impeccable/surfaces/*.md`: eight route briefs (`/`, `/portal`, `/portal/channels`, `/portal/setup`, `/admin`, `/admin/users`, `/admin/settings/connections`, `/admin/settings/lineup`), all marked as a proposed design seed for review.
+- `.impeccable/surfaces/*.md`: eight route briefs (`/`, `/portal`, `/portal/channels`, `/portal/setup`, `/admin`, `/admin/users`, `/admin/settings/connections`, `/admin/settings/lineup`), from the withdrawn design seed. The briefs need revision against the approved product goals before use.
 - `DESIGN.md` and `panda.config.ts`: the withdrawn Dark Matter seed and the tokens used by the existing foundation.
 - `tests/fixtures/demo-fixtures.json`: a fictional fixture (snapshot date 2025-10-15: 42 users, 38 active, 4 inactive, four demo bundles with channel counts). The people in the briefs (Alex, Jordan, Morgan) and the `*.example` addresses are placeholders.
 - `static/otpravkarr-icon.svg`: the product icon. Licensing: [README.md](README.md#license).
