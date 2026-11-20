@@ -264,14 +264,14 @@ one of those; the cleanup procedures below still apply to every PR.
 
 ## otpravkarr
 
-otpravkarr lets the accepted Plex friends of a server owner sign in with Plex and get their own
-scoped IPTV account on the owner's Dispatcharr, with a subscriber portal and an owner console. It is
+otpravkarr lets a Plex owner share existing Dispatcharr lineups with eligible friends. The owner
+chooses who may join, and a friend's first eligible sign-in creates their viewing account. It is
 being rewritten from scratch; the previous version is on the `legacy-old/v1` branch, for reference
 only.
 
 **Status:** the ground floor is built: an empty SvelteKit app on Bun with Panda tokens, `/healthz`,
 unit tests, one e2e smoke and the Bun web CI ([`docs/SPEC.md`](docs/SPEC.md)). Product modules come
-next, in the order of the approved capability map in `docs/SPEC.md`, each through an owner-approved
+next, subject to the product revisions flagged in the capability map in `docs/SPEC.md`, each through an owner-approved
 `docs/SPEC-<id>.md`. Module 1, `secrets` ([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is built
 and ready for consumers. Nothing stores a secret yet. Module 2, `i18n`
 ([`docs/SPEC-i18n.md`](docs/SPEC-i18n.md)), is built: pages are served in English or Danish, with a

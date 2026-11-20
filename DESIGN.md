@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: "otpravkarr Dark Matter"
-description: "Proposed design seed for review; not extracted from implemented components."
+description: "Withdrawn design seed. Retained as a reference for the existing tokens."
 colors:
   background: "#1B1724"
   surface: "#2A2334"
@@ -101,7 +101,7 @@ components:
 
 Dark Matter. Warm orange against dark plum, generous editorial serif headings, restrained grain only on landing, translucent sticky subscriber header. Operational pages flat; one quiet photographic crop on landing only.
 
-Use this as a proposed implementation target; its tokens remain reviewable design decisions. [Product context](PRODUCT.md) and the [surface briefs](.impeccable/surfaces/) define behavior.
+This earlier visual direction has been withdrawn. The tokens document the existing foundation until visual design resumes. [Product context](PRODUCT.md) and the [surface briefs](.impeccable/surfaces/) define behavior.
 
 ## Colors
 

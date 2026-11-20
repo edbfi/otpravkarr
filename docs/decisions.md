@@ -135,7 +135,7 @@ operations, and `@hey-api/openapi-ts` may generate types or calls from a pinned 
 ever one implementation of an operation.
 
 otpravkarr's Plex scope is sign-in, account identity, friends, server discovery and health. An
-accepted friendship grants IPTV eligibility; a pending invitation doesn't. Dispatcharr is a separate
+accepted friendship is required for IPTV eligibility. The owner chooses at onboarding whether all accepted friends qualify or a personal grant is also required. Dispatcharr is a separate
 integration.
 
 Why: a maintained library covers most operations, and one provider boundary keeps the access rules
@@ -220,6 +220,8 @@ one other device.
 
 ### D23. Profiles and the subscriber lifecycle
 
+The [product goals](../PRODUCT.md#product-purpose) supersede the earlier group-scoping plan. otpravkarr assigns existing Dispatcharr channel profiles to viewers and leaves profile contents in Dispatcharr. Grants and roster sync never provision a new subscriber. Verify the shared profiles before issuing playback credentials on first eligible sign-in.
+
 - **Empty profiles from the start.** Every profile otpravkarr creates is created with
   `start_empty: true`.
 - **Disable keeps the account.** Disabling a subscriber (by the owner, or by sync when the friendship
@@ -239,6 +241,8 @@ app's disable-by-delete churned users and left orphans when a local write failed
 list shows a non-admin user every channel, and deleting a profile in Dispatcharr can cause one.
 
 ### D24. Keeping access from widening behind otpravkarr's back
+
+**Earlier group-based design, pending revision.** Apply the profile-sharing goals in D23. The old reconciliation and plugin rules below record the previous design. Onboarding should flag imports that can widen shared profiles. In Dispatcharr v0.34.1 a blank Auto Channel Sync profile selection targets all profiles, an explicit selection maintains the selected memberships, and No Profiles leaves memberships manual.
 
 - **Auto-sync groups.** otpravkarr reads Dispatcharr's M3U auto-sync group settings and warns about
   any group whose Channel Profiles is blank (all profiles). Its docs tell the owner to scope each
